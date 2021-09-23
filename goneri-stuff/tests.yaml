@@ -1,0 +1,15 @@
+---
+- hosts: localhost
+  tasks:
+    - azure.azcollection.azure_rm_deployment:
+        client_id: "{{ azure.clientId }}"
+        secret: "{{ azure.clientSecret  }}"
+        tenant: "{{ azure.tenantId }}"
+        subscription_id: "{{ azure.subscriptionId  }}"
+        # a template list is available here: https://azure.microsoft.com/en-gb/resources/templates/
+        template_link: https://raw.githubusercontent.com/Azure/azure-quickstart-templates/master/application-workloads/wordpress/aci-wordpress/azuredeploy.json
+        resource_group: "{{ azure.resourceGroupNames[0] }}"
+        location: eastus
+        parameters:
+          mySqlPassword:
+            value: foobar2000
