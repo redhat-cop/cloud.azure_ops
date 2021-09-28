@@ -2,5 +2,6 @@
 - hosts: localhost
   gather_facts: no
   roles:
-    - { role: cloud.azure_roles.resource_group, operation: delete }
+    - { role: cloud.azure_roles.resource_group, operation: create }
+    - { role: cloud.azure_roles.storage_account, operation: create }
 

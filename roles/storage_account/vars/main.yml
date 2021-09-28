@@ -1,0 +1,6 @@
+---
+# vars file for storage_account
+operation: "create"  # Valid values are create and delete
+resource_group_name: "akasurde_rg"
+resource_group_location: "eastus"
+storage_account_name: "akasurdesa2"

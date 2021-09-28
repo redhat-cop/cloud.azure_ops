@@ -1,0 +1,7 @@
+---
+- name: Delete a storage account {{ storage_account_name }}
+  azure_rm_storageaccount:
+    resource_group: "{{ resource_group_name }}"
+    name: "{{ storage_account_name }}"
+    account_type: Standard_LRS
+    state: absent

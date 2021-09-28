@@ -1,0 +1,13 @@
+---
+- name: Check operation validation
+  fail:
+    msg: "Please provide operation as 'create' or 'delete'"
+  when: operation not in ['create', 'delete']
+
+- name: Check if storage account name is valid
+  fail:
+    msg: "{{ storage_account_name }} is not a valid storage account name. Storage account name must be between 3 and 24 characters in length and use numbers and lower-case letters only."
+  when: not (storage_account_name | regex_search('^[0-9a-z]{3,24}$'))
+
+- include_tasks: "{{ operation }}.yml"
+
