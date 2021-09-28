@@ -1,0 +1,95 @@
+---
+- name: Define resource group name
+  set_fact:
+    azure_resource_group: "test-{{ lookup('password', '/dev/null chars=ascii_lowercase,digits length=16') }}"
+    tags:
+      azure_roles: resource_group
+
+- name: test resource group role
+  block:
+    - include_role:
+        name: resource_group
+      vars:
+        operation: "create"
+        azure_region: "eastus"
+
+    - name: check resource group
+      azure_rm_resourcegroup_info:
+        name: "{{ azure_resource_group }}"
+      register: result
+
+    - name: assert that resource group exists
+      assert:
+        that:
+          - result.resourcegroups | length == 1
+
+    - name: Get lock info for the resource group
+      azure_rm_lock_info:
+        resource_group: "{{ azure_resource_group }}"
+      register: result
+
+    - name: assert that resource is not locked
+      assert:
+        that:
+          - result.locks | length == 0
+
+    - name: Run the role once again and lock the resource group and add tags
+      include_role:
+        name: resource_group
+      vars:
+        operation: "create"
+        azure_region: "eastus"
+        azure_lock_resource_group: yes
+
+    - name: Get lock info for the resource group
+      azure_rm_lock_info:
+        resource_group: "{{ azure_resource_group }}"
+      register: result
+
+    - name: assert that resource is not locked
+      assert:
+        that:
+          - result.locks | length == 1
+
+    - name: trying to delete resource group locked should failed
+      include_role:
+        name: resource_group
+        apply:
+          ignore_errors: yes
+      vars:
+        operation: "delete"
+
+    - name: check that resource group still exists
+      azure_rm_resourcegroup_info:
+        name: "{{ azure_resource_group }}"
+      register: result
+
+    - name: assert that resource group exists
+      assert:
+        that:
+          - result.resourcegroups | length == 1
+
+    - name: Force locked resource group deletion
+      include_role:
+        name: resource_group
+      vars:
+        operation: "delete"
+        azure_force_delete_locked: yes
+
+    - name: Assert resource group has been deleted
+      azure_rm_resourcegroup_info:
+        name: "{{ azure_resource_group }}"
+      register: result
+
+    - name: assert that resource group exists
+      assert:
+        that:
+          - result.resourcegroups | length == 0
+
+  always:
+    - name: Delete all resource using tags
+      azure_rm_resourcegroup:
+        name: "{{ azure_resource_group }}"
+        state: absent
+        force_delete_nonempty: yes
+      ignore_errors: yes

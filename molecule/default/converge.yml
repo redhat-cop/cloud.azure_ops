@@ -1,0 +1,14 @@
+---
+- name: Converge
+  hosts: localhost
+  collections:
+    - azure.azcollection
+  tasks:
+    - name: test resource_group role
+      include_tasks:
+        file: tasks/resource_group.yml
+        apply:
+          tags:
+            - resource_group
+      tags:
+        - always

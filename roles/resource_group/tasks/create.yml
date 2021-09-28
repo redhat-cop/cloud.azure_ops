@@ -16,4 +16,6 @@
     name: "{{ azure_resource_group }}-lock"
     level: "can_not_delete"
     managed_resource_id: "{{ result.state.id }}"
-  when: azure_lock_resource_group | bool
+  when:
+    - azure_lock_resource_group is defined
+    - azure_lock_resource_group | bool
