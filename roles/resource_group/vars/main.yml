@@ -1,0 +1,5 @@
+---
+# vars file for resource_group
+operation: "create"  # Valid values are create and delete
+resource_group_name: "akasurde_rg"
+resource_group_location: "eastus"

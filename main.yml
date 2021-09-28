@@ -1,0 +1,6 @@
+---
+- hosts: localhost
+  gather_facts: no
+  roles:
+    - { role: cloud.azure_roles.resource_group, operation: delete }
+
