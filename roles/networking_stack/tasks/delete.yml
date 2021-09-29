@@ -1,0 +1,23 @@
+---
+- name: delete resource group
+  import_role:
+    name: cloud.azure_roles.resource_group
+  vars:
+    azure_force_delete_nonempty: yes
+    azure_force_delete_locked: yes
+  when: delete_option == 'all'
+
+- name: Delete virtual network
+  azure_rm_virtualnetwork:
+    state: absent
+    resource_group: "{{ azure_resource_group }}"
+    name: "{{ azure_virtual_network }}"
+  when: delete_option == 'virtual_network'
+
+- name: Delete subnet
+  azure_rm_subnet:
+    state: absent
+    resource_group: "{{ azure_resource_group }}"
+    virtual_network: "{{ azure_virtual_network }}"
+    name: "{{ azure_subnet }}"
+  when: delete_option == 'subnet'

@@ -1,0 +1,26 @@
+---
+- name: check that resource group exists
+  azure_rm_resourcegroup_info:
+    name: "{{ azure_resource_group }}"
+  register: result
+
+- name: create resource group when it does not exists
+  include_role:
+    name: cloud.azure_roles.resource_group
+  when: result.resourcegroups | length == 0
+
+- name: create azure virtual network
+  azure_rm_virtualnetwork:
+    location: "{{ azure_region }}"
+    name: "{{ azure_virtual_network }}"
+    address_prefixes_cidr: "{{ azure_vnet_address_prefixes_cidr }}"
+    resource_group: "{{ azure_resource_group }}"
+    tags: "{{ azure_tags | default(omit) }}"
+
+- name: create azure subnet
+  azure_rm_subnet:
+    name: "{{ azure_subnet }}"
+    virtual_network: "{{ azure_virtual_network }}"
+    address_prefixes_cidr: "{{ azure_subnet_address_prefixes_cidr }}"
+    resource_group: "{{ azure_resource_group }}"
+    tags: "{{ azure_tags | default(omit) }}"

@@ -15,7 +15,7 @@ Role Variables
 * **azure_resource_group** - Resource group to create or delete.
 * **azure_region** - An Azure location for the resource group to create.
 * **azure_lock_resource_group** - If set to 'true', will lock the resource group created.
-* **azure_resource_group_tags** - Dictionary of string:string pairs to assign as metadata to the object.
+* **azure_tags** - Dictionary of string:string pairs to assign as metadata to the object.
 * **azure_force_delete_nonempty** - Remove a resource group and all associated resources.
 * **azure_force_delete_locked** - Remove a resource group even if it is locked.
 

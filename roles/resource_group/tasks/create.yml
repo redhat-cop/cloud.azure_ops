@@ -8,7 +8,7 @@
   azure_rm_resourcegroup:
     name: "{{ azure_resource_group }}"
     location: "{{ azure_region }}"
-    tags: "{{ azure_resource_group_tags | default(omit) }}"
+    tags: "{{ azure_tags | default(omit) }}"
   register: result
 
 - name: lock resource group
