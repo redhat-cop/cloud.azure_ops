@@ -12,3 +12,11 @@
             - resource_group
       tags:
         - always
+    - name: test networking_stack role
+      include_tasks:
+        file: tasks/networking_stack.yml
+        apply:
+          tags:
+            - networking_stack
+      tags:
+        - always

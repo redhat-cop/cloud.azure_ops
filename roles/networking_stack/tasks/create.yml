@@ -21,6 +21,5 @@
   azure_rm_subnet:
     name: "{{ azure_subnet }}"
     virtual_network: "{{ azure_virtual_network }}"
-    address_prefixes_cidr: "{{ azure_subnet_address_prefixes_cidr }}"
+    address_prefix_cidr: "{{ azure_subnet_address_prefixes_cidr }}"
     resource_group: "{{ azure_resource_group }}"
-    tags: "{{ azure_tags | default(omit) }}"

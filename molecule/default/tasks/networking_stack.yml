@@ -1,0 +1,205 @@
+---
+- name: Define resource group name
+  set_fact:
+    resource_group: "netstack-{{ lookup('password', '/dev/null chars=ascii_lowercase,digits length=8') }}"
+    azure_tags:
+      cloud.azure_roles: networking_stack
+
+- name: test networking_stack role
+  block:
+    - name: Define common variables
+      set_fact:
+        azure_virtual_network: '{{ resource_group }}-vnet-00'
+        azure_subnet: '{{ resource_group }}-subnet-00'
+        azure_region: 'eastus'
+        azure_resource_group: '{{ resource_group }}'
+        azure_vnet_address_prefixes_cidr:
+          - 10.16.0.0/16
+        azure_subnet_address_prefixes_cidr: 10.16.0.0/24
+
+    - name: Create a networking stack
+      include_role:
+        name: networking_stack
+      vars:
+        operation: "create"
+
+    - name: Assert that Resource group was created
+      azure_rm_resourcegroup_info:
+        name: '{{ resource_group }}'
+      register: resource
+
+    - assert:
+        that:
+          - resource.resourcegroups | length == 1
+
+    - name: Assert that Virtual network was created
+      azure_rm_virtualnetwork_info:
+        name: '{{ azure_virtual_network }}'
+        resource_group: '{{ resource_group }}'
+      register: vnet
+
+    - assert:
+        that:
+          - vnet.virtualnetworks | length == 1
+
+    - name: Assert that Subnet was created
+      azure_rm_subnet_info:
+        name: '{{ azure_subnet }}'
+        virtual_network_name: '{{ azure_virtual_network }}'
+        resource_group: '{{ resource_group }}'
+      register: subnet
+
+    - assert:
+        that:
+          - subnet.subnets | length == 1
+
+    - name: Delete subnet using networking_stack role
+      include_role:
+        name: networking_stack
+      vars:
+        operation: "delete"
+        delete_option: "subnet"
+
+    - name: Assert that Resource group still exists
+      azure_rm_resourcegroup_info:
+        name: '{{ resource_group }}'
+      register: resource
+
+    - assert:
+        that:
+          - resource.resourcegroups | length == 1
+
+    - name: Assert that Virtual network still exists
+      azure_rm_virtualnetwork_info:
+        name: '{{ azure_virtual_network }}'
+        resource_group: '{{ resource_group }}'
+      register: vnet
+
+    - assert:
+        that:
+          - vnet.virtualnetworks | length == 1
+
+    - name: Assert that Subnet was deleted
+      azure_rm_subnet_info:
+        name: '{{ azure_subnet }}'
+        virtual_network_name: '{{ azure_virtual_network }}'
+        resource_group: '{{ resource_group }}'
+      register: subnet
+      ignore_errors: true
+
+    - assert:
+        that:
+          - subnet is failed
+          - subnet.msg == 'Could not get facts for Subnet.'
+
+    - name: Delete virtual network using networking_stack role
+      include_role:
+        name: networking_stack
+      vars:
+        operation: "delete"
+        delete_option: "virtual_network"
+
+    - name: Assert that Resource group still exists
+      azure_rm_resourcegroup_info:
+        name: '{{ resource_group }}'
+      register: resource
+
+    - assert:
+        that:
+          - resource.resourcegroups | length == 1
+
+    - name: Assert that Virtual network was deleted
+      azure_rm_virtualnetwork_info:
+        name: '{{ azure_virtual_network }}'
+        resource_group: '{{ resource_group }}'
+      register: vnet
+
+    - assert:
+        that:
+          - vnet.virtualnetworks | length == 0
+
+    - set_fact:
+        azure_virtual_network: '{{ resource_group }}-vnet-01'
+        azure_subnet: '{{ resource_group }}-subnet-01'
+
+    - name: Create a networking stack (with existing resource group)
+      include_role:
+        name: networking_stack
+      vars:
+        operation: "create"
+
+    - name: Assert that Resource group still exists
+      azure_rm_resourcegroup_info:
+        name: '{{ resource_group }}'
+      register: resource
+
+    - assert:
+        that:
+          - resource.resourcegroups | length == 1
+
+    - name: Assert that Virtual network was created
+      azure_rm_virtualnetwork_info:
+        name: '{{ azure_virtual_network }}'
+        resource_group: '{{ resource_group }}'
+      register: vnet
+
+    - assert:
+        that:
+          - vnet.virtualnetworks | length == 1
+
+    - name: Assert that Subnet was created
+      azure_rm_subnet_info:
+        name: '{{ azure_subnet }}'
+        virtual_network_name: '{{ azure_virtual_network }}'
+        resource_group: '{{ resource_group }}'
+      register: subnet
+
+    - assert:
+        that:
+          - subnet.subnets | length == 1
+
+    - name: Delete all resource created using networking_stack role
+      include_role:
+        name: networking_stack
+      vars:
+        operation: "delete"
+
+    - name: Assert that Resource group was deleted
+      azure_rm_resourcegroup_info:
+        name: '{{ resource_group }}'
+      register: resource
+
+    - assert:
+        that:
+          - resource.resourcegroups | length == 0
+
+    - name: Assert that Virtual network was deleted
+      azure_rm_virtualnetwork_info:
+        name: '{{ azure_virtual_network }}'
+        resource_group: '{{ resource_group }}'
+      register: vnet
+
+    - assert:
+        that:
+          - vnet.virtualnetworks | length == 0
+
+    - name: Assert that Subnet was deleted
+      azure_rm_subnet_info:
+        name: '{{ azure_subnet }}'
+        virtual_network_name: '{{ azure_virtual_network }}'
+        resource_group: '{{ resource_group }}'
+      register: subnet
+      ignore_errors: true
+
+    - assert:
+        that:
+          - subnet is failed
+          - subnet.msg == 'Could not get facts for Subnet.'
+
+  always:
+    - name: Delete resource group
+      azure_rm_resourcegroup:
+        name: "{{ azure_resource_group }}"
+        state: absent
+        force_delete_nonempty: yes
+      ignore_errors: yes
