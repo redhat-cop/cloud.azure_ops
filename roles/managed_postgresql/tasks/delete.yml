@@ -1,0 +1,58 @@
+---
+- name: Check delete_option validation
+  fail:
+    msg: "Please provide delete_option as 'all' or 'server'"
+  when:
+    - delete_option is defined
+    - delete_option not in ['all', 'server']
+
+- name: Delete PostgreSQL Server configuration settings
+  azure_rm_postgresqlconfiguration:
+    resource_group: "{{ azure_resource_group }}"
+    server_name: "{{ azure_postgresql_name }}"
+    name: "{{ item.name }}"
+    value: "{{ item.value }}"
+    state: absent
+  with_items: "{{ azure_postgresql_settings }}"
+  when:
+    - delete_option is not defined
+
+- name: Delete PostgreSQL Server Firewall rules
+  azure_rm_postgresqlfirewallrule:
+    resource_group: "{{ azure_resource_group }}"
+    server_name: "{{ azure_postgresql_name }}"
+    name: "{{ item.name }}"
+    state: absent
+  with_items: "{{ azure_postgresql_firewall_rules }}"
+  when:
+    - delete_option is not defined
+
+- name: Delete PostgreSQL Database instances
+  azure_rm_postgresqldatabase:
+    resource_group: "{{ azure_resource_group }}"
+    server_name: "{{ azure_postgresql_name }}"
+    name: "{{ item.name }}"
+    force_update: "{{ item.force | default(omit) }}"
+    state: absent
+  with_items: "{{ azure_postgresql_database_instances }}"
+  when:
+    - delete_option is not defined
+
+- name: Delete PostgreSQL Server
+  azure_rm_postgresqlserver:
+    resource_group: "{{ azure_resource_group }}"
+    name: "{{ azure_postgresql_name }}"
+    state: absent
+  when:
+    - delete_option is defined
+    - delete_option == 'server'
+
+- name: Delete Resource group
+  include_role:
+    name: cloud.azure_roles.resource_group
+  vars:
+    azure_force_delete_nonempty: yes
+    azure_force_delete_locked: yes
+  when:
+    - delete_option is defined
+    - delete_option == 'all'

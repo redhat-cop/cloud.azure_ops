@@ -1,0 +1,26 @@
+---
+- name: Check operation validation
+  fail:
+    msg: "Please provide operation as 'create' or 'delete'"
+  when: operation not in ['create', 'delete']
+
+- fail:
+    msg: "Azure resource group must be defined as azure_resource_group"
+  when: azure_resource_group is not defined
+
+- fail:
+    msg: "Azure Postgresql server name must be defined as azure_postgresql_name"
+  when: azure_postgresql_name is not defined
+
+- name: Get server info
+  azure_rm_postgresqlserver_info:
+    resource_group: '{{ azure_resource_group }}'
+    name: '{{ azure_postgresql_name }}'
+  register: server_info
+
+- name: Get Resource group info
+  azure_rm_resourcegroup_info:
+    name: "{{ azure_resource_group }}"
+  register: rg_info
+
+- include_tasks: "{{ operation }}.yml"

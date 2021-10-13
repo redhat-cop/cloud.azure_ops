@@ -20,3 +20,11 @@
             - networking_stack
       tags:
         - always
+    - name: test managed_postgresql role
+      include_tasks:
+        file: tasks/managed_postgresql.yml
+        apply:
+          tags:
+            - managed_postgresql
+      tags:
+        - always
