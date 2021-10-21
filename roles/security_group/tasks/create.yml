@@ -1,0 +1,36 @@
+---
+- name: Check Region Setting
+  fail:
+    msg: "Azure Region must be defined as azure_region"
+  when: azure_region is not defined
+
+- name: Check Resource Group Exists
+  azure_rm_resourcegroup_info:
+    name: "{{ azure_resource_group }}"
+  register: result
+
+- name: Resource Group Does Not Exist -> Create Resource Group
+  include_role:
+    name: resource_group
+  when: result.resourcegroups | length == 0
+
+- name: Create Network Security Group
+  azure_rm_securitygroup:
+    resource_group: "{{ azure_resource_group }}"
+    name: "{{ azure_security_group_name }}"
+    rules:
+      - name: 'allow_ssh'
+        protocol: Tcp
+        destination_port_range:
+          - 22
+        access: Allow
+        priority: 1001
+        direction: Inbound
+      - name: 'allow_web_traffic'
+        protocol: Tcp
+        destination_port_range:
+          - 80
+          - 443
+        access: Allow
+        priority: 1002
+        direction: Inbound
