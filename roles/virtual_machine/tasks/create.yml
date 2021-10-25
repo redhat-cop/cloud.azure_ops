@@ -1,0 +1,52 @@
+---
+- name: Check Region Setting
+  fail:
+    msg: "Azure Region must be defined as azure_region"
+  when: azure_region is not defined
+
+- name: Check Resource Group Exists
+  azure_rm_resourcegroup_info:
+    name: "{{ azure_resource_group }}"
+  register: result
+
+- name: Resource Group Does Not Exist -> Create Resource Group
+  include_role:
+    name: resource_group
+  when: result.resourcegroups | length == 0
+
+- name: Check Virtual Network Exists
+  azure_rm_virtualnetwork_info:
+    resource_group: "{{ azure_resource_group }}"
+    name: "{{ azure_virtual_network }}"
+  register: virtual_network_result
+
+- name: Virtual Network Does Not Exist -> Create Virtual Network
+  include_role:
+    name: networking_stack
+  when: virtual_network_result.virtualnetworks | length == 0  
+
+- name: Check Network Interface Exists
+  azure_rm_networkinterface_info:
+    resource_group: "{{ azure_resource_group }}"
+    name: "{{ azure_nw_interface }}"
+  register: nw_interface_result
+
+- name: Network Interface Does Not Exist -> Create Network Interface
+  include_role:
+    name: network_interface
+  when: nw_interface_result.networkinterfaces | length == 0    
+
+- name: Create a VM
+  azure_rm_virtualmachine:
+    resource_group: "{{ azure_resource_group }}"
+    name: "{{ azure_vm_name }}"
+    vm_size: "{{ azure_vm_size }}"
+    network_interfaces: "{{ azure_nw_interface }}"
+    admin_username: "{{ azure_vm_admin_user }}"
+    admin_password: "{{ azure_vm_admin_pw }}"
+    os_type: Linux
+    image:
+      offer: RHEL
+      publisher: RedHat
+      sku: "7-LVM"
+      version: latest
