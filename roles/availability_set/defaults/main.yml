@@ -1,0 +1,3 @@
+---
+# defaults file for availability_set
+operation: 'create'
