@@ -1,0 +1,13 @@
+---
+- hosts: localhost
+  gather_facts: no
+  vars_files:
+  - vars/main.yml
+  roles:
+    - role: resource_group
+    - role: networking_stack
+    - role: public_ip
+    - role: security_group
+    - role: network_interface
+    - role: virtual_machine
+    - role: availability_set

@@ -1,0 +1,48 @@
+---
+# vars file
+# Shared vars
+operation: "create"
+azure_resource_group: "jtorcasso-rg"
+azure_region: "canadacentral"
+azure_force_delete_nonempty: "yes"
+azure_tags:
+  tag0: "tag0"
+  tag1: "tag1"
+
+# Networking
+azure_virtual_network: "jtorcasso-vnet"
+azure_subnet: "my-subnet-00"
+azure_vnet_address_prefixes_cidr:
+- "10.1.0.0/16"
+- "172.100.0.0/16"
+azure_subnet_address_prefixes_cidr: "10.1.0.0/24"
+
+# VM
+azure_vm_name: 'jtorcasso-vm'
+azure_vm_size: 'Standard_DS1_v2'
+azure_vm_admin_user: azureuser
+azure_vm_admin_pw: fdajlk29!
+
+# Public IP
+azure_public_ip_name: 'jtorcasso-public-ip0'
+
+# Security Group
+azure_security_group_name: 'jtorcasso-sec-grp0'
+
+# Network Interface
+azure_nw_interface: 'jtorcasso-nw-int0'
+
+# MySQL Server
+azure_mysql_server_name: 'jtorcasso-mysql-server'
+azure_mysql_server_admin_user: sqladmin
+azure_mysql_server_admin_pw: fdajlk29!
+
+# MySQL DB
+azure_mysql_db_name: 'jtorcasso-mysql-db0'
+
+# Load Balancer
+azure_lb_name: 'jtorcasso-lb'
+frontend_ip_name: 'jt-frontendipconf0'
+
+# Availability Set
+azure_availability_set_name: 'jtorcasso-as0'

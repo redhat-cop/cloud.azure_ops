@@ -1,7 +1,7 @@
 ---
 - name: delete resource group
   import_role:
-    name: cloud.azure_roles.resource_group
+    name: resource_group
   vars:
     azure_force_delete_nonempty: yes
     azure_force_delete_locked: yes
