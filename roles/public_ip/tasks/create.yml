@@ -25,3 +25,7 @@
 - name: Output public IP
   debug:
     msg: "The public IP is {{ output_ip_address.state.ip_address }}"
+
+- name: Add Public IP to inventory
+  ansible.builtin.add_host:
+    name: "{{ output_ip_address.state.ip_address }}"    
