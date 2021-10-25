@@ -9,6 +9,32 @@
     - role: public_ip
     - role: security_group
     - role: network_interface
-    - role: virtual_machine
     - role: availability_set
     - role: managed_postgresql
+    - role: virtual_machine
+
+- hosts: in_memory
+  gather_facts: no
+  become_user: "{{ azure_vm_admin_user }}"
+  vars_files:
+    - vars/main.yml
+
+  # https://stackoverflow.com/questions/32297456/how-to-ignore-ansible-ssh-authenticity-checking
+  tasks:
+  - name: Check SSH known_hosts for {{ inventory_hostname }}
+    local_action: shell ssh-keygen -F {{ inventory_hostname }}
+    register: checkForKnownHostsEntry
+    failed_when: false
+    changed_when: false
+    ignore_errors: no
+
+  - name: Add {{ inventory_hostname }} to SSH known hosts automatically
+    when: checkForKnownHostsEntry.rc == 1
+    changed_when: checkForKnownHostsEntry.rc == 1
+    set_fact:
+      ansible_ssh_common_args: '-o StrictHostKeyChecking=no'  
+
+  - name: Create test file
+    copy:
+      dest: /tmp/test
+      content: "Hello from {{ inventory_hostname }}!"

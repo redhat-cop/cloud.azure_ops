@@ -36,25 +36,28 @@
     name: security_group
   when: security_group_result.securitygroups | length == 0  
 
-- name: Check Public IP Exists
-  azure_rm_publicipaddress_info:
-    resource_group: "{{ azure_resource_group }}"
-    name: "{{ azure_public_ip_name }}"
-  register: public_ip_result
+# - name: Check Public IP Exists
+#   azure_rm_publicipaddress_info:
+#     resource_group: "{{ azure_resource_group }}"
+#     name: "{{ azure_public_ip_name }}"
+#   register: public_ip_result
 
-- name: Public IP Does Not Exist -> Create Public IP
-  include_role:
-    name: public_ip
-  when: public_ip_result.publicipaddresses | length == 0  
+# - name: Public IP Does Not Exist -> Create Public IP
+#   include_role:
+#     name: public_ip
+#   when: public_ip_result.publicipaddresses | length == 0  
 
 - name: Create a Network Interface
   azure_rm_networkinterface:
-    name: "{{ azure_nw_interface }}"
+    name: "{{ item.name }}"
     resource_group: "{{ azure_resource_group }}"
     virtual_network: "{{ azure_virtual_network }}"
     subnet_name: "{{ azure_subnet }}"
     security_group: "{{ azure_security_group_name }}"
     ip_configurations:
       - name: default
-        public_ip_address_name: "{{ azure_public_ip_name }}"
+        public_ip_address_name: "{{ azure_public_ips[idx].name }}"
         primary: True
+  with_items: "{{ azure_nw_interface_instances }}"
+  loop_control:
+    index_var: idx

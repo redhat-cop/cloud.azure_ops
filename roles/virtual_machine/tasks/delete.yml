@@ -17,7 +17,8 @@
 - name: Delete Virtual Machine
   azure_rm_virtualmachine:
     resource_group: "{{ azure_resource_group }}"
-    name: "{{ azure_vm_name }}"
+    name: "{{ item.name }}"
     remove_on_absent: "{{ remove_on_absent }}"
     state: absent
-  when: result.resourcegroups | length != 0  
+  when: result.resourcegroups | length != 0
+  with_items: "{{ azure_vm_instances }}"

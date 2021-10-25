@@ -1,0 +1,27 @@
+---
+- name: Create a VM
+  azure_rm_virtualmachine:
+    resource_group: "{{ azure_resource_group }}"
+    name: "{{ item.name }}"
+    vm_size: "{{ item.size }}"
+    network_interfaces: "{{ azure_nw_interface_instances[idx].name }}"
+    admin_username: "{{ azure_vm_admin_user }}"
+    admin_password: "{{ azure_vm_admin_pw }}"
+    # ssh_password_enabled: no
+    os_type: "{{ item.os }}"
+    image:
+      offer: RHEL
+      publisher: RedHat
+      sku: "7-LVM"
+      version: latest
+  register: vm_info
+
+- debug:
+    msg: "{{ vm_info.ansible_facts.azure_vm.properties.networkProfile.networkInterfaces[0].properties.ipConfigurations[0].properties.publicIPAddress.properties.ipAddress }}"
+  
+- name: Add VM to Inventory
+  add_host: 
+    name: "{{ vm_info.ansible_facts.azure_vm.properties.networkProfile.networkInterfaces[0].properties.ipConfigurations[0].properties.publicIPAddress.properties.ipAddress }}"
+    groups: in_memory
+    ansible_ssh_user: "{{ azure_vm_admin_user }}"
+    ansible_ssh_pass: "{{ azure_vm_admin_pw }}"
