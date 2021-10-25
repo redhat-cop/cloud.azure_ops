@@ -47,12 +47,12 @@
     - delete_option is defined
     - delete_option == 'server'
 
-- name: Delete Resource group
-  include_role:
-    name: cloud.azure_roles.resource_group
-  vars:
-    azure_force_delete_nonempty: yes
-    azure_force_delete_locked: yes
-  when:
-    - delete_option is defined
-    - delete_option == 'all'
+# - name: Delete Resource group
+#   include_role:
+#     name: cloud.azure_roles.resource_group
+#   vars:
+#     azure_force_delete_nonempty: yes
+#     azure_force_delete_locked: yes
+#   when:
+#     - delete_option is defined
+#     - delete_option == 'all'
