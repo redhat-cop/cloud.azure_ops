@@ -36,6 +36,7 @@ azure_nw_interface: 'jtorcasso-nw-int0'
 azure_postgresql_name: 'jtorcasso-postgresql-server'
 azure_postgresql_admin_username: postgresqladmin
 azure_postgresql_admin_password: fdajlk29!
+azure_postgresql_version: 11
 
 # PostgreSQL DBs
 azure_postgresql_database_instances:
