@@ -11,3 +11,4 @@
     - role: network_interface
     - role: virtual_machine
     - role: availability_set
+    - role: managed_postgresql

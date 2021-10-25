@@ -32,13 +32,16 @@ azure_security_group_name: 'jtorcasso-sec-grp0'
 # Network Interface
 azure_nw_interface: 'jtorcasso-nw-int0'
 
-# MySQL Server
-azure_mysql_server_name: 'jtorcasso-mysql-server'
-azure_mysql_server_admin_user: sqladmin
-azure_mysql_server_admin_pw: fdajlk29!
+# PostgreSQL Server
+azure_postgresql_name: 'jtorcasso-postgresql-server'
+azure_postgresql_admin_username: postgresqladmin
+azure_postgresql_admin_password: fdajlk29!
 
-# MySQL DB
-azure_mysql_db_name: 'jtorcasso-mysql-db0'
+# PostgreSQL DBs
+azure_postgresql_database_instances:
+  - { name: 'jtorcasso-postgresql-db0' }
+  - { name: 'jtorcasso-postgresql-db1' }
+  - { name: 'jtorcasso-postgresql-db2' }
 
 # Load Balancer
 azure_lb_name: 'jtorcasso-lb'
