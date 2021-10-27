@@ -26,5 +26,11 @@
         apply:
           tags:
             - managed_postgresql
+    - name: test security_group role
+      include_tasks:
+        file: tasks/security_group.yml
+        apply:
+          tags:
+            - security_group            
       tags:
         - always

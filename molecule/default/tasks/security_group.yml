@@ -1,0 +1,221 @@
+---
+- name: Define variables
+  set_fact:
+    azure_resource_group: "postgresql-{{ lookup('password', '/dev/null chars=ascii_lowercase,digits length=8') }}"
+    azure_tags:
+      cloud.azure_roles: managed_postgresql
+    azure_region: "eastus"
+    azure_postgresql_name: "dbserver-{{ lookup('password', '/dev/null chars=digits length=8') }}"
+    azure_postgresql_admin_username: "test"
+    azure_postgresql_admin_password: "4fB5In3ueO7,"
+    test_database_instances:
+      - name: db-00
+        charset: UTF8
+      - name: db-01
+
+- name: test security_group role
+  block:
+    - name: Create security group
+      include_role:
+        name: security_group
+      vars:
+        operation: "create"
+
+    - name: Get resource group info
+      azure_rm_resourcegroup_info:
+        name: '{{ azure_resource_group }}'
+      register: rg
+
+    - name: Assert that resource group exists
+      assert:
+        that:
+          - rg.resourcegroups | length == 1
+
+    # - name: Get PostgreSQL Server info
+    #   azure_rm_postgresqlserver_info:
+    #     resource_group: '{{ azure_resource_group }}'
+    #     name: '{{ azure_postgresql_name }}'
+    #   register: server_info
+
+    # - name: Assert that Server was found
+    #   assert:
+    #     that:
+    #       - server_info.servers | length == 1
+
+    # - set_fact:
+    #     server_fqdn: "{{ server_info.servers[0].fully_qualified_domain_name }}"
+
+    # - name: Test connection to the database
+    #   postgresql_ping_db:
+    #     host: "{{ server_fqdn }}"
+    #     dbname: "{{ test_database_instances[0].name }}"
+    #     user: "{{ azure_postgresql_admin_username }}@{{ azure_postgresql_name }}"
+    #     password: "{{ azure_postgresql_admin_password }}"
+    #   ignore_errors: true
+    #   register: connect
+
+    # - name: assert connection failed
+    #   assert:
+    #     that:
+    #       - connect is failed
+
+    # - name: Create database instances
+    #   include_role:
+    #     name: managed_postgresql
+    #   vars:
+    #     operation: "create"
+    #     azure_postgresql_database_instances: "{{ test_database_instances }}"
+
+    # - name: Read Database info
+    #   azure_rm_postgresqldatabase_info:
+    #     resource_group: '{{ azure_resource_group }}'
+    #     server_name: '{{ azure_postgresql_name }}'
+    #   register: db_info
+
+    # - name: assert db were created
+    #   assert:
+    #     that:
+    #       - db_info.databases | map(attribute='name') | intersect(test_database_instances | map(attribute='name')) | length == 2
+
+    # - name: Test connection to the database (should failed, no firewall rule)
+    #   postgresql_ping_db:
+    #     host: "{{ server_fqdn }}"
+    #     dbname: "{{ test_database_instances[0].name }}"
+    #     user: "{{ azure_postgresql_admin_username }}@{{ azure_postgresql_name }}"
+    #     password: "{{ azure_postgresql_admin_password }}"
+    #   ignore_errors: true
+    #   register: connect
+
+    # - name: assert connection failed
+    #   assert:
+    #     that:
+    #       - connect is failed
+
+    # - name: add firewall rule to the server
+    #   include_role:
+    #     name: managed_postgresql
+    #   vars:
+    #     operation: "create"
+    #     azure_postgresql_firewall_rules:
+    #       - name: allow_all
+    #         start_ip_address: 0.0.0.0
+    #         end_ip_address: 255.255.255.255
+
+    # - name: Test connection to the database (should succeed)
+    #   postgresql_ping_db:
+    #     host: "{{ server_fqdn }}"
+    #     dbname: "{{ test_database_instances[0].name }}"
+    #     user: "{{ azure_postgresql_admin_username }}@{{ azure_postgresql_name }}"
+    #     password: "{{ azure_postgresql_admin_password }}"
+
+    # - name: delete firewall rule from the server
+    #   include_role:
+    #     name: managed_postgresql
+    #   vars:
+    #     operation: "delete"
+    #     azure_postgresql_firewall_rules:
+    #       - name: allow_all
+
+    # - name: Test connection to the database (should failed, firewall rule removed)
+    #   postgresql_ping_db:
+    #     host: "{{ server_fqdn }}"
+    #     dbname: "{{ test_database_instances[0].name }}"
+    #     user: "{{ azure_postgresql_admin_username }}@{{ azure_postgresql_name }}"
+    #     password: "{{ azure_postgresql_admin_password }}"
+    #   register: connect
+    #   ignore_errors: true
+
+    # - name: assert connection failed
+    #   assert:
+    #     that:
+    #       - connect is failed
+
+    # - name: Read Database info
+    #   azure_rm_postgresqldatabase_info:
+    #     resource_group: '{{ azure_resource_group }}'
+    #     server_name: '{{ azure_postgresql_name }}'
+    #   register: db_info
+
+    # - name: assert db were not deleted (only firewall rule is supposed to be removed)
+    #   assert:
+    #     that:
+    #       - db_info.databases | map(attribute='name') | intersect(test_database_instances | map(attribute='name')) | length == 2
+
+    # - name: Remove 2nd database instance
+    #   include_role:
+    #     name: managed_postgresql
+    #   vars:
+    #     operation: "delete"
+    #     azure_postgresql_database_instances:
+    #       - "{{ test_database_instances[1] }}"
+
+    # - name: Read Database info
+    #   azure_rm_postgresqldatabase_info:
+    #     resource_group: '{{ azure_resource_group }}'
+    #     server_name: '{{ azure_postgresql_name }}'
+    #   register: db_info
+
+    # - name: assert one db instance is still running
+    #   assert:
+    #     that:
+    #       - db_info.databases | map(attribute='name') | intersect([ test_database_instances[0] ] | map(attribute='name')) | length == 1
+
+    # - name: Delete PostgreSQL Server
+    #   include_role:
+    #     name: managed_postgresql
+    #   vars:
+    #     operation: "delete"
+    #     delete_option: 'server'
+
+    # - name: Get PostgreSQL Server info
+    #   azure_rm_postgresqlserver_info:
+    #     resource_group: '{{ azure_resource_group }}'
+    #     name: '{{ azure_postgresql_name }}'
+    #   register: server_info
+
+    # - name: Assert that Server was deleted
+    #   assert:
+    #     that:
+    #       - server_info.servers | length == 0
+
+    # - name: Create Managed PostgreSQL Server once again
+    #   include_role:
+    #     name: managed_postgresql
+    #   vars:
+    #     operation: "create"
+
+    # - name: Get PostgreSQL Server info
+    #   azure_rm_postgresqlserver_info:
+    #     resource_group: '{{ azure_resource_group }}'
+    #     name: '{{ azure_postgresql_name }}'
+    #   register: server_info
+
+    # - name: Assert that Server was found
+    #   assert:
+    #     that:
+    #       - server_info.servers | length == 1
+
+    # - name: Delete all resources (should delete resource group)
+    #   include_role:
+    #     name: managed_postgresql
+    #   vars:
+    #     operation: "delete"
+    #     delete_option: 'all'
+
+    # - name: Get resource group info
+    #   azure_rm_resourcegroup_info:
+    #     name: '{{ azure_resource_group }}'
+    #   register: resource
+
+    # - name: assert that resource group was found
+    #   assert:
+    #     that:
+    #       - resource.resourcegroups | length == 0
+
+  always:
+    - name: Delete resource group and all its content
+      azure_rm_resourcegroup:
+        name: "{{ azure_resource_group }}"
+        state: absent
+        force_delete_nonempty: yes
+      ignore_errors: yes
