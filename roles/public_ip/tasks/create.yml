@@ -17,8 +17,7 @@
 - name: Create a Public IP
   azure_rm_publicipaddress:
     resource_group: "{{ azure_resource_group }}"
-    name: "{{ item.name }}"
+    name: "{{ azure_public_ip.name }}"
     allocation_method: Static
     sku: Standard
     location: canadacentral
-  with_items: "{{ azure_public_ips }}"

@@ -1,0 +1,45 @@
+---
+- fail:
+    msg: "Azure location must be defined as azure_region"
+  when:
+    - rg_info.resourcegroups | length == 0
+    - azure_region is not defined
+
+- fail:
+    msg: "Azure load balancer public ip must be defined as azure_lb_public_ip"
+  when:
+    - azure_lb_public_ip is not defined
+
+- name: Create resource group
+  include_role:
+    name: cloud.azure_roles.resource_group
+  when: rg_info.resourcegroups | length == 0
+
+- name: Get public ip info
+  azure_rm_publicipaddress_info:
+    resource_group: "{{ azure_resource_group }}"
+    name: "{{ azure_lb_public_ip.name }}"
+  vars:
+    azure_public_ip: "{{ azure_lb_public_ip }}"
+  register: ip_info
+
+- name: Create public ip
+  include_role:
+    name: cloud.azure_roles.public_ip
+  vars:
+    azure_public_ip: "{{ azure_lb_public_ip }}"
+  when: ip_info.publicipaddresses | length == 0  
+
+- name: Create/Update load balancer
+  azure_rm_loadbalancer:
+    resource_group: "{{ azure_resource_group }}"
+    name: "{{ azure_lb_name }}"
+    frontend_ip_configurations:
+      - name: "{{ azure_lb_name }}-ipconf"
+        public_ip_address: "{{ azure_lb_public_ip.name }}"
+    backend_address_pools:
+      - name: "{{ azure_lb_name }}-backendpool"
+    probes: "{{ azure_lb_probes }}"
+    load_balancing_rules: "{{ azure_lb_rules }}"
+    sku: Standard
+    tags: "{{ azure_tags | default(omit) }}"

@@ -4,14 +4,15 @@
   vars_files:
   - vars/main.yml
   roles:
-    - role: resource_group
-    - role: networking_stack
-    - role: public_ip
-    - role: security_group
-    - role: network_interface
-    - role: availability_set
-    - role: managed_postgresql
-    - role: virtual_machine
+    # - role: resource_group
+    # - role: networking_stack
+    # - role: public_ip
+    # - role: security_group
+    - role: load_balancer
+    # - role: network_interface
+    # - role: availability_set
+    # - role: virtual_machine
+    # - role: managed_postgresql
 
 - hosts: in_memory
   gather_facts: no

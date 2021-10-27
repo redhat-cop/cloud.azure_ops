@@ -17,11 +17,20 @@ azure_vnet_address_prefixes_cidr:
 - "172.100.0.0/16"
 azure_subnet_address_prefixes_cidr: "10.1.0.0/24"
 
+# Availability Set
+azure_availability_set_name: 'jtorcasso-as0'
+
 # VMs
 azure_vm_instances:
-  - { name: 'jtorcasso-vm0', size: 'Standard_DS1_v2', os: 'Linux' }
-  - { name: 'jtorcasso-vm1', size: 'Standard_DS1_v2', os: 'Linux' }
-  - { name: 'jtorcasso-vm2', size: 'Standard_DS1_v2', os: 'Linux' }
+  - name: 'jtorcasso-vm0'
+    size: 'Standard_DS1_v2'
+    os: 'Linux'
+  - name: 'jtorcasso-vm1'
+    size: 'Standard_DS1_v2'
+    os: 'Linux'
+  - name: 'jtorcasso-vm2'
+    size: 'Standard_DS1_v2'
+    os: 'Linux'
 azure_vm_admin_user: azureuser
 azure_vm_admin_pw: fdajlk29!
 
@@ -30,15 +39,16 @@ azure_security_group_name: 'jtorcasso-sec-grp0'
 
 # Network Interface
 azure_nw_interface_instances:
-  - { name: 'jtorcasso-nw-int0' }
-  - { name: 'jtorcasso-nw-int1' }
-  - { name: 'jtorcasso-nw-int2' }
+  - name: 'jtorcasso-nw-int0'
+  - name: 'jtorcasso-nw-int1'
+  - name: 'jtorcasso-nw-int2'
 
 # Public IP
 azure_public_ips: 
-  - { name: 'jtorcasso-public-ip0' }
-  - { name: 'jtorcasso-public-ip1' }
-  - { name: 'jtorcasso-public-ip2' }
+  - name: 'jtorcasso-public-ip0'
+  - name: 'jtorcasso-public-ip1'
+  - name: 'jtorcasso-public-ip2'
+  - name: 'jtorcasso-public-ip3'  
 
 # PostgreSQL Server
 azure_postgresql_name: 'jtorcasso-postgresql-server'
@@ -48,13 +58,21 @@ azure_postgresql_version: 10
 
 # PostgreSQL DBs
 azure_postgresql_database_instances:
-  - { name: 'jtorcasso-postgresql-db0' }
-  - { name: 'jtorcasso-postgresql-db1' }
-  - { name: 'jtorcasso-postgresql-db2' }
+  - name: 'jtorcasso-postgresql-db0'
+  - name: 'jtorcasso-postgresql-db1'
+  - name: 'jtorcasso-postgresql-db2'
 
 # Load Balancer
 azure_lb_name: 'jtorcasso-lb'
-frontend_ip_name: 'jt-frontendipconf0'
-
-# Availability Set
-azure_availability_set_name: 'jtorcasso-as0'
+azure_lb_public_ip:
+  name: 'jtorcasso-public-ip3'
+azure_lb_probes:
+- name: prob0
+  port: 8080
+azure_lb_rules:
+  - name: jtorcasso-lb-rule0
+    frontend_ip_configuration: "jtorcasso-lb-ipconf"
+    backend_address_pool: "jtorcasso-lb-backendpool"
+    frontend_port: 8080
+    backend_port: 8080
+    probe: prob0
