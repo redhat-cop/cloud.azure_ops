@@ -1,47 +1,69 @@
 ---
-- name: Check Region Setting
-  fail:
+- fail:
     msg: "Azure Region must be defined as azure_region"
   when: azure_region is not defined
 
-- name: Check Resource Group Exists
-  azure_rm_resourcegroup_info:
-    name: "{{ azure_resource_group }}"
-  register: result
+- fail:
+    msg: "Azure VM admin username must be defined as azure_vm_admin_username"
+  when: azure_vm_admin_username is not defined
+
+- fail:
+    msg: "Azure VM size must be defined as azure_vm_size"
+  when: azure_vm_size is not defined  
+
+- fail:
+    msg: "Azure VM image must be defined as azure_vm_image"
+  when: azure_vm_image is not defined    
 
 - name: Resource Group Does Not Exist -> Create Resource Group
   include_role:
     name: resource_group
-  when: result.resourcegroups | length == 0
+  when: rg_info.resourcegroups | length == 0
 
-- name: Check Virtual Network Exists
-  azure_rm_virtualnetwork_info:
-    resource_group: "{{ azure_resource_group }}"
-    name: "{{ azure_virtual_network }}"
-  register: virtual_network_result
+# If NIC is not specified, assert virtual network exists
+- block:
+  - name: No network interface specified -> get virtual network info
+    azure_rm_virtualnetwork_info:
+      resource_group: "{{ azure_resource_group }}"
+    register: vnet_info
 
-- name: Virtual Network Does Not Exist -> Create Virtual Network
-  include_role:
-    name: networking_stack
-  when: virtual_network_result.virtualnetworks | length == 0  
+  - fail:
+      msg: 'When no NIC is specified, a virtual network must exist'
+    when: vnet_info.virtualnetworks | length == 0
+  when: azure_network_interfaces is undefined
 
-# - name: Check Network Interface Exists
-#   azure_rm_networkinterface_info:
-#     resource_group: "{{ azure_resource_group }}"
-#     name: "{{ azure_nw_interface }}"
-#   register: nw_interface_result
+# Assert specified availability set is created
+- block:
+  - name: Get availability set info
+    azure_rm_availabilityset_info:
+      resource_group: "{{ azure_resource_group }}"
+      name: "{{ azure_availability_set_name }}"
+    register: as_info
 
-# - name: Network Interface Does Not Exist -> Create Network Interface
-#   include_role:
-#     name: network_interface
-#   when: nw_interface_result.networkinterfaces | length == 0    
-
-- name: Create & Register VM(s)
-  include_tasks: create_register_vm.yml
-  with_items: "{{ azure_vm_instances }}"
-  loop_control:
-    index_var: idx
-
-- debug:
-    msg: "{{ groups['in_memory'] }}"    
+  - name: Create availability set '{{ azure_availability_set_name }}'
+    include_role:
+      name: availability_set
+    when: as_info.ansible_info.azure_availabilitysets | length == 0
+  when: azure_availability_set_name is defined
   
+- name: Create a VM
+  azure_rm_virtualmachine:
+    resource_group: "{{ azure_resource_group }}"
+    name: "{{ azure_vm_name }}"
+    vm_size: "{{ azure_vm_size }}"
+    network_interfaces: "{{ azure_network_interfaces | default(omit) }}"
+    os_type: "{{ azure_vm_os | default(omit) }}"
+    availability_set: "{{ azure_availability_set_name | default(omit) }}"
+    image: "{{ azure_vm_image }}"
+    admin_username: "{{ azure_vm_admin_username }}"
+    admin_password: "{{ azure_vm_admin_password | default(omit) }}"
+    ssh_password_enabled: "{{ azure_vm_ssh_pw_enabled | default(omit) }}"
+    ssh_public_keys: "{{ azure_vm_ssh_public_keys | default(omit) }}"    
+  register: vm_info
+  
+# - name: Add VM to Inventory
+#   add_host: 
+#     name: "{{ vm_info.ansible_facts.azure_vm.properties.networkProfile.networkInterfaces[0].properties.ipConfigurations[0].properties.publicIPAddress.properties.ipAddress }}"
+#     groups: in_memory
+#     ansible_ssh_user: "{{ azure_vm_admin_username }}"
+#     ansible_ssh_pass: "{{ azure_vm_admin_password }}"

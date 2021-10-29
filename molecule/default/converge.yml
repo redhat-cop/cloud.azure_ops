@@ -26,5 +26,11 @@
         apply:
           tags:
             - managed_postgresql
+    - name: test virtual_machine role
+      include_tasks:
+        file: tasks/virtual_machine.yml
+        apply:
+          tags:
+            - virtual_machine            
       tags:
         - always
