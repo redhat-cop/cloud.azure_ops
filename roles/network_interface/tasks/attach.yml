@@ -1,0 +1,23 @@
+---
+- fail:
+    msg: 'azure_lb_name must be specified when attaching nic to load balancer'
+  when: azure_lb_name is undefined
+  
+- name: Create/update network interface and attach to load balancer 
+  block:
+    - name: Get load balancer info
+      azure_rm_loadbalancer_info:
+        name: "{{ azure_lb_name }}"
+        resource_group: "{{ azure_resource_group }}"
+      register: lb_info
+
+    - name: Add Network Interface to Load Balancer
+      azure_rm_networkinterface:
+        name: "{{ azure_network_interface_name }}"
+        resource_group: "{{ azure_resource_group }}"
+        virtual_network: "{{ azure_virtual_network }}"
+        subnet_name: "{{ azure_subnet }}"
+        ip_configurations:
+          - name: default
+            load_balancer_backend_address_pools:
+              - "{{ lb_info.ansible_info.azure_loadbalancers[0].properties.backendAddressPools[0].id }}"     

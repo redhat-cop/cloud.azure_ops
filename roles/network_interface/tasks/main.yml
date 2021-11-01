@@ -1,0 +1,11 @@
+---
+- name: Check operation validation
+  fail:
+    msg: "Please provide operation as 'create', 'delete', or 'attach'"
+  when: operation not in ['create', 'delete', 'attach']
+
+- fail:
+    msg: "Azure Resource group name must be defined as azure_resource_group"
+  when: azure_resource_group is not defined
+
+- include_tasks: "{{ operation }}.yml"

@@ -1,0 +1,81 @@
+---
+- name: Check Region Setting
+  fail:
+    msg: "Azure Region must be defined as azure_region"
+  when: azure_region is not defined
+
+- name: Check Resource Group Exists
+  azure_rm_resourcegroup_info:
+    name: "{{ azure_resource_group }}"
+  register: result
+
+- name: Resource Group Does Not Exist -> Create Resource Group
+  include_role:
+    name: resource_group
+  when: result.resourcegroups | length == 0
+
+- name: Check Networking Stack Exists
+  azure_rm_virtualnetwork_info:
+    resource_group: "{{ azure_resource_group }}"
+    name: "{{ azure_virtual_network }}"
+  register: virtual_network_result
+
+- name: Networking Stack Does Not Exist -> Create Networking Stack
+  include_role:
+    name: networking_stack
+  when: virtual_network_result.virtualnetworks | length == 0
+
+# Assert specified security group exists
+- block:
+  - name: Assert security group exists if specified by user
+    azure_rm_securitygroup_info:
+      resource_group: "{{ azure_resource_group }}"
+      name: "{{ azure_security_group_name }}"
+    register: sg_info
+
+  - name: Create security group
+    include_role:
+      name: security_group
+    when: sg_info.securitygroups | length == 0
+  when: azure_security_group_name is defined
+
+- name: Create/update network interface and attach to load balancer 
+  block:
+    - name: Get load balancer info
+      azure_rm_loadbalancer_info:
+        name: "{{ azure_lb_name }}"
+        resource_group: "{{ azure_resource_group }}"
+      register: lb_info
+
+    - debug:
+        msg: "{{ lb_info }}"
+
+    - name: Create a Network Interface
+      azure_rm_networkinterface:
+        name: "{{ azure_network_interface_name }}"
+        resource_group: "{{ azure_resource_group }}"
+        virtual_network: "{{ azure_virtual_network }}"
+        subnet_name: "{{ azure_subnet }}"
+        security_group: "{{ azure_security_group_name | default(omit) }}"
+        ip_configurations:
+          - name: default
+            public_ip_address_name: "{{ azure_public_ip_name | default(omit) }}"
+            primary: True
+            load_balancer_backend_address_pools:
+              - "{{ lb_info.ansible_info.azure_loadbalancers[0].properties.backendAddressPools[0].id }}"
+  when:
+    - azure_lb_name is defined
+
+- name: Create a Network Interface
+  azure_rm_networkinterface:
+    name: "{{ azure_network_interface_name }}"
+    resource_group: "{{ azure_resource_group }}"
+    virtual_network: "{{ azure_virtual_network }}"
+    subnet_name: "{{ azure_subnet }}"
+    security_group: "{{ azure_security_group_name | default(omit) }}"
+    ip_configurations:
+      - name: default
+        public_ip_address_name: "{{ azure_public_ip_name | default(omit) }}"
+        primary: True    
+  when:
+    - azure_lb_name is undefined        
