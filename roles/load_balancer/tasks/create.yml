@@ -5,30 +5,31 @@
     - rg_info.resourcegroups | length == 0
     - azure_region is not defined
 
-- fail:
-    msg: "Azure load balancer public ip must be defined as azure_lb_public_ip"
-  when:
-    - azure_lb_public_ip is not defined
+# - fail:
+#     msg: "Azure load balancer public ip must be defined as azure_lb_public_ip"
+#   when:
+#     - azure_lb_public_ip is not defined
 
 - name: Create resource group
   include_role:
     name: cloud.azure_roles.resource_group
   when: rg_info.resourcegroups | length == 0
 
-- name: Get public ip info
-  azure_rm_publicipaddress_info:
-    resource_group: "{{ azure_resource_group }}"
-    name: "{{ azure_lb_public_ip.name }}"
-  vars:
-    azure_public_ip: "{{ azure_lb_public_ip }}"
-  register: ip_info
+- name: Create default public ip name
+  set_fact:
+    azure_public_ip_name: "{{ azure_lb_name }}-ip"
+  when: azure_public_ip_name is undefined  
 
-- name: Create public ip
-  include_role:
-    name: cloud.azure_roles.public_ip
-  vars:
-    azure_public_ip: "{{ azure_lb_public_ip }}"
-  when: ip_info.publicipaddresses | length == 0  
+- name: Ensure public ip exists
+  block:
+    - azure_rm_publicipaddress_info:
+        resource_group: "{{ azure_resource_group }}"
+        name: "{{ azure_public_ip_name }}"
+      register: lb_ip_info
+    - name: Create public ip
+      include_role:
+        name: public_ip
+      when: lb_ip_info.publicipaddresses | length == 0
 
 - name: Create/Update load balancer
   azure_rm_loadbalancer:
@@ -36,10 +37,10 @@
     name: "{{ azure_lb_name }}"
     frontend_ip_configurations:
       - name: "{{ azure_lb_name }}-ipconf"
-        public_ip_address: "{{ azure_lb_public_ip.name }}"
+        public_ip_address: "{{ azure_public_ip_name }}"
     backend_address_pools:
       - name: "{{ azure_lb_name }}-backendpool"
-    probes: "{{ azure_lb_probes }}"
-    load_balancing_rules: "{{ azure_lb_rules }}"
-    sku: Standard
+    probes: "{{ azure_lb_probes | default(omit) }}"
+    load_balancing_rules: "{{ azure_lb_rules | default(omit) }}"
+    sku: "{{ azure_lb_sku | default(omit) }}"
     tags: "{{ azure_tags | default(omit) }}"

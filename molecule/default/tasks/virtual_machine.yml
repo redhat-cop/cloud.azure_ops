@@ -9,7 +9,7 @@
   set_fact:
     azure_resource_group: "{{ resource_group }}"
     azure_region: 'canadacentral'
-    azure_vm_name: "{{ resource_group }}-vm-00"
+    azure_vm_name: "{{ resource_group }}-vm"
     azure_vm_size: 'Standard_DS1_v2'
     azure_vm_os_type: 'Linux'
     azure_vm_admin_username: 'azureuser'

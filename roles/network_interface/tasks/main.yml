@@ -1,11 +1,10 @@
 ---
 - name: Check operation validation
   fail:
-    msg: "Please provide operation as 'create' or 'delete'"
-  when: operation not in ['create', 'delete']
+    msg: "Please provide operation as 'create', 'delete', or 'attach'"
+  when: operation not in ['create', 'delete', 'attach']
 
-- name: Check Resource group name
-  fail:
+- fail:
     msg: "Azure Resource group name must be defined as azure_resource_group"
   when: azure_resource_group is not defined
 

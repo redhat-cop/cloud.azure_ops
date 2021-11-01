@@ -6,13 +6,43 @@
   roles:
     # - role: resource_group
     # - role: networking_stack
-    # - role: public_ip
     # - role: security_group
-    - role: load_balancer
+    # - role: load_balancer
+    # - role: public_ip    
     # - role: network_interface
     # - role: availability_set
     # - role: virtual_machine
     # - role: managed_postgresql
+  tasks:
+    - name: Create resource group
+      include_role:
+        name: resource_group
+
+    - name: Create networking stack
+      include_role:
+        name: networking_stack
+
+    # - name: Create network interface(s) with respective dependent resources
+    #   include_role:
+    #     name: network_interface
+    #   with_items: "{{ azure_network_interfaces }}"
+    #   loop_control:
+    #     loop_var: azure_network_interface
+
+    # - name: Create availability set
+    #   include_role:
+    #     name: availability_set
+
+    - name: Create virtual machines
+      include_role:
+        name: virtual_machine
+      loop: "{{ range(0, azure_vm_replicas ) | list }}"
+      loop_control:
+        index_var: idx
+
+    # - name: Create load balancer
+    #   include_role:
+    #     name: load_balancer        
 
 - hosts: in_memory
   gather_facts: no

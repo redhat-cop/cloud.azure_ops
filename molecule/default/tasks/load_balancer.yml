@@ -1,0 +1,170 @@
+---
+- name: define resource group name
+  set_fact:
+    resource_group: "test-{{ lookup('password', '/dev/null chars=ascii_lowercase,digits length=6') }}"
+    azure_tags:
+      cloud.azure_roles: load_balancer
+
+- name: define load balancer variables
+  set_fact:
+    azure_resource_group: "{{ resource_group }}"
+    azure_region: 'canadacentral'
+    azure_lb_name: "{{ resource_group }}-lb"
+
+- name: Test valid creation of load balancer
+  block:
+    - name: Create load balancer
+      include_role:
+        name: load_balancer
+      vars:
+        operation: "create"
+
+    - name: Get resource group info
+      azure_rm_resourcegroup_info:
+        name: '{{ azure_resource_group }}'
+      register: rg
+
+    - name: Assert that resource group was created
+      assert:
+        that:
+          - rg.resourcegroups | length == 1
+
+    - name: Assert that load balancer was successfully created      
+      azure_rm_loadbalancer_info:
+        resource_group: '{{ azure_resource_group }}'
+      register: lb_info
+
+    - assert:
+        that:
+          - lb_info.ansible_info.azure_loadbalancers | length == 1
+
+    - name: Delete load balancer
+      include_role:
+        name: load_balancer
+      vars:
+        operation: 'delete'
+
+    - name: Assert resource group still exists
+      azure_rm_resourcegroup_info:
+        name: '{{ azure_resource_group }}'
+      register: rg
+
+    - assert:
+        that:
+          - rg.resourcegroups | length == 1
+
+    - name: Assert that load balancer was deleted      
+      azure_rm_loadbalancer_info:
+        resource_group: '{{ azure_resource_group }}'
+      register: lb_info
+
+    - assert:
+        that:
+          - lb_info.ansible_info.azure_loadbalancers | length == 0
+
+    - name: Delete resource group
+      azure_rm_resourcegroup:
+        name: "{{ azure_resource_group }}"
+        state: absent
+        force_delete_nonempty: yes
+      ignore_errors: no
+
+    - name: Get resource group info
+      azure_rm_resourcegroup_info:
+        name: '{{ azure_resource_group }}'
+      register: resource
+
+    - name: Assert that resource group is deleted
+      assert:
+        that:
+          - resource.resourcegroups | length == 0
+
+- name: Test attaching VMs to load balancer
+  block:
+    - name: Set VM variables
+      set_fact:
+        azure_resource_group: "{{ resource_group }}"
+        azure_region: 'canadacentral'
+        vm_name: "{{ resource_group }}-vm"
+        vm_instances: 3
+        azure_vm_size: 'Standard_DS1_v2'
+        azure_vm_os_type: 'Linux'
+        azure_vm_admin_username: 'azureuser'
+        azure_vm_admin_password: '4fB5In3ueO7,'
+        azure_availability_set_name: "{{ resource_group }}-as"
+        azure_vm_image:
+          offer: RHEL
+          publisher: RedHat
+          sku: "7-LVM"
+          version: latest
+        azure_virtual_network: "{{ resource_group }}-vnet-00"
+        azure_subnet: "{{ resource_group }}-subnet-00"
+        azure_vnet_address_prefixes_cidr:
+          - 10.16.0.0/16
+        azure_subnet_address_prefixes_cidr: 10.16.0.0/24
+        azure_vm_instances:
+          - "{{ resource_group }}-vm0"
+          - "{{ resource_group }}-vm1"
+          - "{{ resource_group }}-vm2"
+      
+    - name: Create VM name
+      set_fact:
+        azure_vm_name: "{{ vm_name }}"
+
+    - name: Create networking stack
+      include_role:
+        name: networking_stack
+      vars:
+        operation: 'create'
+
+    - name: Create VMs
+      include_role:
+        name: virtual_machine
+      loop: "{{ range(0, vm_instances) | list }}"
+      loop_control:
+        index_var: idx
+      vars:
+        azure_vm_name: "{{ vm_name }}{{ idx }}"
+        operation: 'create'
+
+    - name: Create load balancer
+      include_role:
+        name: load_balancer
+      vars:
+        operation: "create"
+
+    - name: Assert load balancer has no VMs attached
+      azure_rm_loadbalancer_info:
+        resource_group: '{{ azure_resource_group }}'
+      register: lb_info
+
+    - assert:
+        that:
+          - lb_info.ansible_info.azure_loadbalancers[0].properties.backendAddressPools | length == 1        
+
+    - name: Attach VMs (NICs) to load balancer
+      include_tasks: add_vms_to_lb.yml
+      with_items:
+        - "{{ azure_vm_instances }}"
+      loop_control:
+        loop_var: vm
+        index_var: idx
+
+    - name: Assert VMs are successfully being load balanced
+      block:
+        - azure_rm_loadbalancer_info:
+            resource_group: '{{ azure_resource_group }}'
+          register: lb_info
+
+        - name: Assert VMs are successfully being load balanced
+          assert:
+            that:
+              - "lb_info.ansible_info.azure_loadbalancers[0].properties.backendAddressPools[0].properties.backendIPConfigurations | length == {{ vm_instances | int }}"       
+
+  always:
+    - name: Delete resource group
+      azure_rm_resourcegroup:
+        name: "{{ azure_resource_group }}"
+        state: absent
+        force_delete_nonempty: yes
+      ignore_errors: yes

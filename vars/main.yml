@@ -2,7 +2,7 @@
 # vars file
 # Shared vars
 operation: "create"
-azure_resource_group: "jtorcasso-rg"
+# azure_resource_group: "jtorcasso-rg"
 azure_region: "canadacentral"
 azure_force_delete_nonempty: "yes"
 azure_tags:

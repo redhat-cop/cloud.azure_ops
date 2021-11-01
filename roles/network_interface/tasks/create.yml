@@ -23,41 +23,92 @@
 - name: Networking Stack Does Not Exist -> Create Networking Stack
   include_role:
     name: networking_stack
-  when: virtual_network_result.virtualnetworks | length == 0  
+  when: virtual_network_result.virtualnetworks | length == 0
 
-- name: Check Security Group Exists
-  azure_rm_securitygroup_info:
-    resource_group: "{{ azure_resource_group }}"
-    name: "{{ azure_security_group_name }}"
-  register: security_group_result
+# Assert specified security group exists
+- block:
+  - name: Assert security group exists if specified by user
+    azure_rm_securitygroup_info:
+      resource_group: "{{ azure_resource_group }}"
+      name: "{{ azure_security_group_name }}"
+    register: sg_info
 
-- name: Security Group Does Not Exist -> Create Security Group
-  include_role:
-    name: security_group
-  when: security_group_result.securitygroups | length == 0  
+  - name: Create security group
+    include_role:
+      name: security_group
+    when: sg_info.securitygroups | length == 0
+  when: azure_security_group_name is defined
 
-# - name: Check Public IP Exists
+# - name: Get public ip info
 #   azure_rm_publicipaddress_info:
 #     resource_group: "{{ azure_resource_group }}"
-#     name: "{{ azure_public_ip_name }}"
-#   register: public_ip_result
+#     name: "{{ azure_network_interface.public_ip.name }}"
+#   register: pip_info
+#   when: azure_network_interface.public_ip is defined
 
-# - name: Public IP Does Not Exist -> Create Public IP
+# - name: Map specified public ip name
+#   set_fact:
+#     azure_public_ip:
+#       name: "{{ azure_network_interface.public_ip.name }}"
+#   when: 
+#     - azure_network_interface.public_ip is defined
+
+# - name: Create default public ip name
+#   set_fact:
+#     azure_public_ip:
+#       name: "{{ azure_network_interface.name }}-public-ip"
+#   when:
+#     - azure_network_interface.public_ip is undefined  
+
+# - name: Create public ip
 #   include_role:
 #     name: public_ip
-#   when: public_ip_result.publicipaddresses | length == 0  
+
+# - name: Get load balancer info
+#   azure_rm_loadbalancer_info:
+#     name: "{{ azure_lb_name }}"
+#     resource_group: "{{ azure_resource_group }}"
+#   register: lb_info
+#   tags:
+#     - load_balancer
+
+- name: Create/update network interface and attach to load balancer 
+  block:
+    - name: Get load balancer info
+      azure_rm_loadbalancer_info:
+        name: "{{ azure_lb_name }}"
+        resource_group: "{{ azure_resource_group }}"
+      register: lb_info
+
+    - debug:
+        msg: "{{ lb_info }}"
+
+    - name: Create a Network Interface
+      azure_rm_networkinterface:
+        name: "{{ azure_network_interface_name }}"
+        resource_group: "{{ azure_resource_group }}"
+        virtual_network: "{{ azure_virtual_network }}"
+        subnet_name: "{{ azure_subnet }}"
+        security_group: "{{ azure_security_group_name | default(omit) }}"
+        ip_configurations:
+          - name: default
+            public_ip_address_name: "{{ azure_public_ip_name | default(omit) }}"
+            primary: True
+            load_balancer_backend_address_pools:
+              - "{{ lb_info.ansible_info.azure_loadbalancers[0].properties.backendAddressPools[0].id }}"
+  when:
+    - azure_lb_name is defined
 
 - name: Create a Network Interface
   azure_rm_networkinterface:
-    name: "{{ item.name }}"
+    name: "{{ azure_network_interface_name }}"
     resource_group: "{{ azure_resource_group }}"
     virtual_network: "{{ azure_virtual_network }}"
     subnet_name: "{{ azure_subnet }}"
-    security_group: "{{ azure_security_group_name }}"
+    security_group: "{{ azure_security_group_name | default(omit) }}"
     ip_configurations:
       - name: default
-        public_ip_address_name: "{{ azure_public_ips[idx].name }}"
-        primary: True
-  with_items: "{{ azure_nw_interface_instances }}"
-  loop_control:
-    index_var: idx
+        public_ip_address_name: "{{ azure_public_ip_name | default(omit) }}"
+        primary: True    
+  when:
+    - azure_lb_name is undefined        
