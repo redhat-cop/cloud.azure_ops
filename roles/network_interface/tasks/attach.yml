@@ -11,7 +11,7 @@
         resource_group: "{{ azure_resource_group }}"
       register: lb_info
 
-    - name: Create a Network Interface
+    - name: Add Network Interface to Load Balancer
       azure_rm_networkinterface:
         name: "{{ azure_network_interface_name }}"
         resource_group: "{{ azure_resource_group }}"

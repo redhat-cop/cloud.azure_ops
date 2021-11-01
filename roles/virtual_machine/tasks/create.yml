@@ -59,11 +59,3 @@
     admin_password: "{{ azure_vm_admin_password | default(omit) }}"
     ssh_password_enabled: "{{ azure_vm_ssh_pw_enabled | default(omit) }}"
     ssh_public_keys: "{{ azure_vm_ssh_public_keys | default(omit) }}"    
-  register: vm_info
-  
-# - name: Add VM to Inventory
-#   add_host: 
-#     name: "{{ vm_info.ansible_facts.azure_vm.properties.networkProfile.networkInterfaces[0].properties.ipConfigurations[0].properties.publicIPAddress.properties.ipAddress }}"
-#     groups: in_memory
-#     ansible_ssh_user: "{{ azure_vm_admin_username }}"
-#     ansible_ssh_pass: "{{ azure_vm_admin_password }}"

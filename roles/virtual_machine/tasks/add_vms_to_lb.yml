@@ -1,0 +1,19 @@
+---
+- block:
+    - name: Lookup VM's NIC
+      azure_rm_virtualmachine_info:
+        resource_group: "{{ azure_resource_group }}"
+        name: "{{ azure_vm_name }}"
+      register: vm_info      
+    
+    - fail:
+        msg: Could not find network interface for vm '{{ azure_vm_name }}'
+      when:
+        - vm_info.vms | length == 0 or vm_info.vms[0].network_interface_names | length == 0
+
+    - name: Attach NIC to load balancer
+      include_role:
+        name: network_interface
+        tasks_from: attach
+      vars:
+        azure_network_interface_name: "{{ vm_info.vms[0].network_interface_names[0] }}"  

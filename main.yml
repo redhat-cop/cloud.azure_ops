@@ -1,71 +1,113 @@
 ---
 - hosts: localhost
   gather_facts: no
-  vars_files:
-  - vars/main.yml
-  roles:
-    # - role: resource_group
-    # - role: networking_stack
-    # - role: security_group
-    # - role: load_balancer
-    # - role: public_ip    
-    # - role: network_interface
-    # - role: availability_set
-    # - role: virtual_machine
-    # - role: managed_postgresql
+  vars:
+    - resource_group: 'jtorcasso'
+    - azure_region: 'canadacentral'
+    - azure_vm_admin_username: 'azureuser'
+    - azure_vm_admin_password: '4fB5In3ueO7,'
+    - operation: 'create'
   tasks:
-    - name: Create resource group
-      include_role:
-        name: resource_group
+  - name: delete resource group
+    include_role:
+      name: resource_group
+    vars:
+      - azure_resource_group: "{{ resource_group }}"
+      - azure_force_delete_nonempty: 'yes'
+    when:
+      - operation == 'delete'
 
-    - name: Create networking stack
-      include_role:
-        name: networking_stack
+  - name: create
+    block:
+      - name: Set VM variables
+        set_fact:
+          azure_resource_group: "{{ resource_group }}"
+          azure_lb_name: "{{ resource_group }}-lb"
+          vm_name: "{{ resource_group }}-vm"
+          vm_instances: 1
+          azure_vm_size: 'Standard_DS1_v2'
+          azure_vm_os_type: 'Linux'
+          azure_availability_set_name: "{{ resource_group }}-as"
+          azure_vm_image:
+            offer: RHEL
+            publisher: RedHat
+            sku: "7-LVM"
+            version: latest
+          azure_virtual_network: "{{ resource_group }}-vnet-00"
+          azure_subnet: "{{ resource_group }}-subnet-00"
+          azure_vnet_address_prefixes_cidr:
+            - 10.16.0.0/16
+          azure_subnet_address_prefixes_cidr: 10.16.0.0/24
 
-    # - name: Create network interface(s) with respective dependent resources
-    #   include_role:
-    #     name: network_interface
-    #   with_items: "{{ azure_network_interfaces }}"
-    #   loop_control:
-    #     loop_var: azure_network_interface
+      - name: Create networking stack
+        include_role:
+          name: networking_stack
 
-    # - name: Create availability set
-    #   include_role:
-    #     name: availability_set
+      - name: Create VMs
+        include_role:
+          name: virtual_machine
+        loop: "{{ range(0, (vm_instances | int)) | list }}"
+        loop_control:
+          index_var: idx
+        vars:
+          azure_vm_name: "{{ vm_name }}{{ idx }}"
 
-    - name: Create virtual machines
-      include_role:
-        name: virtual_machine
-      loop: "{{ range(0, azure_vm_replicas ) | list }}"
-      loop_control:
-        index_var: idx
+      - name: Add VMs to inventory
+        include_role:
+          name: virtual_machine
+          tasks_from: add_to_inventory
+        loop: "{{ range(0, (vm_instances | int)) | list }}"
+        loop_control:
+          index_var: idx
+        vars:
+          azure_vm_name: "{{ vm_name }}{{ idx }}"
 
-    # - name: Create load balancer
-    #   include_role:
-    #     name: load_balancer        
+      - name: Create load balancer
+        include_role:
+          name: load_balancer 
+
+      - name: Attach VMs (NICs) to load balancer
+        include_role: 
+          name: virtual_machine
+          tasks_from: add_vms_to_lb
+        loop: "{{ range(0, (vm_instances | int)) | list }}"
+        loop_control:
+          index_var: idx
+        vars:
+          azure_vm_name: "{{ vm_name }}{{ idx }}"
+
+    when:
+      - operation == 'create'
 
 - hosts: in_memory
   gather_facts: no
-  become_user: "{{ azure_vm_admin_user }}"
-  vars_files:
-    - vars/main.yml
-
-  # https://stackoverflow.com/questions/32297456/how-to-ignore-ansible-ssh-authenticity-checking
   tasks:
-  - name: Check SSH known_hosts for {{ inventory_hostname }}
-    local_action: shell ssh-keygen -F {{ inventory_hostname }}
-    register: checkForKnownHostsEntry
-    failed_when: false
-    changed_when: false
-    ignore_errors: no
+    - debug:
+        msg: "{{ inventory_hostname }}"
+        
+# - hosts: in_memory
+#   gather_facts: no
+#   become_user: "{{ azure_vm_admin_username }}"
+#   vars:
+#     - azure_vm_admin_username: 'azureuser'
+#     - azure_vm_admin_password: '4fB5In3ueO7,'   
 
-  - name: Add {{ inventory_hostname }} to SSH known hosts automatically
-    when: checkForKnownHostsEntry.rc == 1
-    changed_when: checkForKnownHostsEntry.rc == 1
-    set_fact:
-      ansible_ssh_common_args: '-o StrictHostKeyChecking=no'  
+#   # https://stackoverflow.com/questions/32297456/how-to-ignore-ansible-ssh-authenticity-checking
+#   tasks:
+#   - name: Check SSH known_hosts for {{ inventory_hostname }}
+#     local_action: shell ssh-keygen -F {{ inventory_hostname }}
+#     register: checkForKnownHostsEntry
+#     failed_when: false
+#     changed_when: false
+#     ignore_errors: no
 
-  - name: Create test file
-    copy:
-      dest: /tmp/test
-      content: "Hello from {{ inventory_hostname }}!"
+#   - name: Add {{ inventory_hostname }} to SSH known hosts automatically
+#     when: checkForKnownHostsEntry.rc == 1
+#     changed_when: checkForKnownHostsEntry.rc == 1
+#     set_fact:
+#       ansible_ssh_common_args: '-o StrictHostKeyChecking=no'  
+
+#   - name: Create test file
+#     copy:
+#       dest: /tmp/test
+#       content: "Hello from {{ inventory_hostname }}!"
