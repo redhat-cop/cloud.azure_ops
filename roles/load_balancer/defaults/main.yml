@@ -1,0 +1,6 @@
+---
+operation: create
+azure_postgresql_version: '9.5'
+azure_postgresql_settings: []
+azure_postgresql_firewall_rules: []
+azure_postgresql_database_instances: []
