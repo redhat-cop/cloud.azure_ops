@@ -5,14 +5,9 @@
     - rg_info.resourcegroups | length == 0
     - azure_region is not defined
 
-# - fail:
-#     msg: "Azure load balancer public ip must be defined as azure_lb_public_ip"
-#   when:
-#     - azure_lb_public_ip is not defined
-
 - name: Create resource group
   include_role:
-    name: cloud.azure_roles.resource_group
+    name: resource_group
   when: rg_info.resourcegroups | length == 0
 
 - name: Create default public ip name
