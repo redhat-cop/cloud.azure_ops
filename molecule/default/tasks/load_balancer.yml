@@ -86,7 +86,7 @@
         azure_resource_group: "{{ resource_group }}"
         azure_region: 'canadacentral'
         vm_name: "{{ resource_group }}-vm"
-        vm_instances: 3
+        vm_instances: 2
         azure_vm_size: 'Standard_DS1_v2'
         azure_vm_os_type: 'Linux'
         azure_vm_admin_username: 'azureuser'
@@ -102,10 +102,6 @@
         azure_vnet_address_prefixes_cidr:
           - 10.16.0.0/16
         azure_subnet_address_prefixes_cidr: 10.16.0.0/24
-        azure_vm_instances:
-          - "{{ resource_group }}-vm0"
-          - "{{ resource_group }}-vm1"
-          - "{{ resource_group }}-vm2"
       
     - name: Create VM name
       set_fact:
@@ -120,7 +116,7 @@
     - name: Create VMs
       include_role:
         name: virtual_machine
-      loop: "{{ range(0, vm_instances) | list }}"
+      loop: "{{ range(0, (vm_instances | int)) | list }}"
       loop_control:
         index_var: idx
       vars:
@@ -143,12 +139,14 @@
           - lb_info.ansible_info.azure_loadbalancers[0].properties.backendAddressPools | length == 1        
 
     - name: Attach VMs (NICs) to load balancer
-      include_tasks: add_vms_to_lb.yml
-      with_items:
-        - "{{ azure_vm_instances }}"
+      include_role: 
+        name: virtual_machine
+        tasks_from: add_to_lb
+      loop: "{{ range(0, (vm_instances | int)) | list }}"
       loop_control:
-        loop_var: vm
         index_var: idx
+      vars:
+        azure_vm_name: "{{ vm_name }}{{ idx }}"
 
     - name: Assert VMs are successfully being load balanced
       block:
