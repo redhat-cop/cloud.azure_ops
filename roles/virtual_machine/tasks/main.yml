@@ -1,0 +1,20 @@
+---
+- name: Check operation validation
+  fail:
+    msg: "Please provide operation as 'create' or 'delete'"
+  when: operation not in ['create', 'delete']
+
+- fail:
+    msg: "Azure Resource group name must be defined as azure_resource_group"
+  when: azure_resource_group is not defined
+
+- fail:
+    msg: "Azure Virtual Machine name must be defined as azure_vm_name"
+  when: azure_vm_name is not defined  
+
+- name: Get resource group info
+  azure_rm_resourcegroup_info:
+    name: "{{ azure_resource_group }}"
+  register: rg_info
+
+- include_tasks: "{{ operation }}.yml"
