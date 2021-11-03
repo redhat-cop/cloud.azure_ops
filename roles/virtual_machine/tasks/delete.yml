@@ -13,7 +13,7 @@
     msg: 'Resource group {{ azure_resource_group }} does not exist.'
   when: result.resourcegroups | length == 0  
 
-- name: Delete Virtual Machine
+- name: Delete Virtual Machine and specified associated resources
   azure_rm_virtualmachine:
     resource_group: "{{ azure_resource_group }}"
     name: "{{ azure_vm_name }}"

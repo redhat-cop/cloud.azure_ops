@@ -5,6 +5,11 @@
     name: "{{ azure_vm_name }}"
   register: vm_info
 
+- fail:
+    msg: Unable to find VM '{{ azure_vm_name }}'
+  when:
+    - vm_info.vms | length == 0
+
 - name: Lookup VM's public ip
   azure_rm_publicipaddress_info:
     resource_group: "{{ azure_resource_group }}"
@@ -19,6 +24,6 @@
 - name: Add VM to Inventory
   add_host: 
     name: "{{ pip_info.publicipaddresses[0].ip_address }}" 
-    groups: in_memory
+    groups: "{{ azure_vm_group }}"
     ansible_ssh_user: "{{ azure_vm_admin_username }}"
     ansible_ssh_pass: "{{ azure_vm_admin_password }}"
