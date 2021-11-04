@@ -27,13 +27,13 @@ Role Variables
 * **azure_vm_ssh_pw_enabled**: Enable/disable SSH passwords. Valid values are 'yes', 'no'. Default value is 'yes'.
 * **azure_vm_ssh_public_keys**: List of SSH keys when **azure_vm_os** is 'Linux'. Accepts a list of dicts where each dictionary contains two keys, 'path' and 'key_data'. Set path to the default location of the authorized_keys files. For example, path=/home/<admin username>/.ssh/authorized_keys. Set key_data to the actual value of the public key.
 * **azure_vm_data_disks**: List of data disks.
-- **lun**: Logical unit number for data disk. Must be unique for each data disk attached to a VM.
-- **caching**: Type of data disk caching. Options are 'ReadOnly' (default) or 'ReadWrite'.
-- **disk_size_gb**: Initial disk size in GB for blank data disks. Cannot be larger than 1023 GB. Can only be modified when VM is deallocated.
-- **managed_disk_type**: Managed data disk type.
-- **storage_account_name**: Name of an existing storage account that supports creation of VHD blobs.
-- **storage_blob_name**: Name of storage blob used to hold the OS disk image of the VM.
-- **storage_container_name**: Name of the container to use within the storage account to store VHD blobs. Default is 'vhds'
+  - **lun**: Logical unit number for data disk. Must be unique for each data disk attached to a VM.
+  - **caching**: Type of data disk caching. Options are 'ReadOnly' (default) or 'ReadWrite'.
+  - **disk_size_gb**: Initial disk size in GB for blank data disks. Cannot be larger than 1023 GB. Can only be modified when VM is deallocated.
+  - **managed_disk_type**: Managed data disk type.
+  - **storage_account_name**: Name of an existing storage account that supports creation of VHD blobs.
+  - **storage_blob_name**: Name of storage blob used to hold the OS disk image of the VM.
+  - **storage_container_name**: Name of the container to use within the storage account to store VHD blobs. Default is 'vhds'
 
 
 Dependencies
