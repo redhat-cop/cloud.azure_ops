@@ -114,6 +114,68 @@
             that:
               - 'azure_vm_group in groups'
 
+    - name: Test modifying VMs state (power on/off, restart, etc)
+      block:
+        - name: Power Off VM
+          include_role:
+            name: virtual_machine
+          vars:
+            operation: 'power_off'   
+
+        - name: Assert that VM was successfully powered off
+          azure_rm_virtualmachine_info:
+            resource_group: '{{ azure_resource_group }}'
+          register: vm_info
+
+        - assert:
+            that:
+              - vm_info.vms[0].power_state == 'stopped'
+
+        - name: Power On VM
+          include_role:
+            name: virtual_machine
+          vars:
+            operation: 'power_on'
+
+        - name: Assert that VM was successfully powered off
+          azure_rm_virtualmachine_info:
+            resource_group: '{{ azure_resource_group }}'
+          register: vm_info
+
+        - assert:
+            that:
+              - vm_info.vms[0].power_state == 'running'            
+
+        - name: Restart VM
+          include_role:
+            name: virtual_machine
+          vars:
+            operation: 'restart'     
+
+        - name: Assert that VM was successfully restarted
+          azure_rm_virtualmachine_info:
+            resource_group: '{{ azure_resource_group }}'
+          register: vm_info
+
+        - assert:
+            that:
+              - vm_info.vms[0].power_state == 'running'            
+
+        - name: Deallocate VM
+          include_role:
+            name: virtual_machine
+          vars:
+            operation: 'deallocate'
+
+        - name: Assert that VM was successfully deallocated
+          azure_rm_virtualmachine_info:
+            resource_group: '{{ azure_resource_group }}'
+          register: vm_info
+
+        - assert:
+            that:
+              - vm_info.vms[0].power_state == 'deallocated'
+
     - name: Test deleting VM
       block:
         - name: Delete virtual machine

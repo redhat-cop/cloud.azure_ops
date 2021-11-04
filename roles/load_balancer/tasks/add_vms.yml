@@ -3,6 +3,14 @@
     msg: 'azure_lb_name must be specified when attaching nic to load balancer'
   when: azure_lb_name is undefined
 
+- fail:
+    msg: 'azure_virtual_network must be specified when attaching nic to load balancer'
+  when: azure_virtual_network is undefined
+
+- fail:
+    msg: 'azure_subnet must be specified when attaching nic to load balancer'
+  when: azure_subnet is undefined    
+
 - name: Lookup VM's NIC
   azure_rm_virtualmachine_info:
     resource_group: "{{ azure_resource_group }}"

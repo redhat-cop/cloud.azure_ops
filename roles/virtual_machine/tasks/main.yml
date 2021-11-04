@@ -1,20 +1,44 @@
 ---
 - name: Check operation validation
   fail:
-    msg: "Please provide operation as 'create' or 'delete'"
-  when: operation not in ['create', 'delete']
+    msg: "Please provide operation as 'create', 'delete', 'power_on', 'power_off', 'deallocate', or 'restart'"
+  when: operation not in ['create', 'delete', 'power_on', 'power_off', 'deallocate', 'restart']
 
 - fail:
     msg: "Azure Resource group name must be defined as azure_resource_group"
   when: azure_resource_group is not defined
-
-- fail:
-    msg: "Azure Virtual Machine name must be defined as azure_vm_name"
-  when: azure_vm_name is not defined  
 
 - name: Get resource group info
   azure_rm_resourcegroup_info:
     name: "{{ azure_resource_group }}"
   register: rg_info
 
+- name: Power Off VM
+  azure_rm_virtualmachine:
+    resource_group: "{{ azure_resource_group }}"
+    name: "{{ azure_vm_name }}"
+    started: no
+  when: operation == 'power_off'
+
+- name: Deallocate VM
+  azure_rm_virtualmachine:
+    resource_group: "{{ azure_resource_group }}"
+    name: "{{ azure_vm_name }}"
+    allocated: no
+  when: operation == 'deallocate'
+
+- name: Power On VM
+  azure_rm_virtualmachine:
+    resource_group: "{{ azure_resource_group }}"
+    name: "{{ azure_vm_name }}"
+  when: operation == 'power_on'
+
+- name: Restart VM
+  azure_rm_virtualmachine:
+    resource_group: "{{ azure_resource_group }}"
+    name: "{{ azure_vm_name }}"
+    restarted: yes    
+  when: operation == 'restart'
+
 - include_tasks: "{{ operation }}.yml"
+  when: operation in ['create', 'delete']
