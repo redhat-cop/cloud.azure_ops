@@ -17,6 +17,7 @@ Role Variables
 * **azure_resource_group** - Resource group on which the networking stack should be attached. If not existing, it will be created.
 * **azure_virtual_network** - Name of the virtual network to create/delete.
 * **azure_subnet** - Name of the subnet to create/delete.
+* **azure_security_group** - Existing security group with which to associate the subnet.
 * **azure_region** - An Azure location for the virtual network to create.
 * **azure_vnet_address_prefixes_cidr** - List of IPv4 address ranges for virtual network where each is formatted using CIDR notation.
   Required when creating a new virtual network.
