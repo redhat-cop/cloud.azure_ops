@@ -31,7 +31,7 @@
             that:
               - rg.resourcegroups | length == 1
 
-        - name: Assert that load balancer was successfully created      
+        - name: Assert that load balancer was successfully created
           azure_rm_loadbalancer_info:
             resource_group: '{{ azure_resource_group }}'
           register: lb_info
@@ -55,7 +55,7 @@
             that:
               - rg.resourcegroups | length == 1
 
-        - name: Assert that load balancer was deleted      
+        - name: Assert that load balancer was deleted
           azure_rm_loadbalancer_info:
             resource_group: '{{ azure_resource_group }}'
           register: lb_info
@@ -138,7 +138,7 @@
 
         - assert:
             that:
-              - lb_info.ansible_info.azure_loadbalancers[0].properties.backendAddressPools | length == 1        
+              - lb_info.ansible_info.azure_loadbalancers[0].properties.backendAddressPools | length == 1
 
         - name: Attach VMs (NICs) to load balancer
           include_role: 
@@ -159,7 +159,7 @@
             - name: Assert VMs are successfully being load balanced
               assert:
                 that:
-                  - "lb_info.ansible_info.azure_loadbalancers[0].properties.backendAddressPools[0].properties.backendIPConfigurations | length == {{ vm_instances | int }}"       
+                  - "lb_info.ansible_info.azure_loadbalancers[0].properties.backendAddressPools[0].properties.backendIPConfigurations | length == {{ vm_instances | int }}"
 
   always:
     - name: Delete resource group

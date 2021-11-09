@@ -31,7 +31,7 @@
         file: tasks/virtual_machine.yml
         apply:
           tags:
-            - virtual_machine            
+            - virtual_machine
       tags:
         - always
     - name: test load_balancer role
@@ -41,4 +41,4 @@
           tags:
             - load_balancer
       tags:
-        - always        
+        - always

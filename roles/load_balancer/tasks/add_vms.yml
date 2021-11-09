@@ -47,4 +47,4 @@
         ip_configurations:
           - name: default
             load_balancer_backend_address_pools:
-              - "{{ lb_info.ansible_info.azure_loadbalancers[0].properties.backendAddressPools[0].id }}"     
+              - "{{ lb_info.ansible_info.azure_loadbalancers[0].properties.backendAddressPools[0].id }}"
