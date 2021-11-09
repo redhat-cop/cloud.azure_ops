@@ -1,0 +1,21 @@
+---
+- name: Update ssh_config
+  lineinfile:
+    path: "/etc/ssh/sshd_config"
+    regex: "{{ item.regex }}"
+    line: "{{ item.line }}"
+  loop:
+    - regex: "^(# *)?ClientAliveInterval"
+      line: "ClientAliveInterval  1200"
+    - regex: "^(# *)?ClientAliveCountMax"
+      line: "ClientAliveCountMax 3"
+  become: true
+  register: ssh_config
+
+- name: Assure docker.socket service is running
+  service:
+    name: sshd
+    enabled: yes
+    state: restarted
+  become: true
+  when: ssh_config is changed

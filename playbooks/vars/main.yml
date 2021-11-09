@@ -1,0 +1,36 @@
+---
+azure_vm_name: "webapp-vm-"
+azure_vm_user: "ansible"
+azure_vm_user_password: "4fB5In3ueO7,"
+azure_vm_image:
+  offer: CentOS
+  publisher: OpenLogic
+  sku: '7.5'
+  version: latest
+azure_number_vm: 3
+
+# PostgreSQL Server variables
+azure_postgresql_name: "{{ azure_resource_group }}-dbserver"
+azure_postgresql_admin_username: "ansible"
+azure_postgresql_admin_password: "4fB5In3ueO7,"
+azure_postgresql_database_instances:
+  - name: pyapp
+    charset: UTF8
+azure_postgresql_firewall_rules:
+  - name: allow_all
+    start_ip_address: 0.0.0.0
+    end_ip_address: 255.255.255.255
+
+# Application variables
+py_application:
+  env: "development"
+  admin_user: "admin"
+  admin_password: "admin"
+  docker_image: "pywebapp"
+  docker_dir: "/app/pyapp"
+  data_dir: "/tmp/myapp_data"
+  container_name: "myapp-container"
+
+application_force_init: false
+
+application_src: "https://github.com/abikouo/webapp_pyflask_demo.git"
