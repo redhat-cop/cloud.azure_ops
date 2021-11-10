@@ -1,7 +1,12 @@
 ---
-- name: Extract NIC name from id
+- name: Get nic resource
+  azure_rm_resource_info:
+    url: "{{ nic_id['id'] }}"
+  register: nic_obj
+
+- name: Extract NIC name from resource
   set_fact:
-    nic_name: "{{ nic_id['id'] | regex_search('[^/]+$') }}"
+    nic_name: "{{ nic_obj.response[0].name }}"
 
 - name: Get NIC info
   azure_rm_networkinterface_info:

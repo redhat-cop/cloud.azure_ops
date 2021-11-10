@@ -24,7 +24,7 @@
             that:
               - sg_info.securitygroups | length == 0
           ignore_errors: no
-      ignore_errors: yes              
+      ignore_errors: yes
 
     - name: Test valid creation of security group
       block:
@@ -235,7 +235,24 @@
           assert:
             that:
               - sg_rules.securitygroups | length == 0
-          
+
+        - name: Delete security group that does not exist
+          include_role:
+            name: security_group
+          vars:
+            state: "absent"
+
+        - name: Get security group info
+          azure_rm_securitygroup_info:
+            resource_group: "{{ azure_resource_group }}"
+            name: "{{ azure_security_group }}"
+          register: sg_rules
+
+        - name: Assert security group was deleted
+          assert:
+            that:
+              - sg_rules.securitygroups | length == 0
+
 
   always:
     - name: Delete resource group and all its content
