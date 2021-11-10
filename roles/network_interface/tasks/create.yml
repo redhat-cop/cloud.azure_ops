@@ -39,16 +39,33 @@
     when: sg_info.securitygroups | length == 0
   when: azure_security_group_name is defined
 
+# Assert NIC is created and attached to lb specified if specified
 - name: Create/update network interface and attach to load balancer 
   block:
     - name: Get load balancer info
       azure_rm_loadbalancer_info:
         name: "{{ azure_lb_name }}"
         resource_group: "{{ azure_resource_group }}"
-      register: lb_info
+      register: lb_info      
 
-    - debug:
-        msg: "{{ lb_info }}"
+    - block:
+        - name: Create load balancer
+          include_role:
+            name: cloud.azure_roles.load_balancer
+
+        - name: Get load balancer info
+          azure_rm_loadbalancer_info:
+            name: "{{ azure_lb_name }}"
+            resource_group: "{{ azure_resource_group }}"
+          register: new_lb_info
+
+      when:
+        - lb_info.ansible_info.azure_loadbalancers | length == 0
+
+    - set_fact:
+        lb_info: "{{ new_lb_info }}"
+      when:
+        - new_lb_info.skipped is not defined
 
     - name: Create a Network Interface
       azure_rm_networkinterface:
@@ -65,7 +82,9 @@
               - "{{ lb_info.ansible_info.azure_loadbalancers[0].properties.backendAddressPools[0].id }}"
   when:
     - azure_lb_name is defined
+    - azure_lb_name != ''
 
+# Assert NIC is created and not attached to a lb
 - name: Create a Network Interface
   azure_rm_networkinterface:
     name: "{{ azure_network_interface_name }}"
@@ -78,4 +97,4 @@
         public_ip_address_name: "{{ azure_public_ip_name | default(omit) }}"
         primary: True    
   when:
-    - azure_lb_name is undefined        
+    - azure_lb_name is undefined or azure_lb_name == ''      

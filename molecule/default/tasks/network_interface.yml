@@ -1,0 +1,174 @@
+---
+- name: Define resource group name
+  set_fact:
+    resource_group: "test-{{ lookup('password', '/dev/null chars=ascii_lowercase,digits length=6') }}"
+    azure_tags:
+      cloud.azure_roles: network_interface
+
+- name: Define network interface variables
+  set_fact:
+    azure_resource_group: "{{ resource_group }}"
+    azure_region: 'canadacentral'
+    nic_instances: 2
+    azure_virtual_network: "{{ resource_group }}-vnet-00"
+    azure_subnet: "{{ resource_group }}-subnet-00"
+    azure_vnet_address_prefixes_cidr:
+      - 10.16.0.0/16
+    azure_subnet_address_prefixes_cidr: 10.16.0.0/24
+
+- name: Test network interface role
+  block:
+    - name: Test valid creation of network interface w/ no load balancer
+      block:
+        - name: Create NICs
+          include_role:
+            name: network_interface
+          vars:
+            operation: "create"
+            azure_network_interface_name: "{{ resource_group }}-nic{{ idx }}"
+          loop: "{{ range(0, (nic_instances | int)) | list }}"
+          loop_control:
+            index_var: idx
+
+        - name: Get resource group info
+          azure_rm_resourcegroup_info:
+            name: '{{ azure_resource_group }}'
+          register: rg
+
+        - name: Assert that resource group was created
+          assert:
+            that:
+              - rg.resourcegroups | length == 1
+
+        - azure_rm_networkinterface_info:
+            resource_group: '{{ azure_resource_group }}'
+          register: nics_info
+
+        - name: Assert that network interfaces were successfully created
+          assert:
+            that:
+              - "nics_info.networkinterfaces | length == {{ nic_instances | int }}"
+
+        - name: Assert that network interface is not attached to load balancer
+          assert:
+            that:
+              - nics_info.networkinterfaces[0].ip_configurations[0].load_balancer_backend_address_pools is none
+
+    - name: Test updating network interface w/ load balancer
+      block:
+        - name: Set load balancer name
+          set_fact:
+            azure_lb_name: "{{ resource_group }}-lb"
+
+        - name: Update NICs
+          include_role:
+            name: network_interface
+          vars:
+            operation: "create"
+            azure_network_interface_name: "{{ resource_group }}-nic{{ idx }}"
+          loop: "{{ range(0, (nic_instances | int)) | list }}"
+          loop_control:
+            index_var: idx
+
+        - azure_rm_networkinterface_info:
+            resource_group: '{{ azure_resource_group }}'
+          register: nics_info
+
+        - name: Assert that network interfaces still exist
+          assert:
+            that:
+              - "nics_info.networkinterfaces | length == {{ nic_instances | int }}"
+
+        - name: Assert that network interface is attached to load balancer
+          assert:
+            that:
+              - nics_info.networkinterfaces[0].ip_configurations[0].load_balancer_backend_address_pools is not none
+
+    - name: Test deletion of network interfaces
+      block:
+        - name: Delete NICs
+          include_role:
+            name: network_interface
+          vars:
+            operation: "delete"
+            azure_network_interface_name: "{{ resource_group }}-nic{{ idx }}"
+          loop: "{{ range(0, (nic_instances | int)) | list }}"
+          loop_control:
+            index_var: idx
+
+        - azure_rm_networkinterface_info:
+            resource_group: '{{ azure_resource_group }}'
+          register: nics_info
+
+        - name: Assert that network interfaces were successfully deleted
+          assert:
+            that:
+              - nics_info.networkinterfaces | length == 0            
+
+    - name: Test creating network interface w/ load balancer
+      block:
+        - name: Set load balancer name
+          set_fact:
+            azure_lb_name: "{{ resource_group }}-lb"
+
+        - name: Create NICs w/ load balancer
+          include_role:
+            name: network_interface
+          vars:
+            operation: "create"
+            azure_network_interface_name: "{{ resource_group }}-nic{{ idx }}"
+          loop: "{{ range(0, (nic_instances | int)) | list }}"
+          loop_control:
+            index_var: idx
+
+        - azure_rm_networkinterface_info:
+            resource_group: '{{ azure_resource_group }}'
+          register: nics_info
+
+        - name: Assert that network interfaces were created
+          assert:
+            that:
+              - "nics_info.networkinterfaces | length == {{ nic_instances | int }}"
+
+        - name: Assert that network interface is attached to load balancer
+          assert:
+            that:
+              - nics_info.networkinterfaces[0].ip_configurations[0].load_balancer_backend_address_pools is not none
+
+    - name: Test updating network interface to remove load balancer
+      block:
+        - name: remove azure_lb_name var
+          set_fact:
+            azure_lb_name: ''
+            
+        - name: Update NICs
+          include_role:
+            name: network_interface
+          vars:
+            operation: "create"
+            azure_network_interface_name: "{{ resource_group }}-nic{{ idx }}"
+          loop: "{{ range(0, (nic_instances | int)) | list }}"
+          loop_control:
+            index_var: idx
+
+        - azure_rm_networkinterface_info:
+            resource_group: '{{ azure_resource_group }}'
+          register: nics_info
+
+        - name: Assert that network interfaces still exist
+          assert:
+            that:
+              - "nics_info.networkinterfaces | length == {{ nic_instances | int }}"
+
+        - name: Assert that network interface is not attached to load balancer
+          assert:
+            that:
+              - nics_info.networkinterfaces[0].ip_configurations[0].load_balancer_backend_address_pools is none
+
+  always:
+    - name: Delete resource group
+      azure_rm_resourcegroup:
+        name: "{{ azure_resource_group }}"
+        state: absent
+        force_delete_nonempty: yes
+      ignore_errors: yes

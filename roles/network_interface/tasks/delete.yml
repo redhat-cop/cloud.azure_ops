@@ -5,13 +5,12 @@
   register: result
 
 - name: Resource Group Does Not Exist -> Exit
-  debug:
+  fail:
     msg: 'Resource group {{ azure_resource_group }} does not exist.'
   when: result.resourcegroups | length == 0
 
 - name: Delete a Network Interface
   azure_rm_networkinterface:
-    name: "{{ azure_nw_interface }}"
+    name: "{{ azure_network_interface_name }}"
     resource_group: "{{ azure_resource_group }}"
     state: absent
-  when: result.resourcegroups | length != 0

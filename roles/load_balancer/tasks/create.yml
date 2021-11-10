@@ -12,18 +12,20 @@
 
 - name: Create default public ip name
   set_fact:
-    azure_public_ip_name: "{{ azure_lb_name }}-ip"
-  when: azure_public_ip_name is undefined  
+    azure_lb_pip_name: "{{ azure_lb_name }}-ip"
+  when: azure_lb_pip_name is undefined  
 
 - name: Ensure public ip exists
   block:
     - azure_rm_publicipaddress_info:
         resource_group: "{{ azure_resource_group }}"
-        name: "{{ azure_public_ip_name }}"
+        name: "{{ azure_lb_pip_name }}"
       register: lb_ip_info
+
     - name: Create public ip
-      include_role:
-        name: public_ip
+      azure_rm_publicipaddress:
+        resource_group: "{{ azure_resource_group }}"
+        name: "{{ azure_lb_pip_name }}"
       when: lb_ip_info.publicipaddresses | length == 0
 
 - name: Create/Update load balancer
@@ -32,7 +34,7 @@
     name: "{{ azure_lb_name }}"
     frontend_ip_configurations:
       - name: "{{ azure_lb_name }}-ipconf"
-        public_ip_address: "{{ azure_public_ip_name }}"
+        public_ip_address: "{{ azure_lb_pip_name }}"
     backend_address_pools:
       - name: "{{ azure_lb_name }}-backendpool"
     probes: "{{ azure_lb_probes | default(omit) }}"

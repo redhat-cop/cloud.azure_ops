@@ -4,41 +4,49 @@
   collections:
     - azure.azcollection
   tasks:
-    - name: test resource_group role
+    # - name: test resource_group role
+    #   include_tasks:
+    #     file: tasks/resource_group.yml
+    #     apply:
+    #       tags:
+    #         - resource_group
+    #   tags:
+    #     - always
+    # - name: test networking_stack role
+    #   include_tasks:
+    #     file: tasks/networking_stack.yml
+    #     apply:
+    #       tags:
+    #         - networking_stack
+    #   tags:
+    #     - always
+    # - name: test managed_postgresql role
+    #   include_tasks:
+    #     file: tasks/managed_postgresql.yml
+    #     apply:
+    #       tags:
+    #         - managed_postgresql
+    # - name: test virtual_machine role
+    #   include_tasks:
+    #     file: tasks/virtual_machine.yml
+    #     apply:
+    #       tags:
+    #         - virtual_machine
+    #   tags:
+    #     - always
+    # - name: test load_balancer role
+    #   include_tasks:
+    #     file: tasks/load_balancer.yml
+    #     apply:
+    #       tags:
+    #         - load_balancer
+    #   tags:
+    #     - always
+    - name: test network_interface role
       include_tasks:
-        file: tasks/resource_group.yml
+        file: tasks/network_interface.yml
         apply:
           tags:
-            - resource_group
+            - network_interface
       tags:
-        - always
-    - name: test networking_stack role
-      include_tasks:
-        file: tasks/networking_stack.yml
-        apply:
-          tags:
-            - networking_stack
-      tags:
-        - always
-    - name: test managed_postgresql role
-      include_tasks:
-        file: tasks/managed_postgresql.yml
-        apply:
-          tags:
-            - managed_postgresql
-    - name: test virtual_machine role
-      include_tasks:
-        file: tasks/virtual_machine.yml
-        apply:
-          tags:
-            - virtual_machine
-      tags:
-        - always
-    - name: test load_balancer role
-      include_tasks:
-        file: tasks/load_balancer.yml
-        apply:
-          tags:
-            - load_balancer
-      tags:
-        - always
+        - always    
