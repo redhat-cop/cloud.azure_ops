@@ -37,6 +37,10 @@ Role Variables
   - **protocol**: IP protocol for the rule. Valid choices are: 'Tcp', 'Udp', 'All'.
 * **azure_lb_sku**: Load balancer SKU. Valid choices are: 'Basic', 'Standard'.
 * **azure_lb_network_interface_instances**: List of NIC names to be load balanced.
+* **azure_virtual_network**: Name of virtual network. Required when **azure_lb_network_interface_instances** is specified.
+* **azure_subnet**: Name of subnet. Required when **azure_lb_network_interface_instances** is specified.
+* **azure_vnet_address_prefixes_cidr** - List of IPv4 address ranges for virtual network where each is formatted using CIDR notation. Required when **azure_virtual_network** does not yet exist.
+* **azure_subnet_address_prefixes_cidr** - CIDR defining the IPv4 and IPv6 address space of the subnet. Must be valid within the context of the virtual network. Required when **azure_subnet** does not yet exist.
 
 
 Dependencies
@@ -55,14 +59,17 @@ Example Playbook
           azure_resource_group: "rg"
           azure_lb_name: testlb0
           azure_lb_network_interface_instances:
-            - "{{ resource_group }}-nic1"
-            - "{{ resource_group }}-nic2"
-            - "{{ resource_group }}-nic3"
-          azure_virtual_network: "{{ resource_group }}-vnet-00"
-          azure_subnet: "{{ resource_group }}-subnet-00"
+            - "rg-nic1"
+            - "rg-nic2"
+            - "rg-nic3"
+          azure_virtual_network: "rg-vnet-00"
+          azure_subnet: "rg-subnet-00"
           azure_vnet_address_prefixes_cidr:
             - 10.16.0.0/16
-          azure_subnet_address_prefixes_cidr: 10.16.0.0/24          
+          azure_subnet_address_prefixes_cidr: 10.16.0.0/24    
+          azure_tags:
+            tag0: "tag0"
+            tag1: "tag1" 
 
 License
 -------
