@@ -54,7 +54,7 @@
               - rg.resourcegroups | length == 1
           ignore_errors: no
 
-    - name: Test valid creation of virtual machine
+    - name: Test valid creation of virtual machine with no nic
       block:
         - name: Define virtual network variables
           set_fact:
@@ -218,6 +218,60 @@
           assert:
             that:
               - resource.resourcegroups | length == 0
+
+    - name: Test valid creation of virtual machine with nic
+      block:
+        - name: Create virtual machine
+          include_role:
+            name: virtual_machine
+          vars:
+            operation: "create"
+            azure_virtual_network: "{{ resource_group }}-vnet-00"
+            azure_subnet: "{{ resource_group }}-subnet-00"
+            azure_vnet_address_prefixes_cidr:
+              - 10.16.0.0/16
+            azure_subnet_address_prefixes_cidr: 10.16.0.0/24
+            azure_network_interface_name: "{{ resource_group }}-nic"
+            azure_public_ip_name: "{{ resource_group }}-pip"
+
+        - name: Get resource group info
+          azure_rm_resourcegroup_info:
+            name: '{{ azure_resource_group }}'
+          register: rg
+
+        - name: Assert that resource group was created
+          assert:
+            that:
+              - rg.resourcegroups | length == 1
+
+        - name: Assert that VM was successfully created
+          azure_rm_virtualmachine_info:
+            resource_group: '{{ azure_resource_group }}'
+          register: vm_info
+
+        - assert:
+            that:
+              - vm_info.vms | length == 1
+
+    - name: Test adding VM to inventory with NIC
+      block:
+        - name: Set group name
+          set_fact:
+            azure_vm_group: 'testgrp-2'
+
+        - assert:
+            that:
+              - 'azure_vm_group not in groups'
+
+        - name: Add VM to group '{{ azure_vm_group }}'
+          include_role:
+            name: virtual_machine
+            tasks_from: add_to_inventory
+
+        - assert:
+            that:
+              - 'azure_vm_group in groups'
+
 
   always:
     - name: Delete resource group

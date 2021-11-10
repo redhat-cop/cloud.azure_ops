@@ -5,10 +5,17 @@
     name: "{{ azure_vm_name }}"
   register: vm_info
 
-- fail:
+- name: Check vm name
+  fail:
     msg: Unable to find VM '{{ azure_vm_name }}'
   when:
     - vm_info.vms | length == 0
+
+- name: Check vm's _own_pip_ tag
+  fail:
+    msg: Unable to find VM '{{ azure_vm_name }}' ip. Must be tagged as _own_pip_
+  when:
+    - vm_info.vms[0].tags._own_pip_ is undefined
 
 - name: Lookup VM's public ip
   azure_rm_publicipaddress_info:

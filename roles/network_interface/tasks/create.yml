@@ -70,7 +70,7 @@
       when:
         - new_lb_info.skipped is not defined
 
-    - name: Create a Network Interface
+    - name: Create a Network Interface and Attach to LB
       azure_rm_networkinterface:
         name: "{{ azure_network_interface_name }}"
         resource_group: "{{ azure_resource_group }}"
@@ -97,6 +97,6 @@
     ip_configurations:
       - name: default
         public_ip_address_name: "{{ azure_public_ip_name | default(omit) }}"
-        primary: True    
+        primary: True
   when:
     - azure_lb_name is undefined
