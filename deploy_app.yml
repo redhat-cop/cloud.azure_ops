@@ -1,0 +1,50 @@
+---
+- hosts: wp
+  gather_facts: no
+  tasks:
+    # - name: Check SSH known_hosts for {{ inventory_hostname }}
+    #   shell: ssh-keygen -F {{ inventory_hostname }}
+    #   register: checkForKnownHostsEntry
+    #   failed_when: false
+    #   changed_when: false
+    #   ignore_errors: no
+
+    # - name: Add {{ inventory_hostname }} to SSH known hosts automatically
+    #   when: checkForKnownHostsEntry.rc == 1
+    #   changed_when: checkForKnownHostsEntry.rc == 1
+    #   set_fact:
+    #     ansible_ssh_common_args: '-o StrictHostKeyChecking=no'  
+
+    # - name: Create test file
+    #   copy:
+    #     dest: /tmp/test
+    #     content: "Hello from {{ inventory_hostname }}!"
+
+    # - ping:
+
+    - service:
+        name: firewalld
+        state: stopped
+        enabled: no
+      become: True
+
+    - name: Install Python3
+      shell: yum install -y python3
+      become: True
+
+    - name: Install Python requirements
+      pip:
+        name: flask
+      vars:
+        ansible_python_interpreter: /usr/bin/python3
+      become: True
+
+    - copy:
+        src: flaskapp
+        dest: /home/azureuser
+
+    - name: Start WebServer
+      shell: nohup /usr/bin/python3 /home/azureuser/flaskapp/main.py &
+      become: True
+      
+    

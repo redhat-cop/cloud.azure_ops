@@ -10,32 +10,33 @@
     name: resource_group
   when: rg_info.resourcegroups | length == 0
 
-- name: Create default public ip name
+- name: Set default public IP name
   set_fact:
-    azure_public_ip_name: "{{ azure_lb_name }}-ip"
+    azure_public_ip_name: "{{azure_lb_public_ip.name }}"
   when: azure_public_ip_name is undefined  
 
-- name: Ensure public ip exists
-  block:
-    - azure_rm_publicipaddress_info:
-        resource_group: "{{ azure_resource_group }}"
-        name: "{{ azure_public_ip_name }}"
-      register: lb_ip_info
-    - name: Create public ip
-      include_role:
-        name: public_ip
-      when: lb_ip_info.publicipaddresses | length == 0
+# - name: Ensure public IP exists
+#   block:
+#     - azure_rm_publicipaddress_info:
+#         resource_group: "{{ azure_resource_group }}"
+#         name: "{{ azure_lb_public_ip }}"
+#       register: lb_ip_info
+#     - name: Create public IP
+#       include_role:
+#         name: public_ip
+#       when: lb_ip_info.publicipaddresses | length == 0
 
 - name: Create/Update load balancer
   azure_rm_loadbalancer:
     resource_group: "{{ azure_resource_group }}"
     name: "{{ azure_lb_name }}"
     frontend_ip_configurations:
-      - name: "{{ azure_lb_name }}-ipconf"
-        public_ip_address: "{{ azure_public_ip_name }}"
+      - name: "{{ azure_lb_name }}-ipconf-0"
+        public_ip_address: "{{ azure_lb_public_ip.name }}"
     backend_address_pools:
       - name: "{{ azure_lb_name }}-backendpool"
     probes: "{{ azure_lb_probes | default(omit) }}"
     load_balancing_rules: "{{ azure_lb_rules | default(omit) }}"
     sku: "{{ azure_lb_sku | default(omit) }}"
     tags: "{{ azure_tags | default(omit) }}"
+    location: "{{ azure_region }}"

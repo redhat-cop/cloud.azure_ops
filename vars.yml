@@ -1,0 +1,88 @@
+---
+# vars file
+# Shared vars
+operation: "create"
+azure_resource_group: "akasurde-rg"
+azure_region: "canadacentral"
+azure_force_delete_nonempty: "yes"
+azure_tags:
+  tag0: "tag0"
+  tag1: "tag1"
+
+# Networking
+azure_virtual_network: "akasurde-vnet"
+azure_subnet: "my-subnet-00"
+azure_vnet_address_prefixes_cidr:
+- "10.1.0.0/16"
+- "172.100.0.0/16"
+azure_subnet_address_prefixes_cidr: "10.1.0.0/24"
+
+# Availability Set
+azure_availability_set_name: 'akasurde-as0'
+
+# VMs
+azure_vm_instances:
+  - name: 'akasurde-vm0'
+    size: 'Standard_DS1_v2'
+    os: 'Linux'
+    nw_int: 'akasurde-nw-int0'
+  - name: 'akasurde-vm1'
+    size: 'Standard_DS1_v2'
+    os: 'Linux'
+    nw_int: 'akasurde-nw-int1'
+  - name: 'akasurde-vm2'
+    size: 'Standard_DS1_v2'
+    os: 'Linux'
+    nw_int: 'akasurde-nw-int2'
+azure_vm_admin_user: azureuser
+azure_vm_admin_pw: fdajlk29!
+azure_vm_image:
+    offer: RHEL
+    publisher: RedHat
+    sku: "7-LVM"
+    version: latest
+
+# Security Group
+azure_security_group_name: 'akasurde-sec-grp0'
+
+# Network Interface
+azure_nw_interface_instances:
+  - 'akasurde-nw-int0'
+  - 'akasurde-nw-int1'
+  - 'akasurde-nw-int2'
+
+# Public IP
+azure_public_ips: 
+  - 'akasurde-public-ip0'
+  - 'akasurde-public-ip1'
+  - 'akasurde-public-ip2'
+  - 'akasurde-public-ip3'  
+azure_public_ip_sku: Standard
+
+# PostgreSQL Server
+azure_postgresql_name: 'akasurde-postgresql-server'
+azure_postgresql_admin_username: postgresqladmin
+azure_postgresql_admin_password: fdajlk29!
+azure_postgresql_version: 10
+
+# PostgreSQL DBs
+azure_postgresql_database_instances:
+  - name: 'akasurde-postgresql-db0'
+  - name: 'akasurde-postgresql-db1'
+  - name: 'akasurde-postgresql-db2'
+
+# Load Balancer
+azure_lb_name: 'akasurde-lb'
+azure_lb_sku: 'Standard'
+azure_lb_public_ip:
+  name: 'akasurde-public-ip3'
+azure_lb_probes:
+- name: prob0
+  port: 8080
+azure_lb_rules:
+  - name: akasurde-lb-rule0
+    frontend_ip_configuration: "{{ azure_lb_name }}-ipconf-0"
+    backend_address_pool: "akasurde-lb-backendpool"
+    frontend_port: 8080
+    backend_port: 8080
+    probe: prob0
