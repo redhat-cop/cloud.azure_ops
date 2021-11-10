@@ -122,6 +122,37 @@
         - assert:
             that:
               - lb_info.ansible_info.azure_loadbalancers | length == 0
+
+    - name: Test adding NICs to load balancer
+      block:
+        - name: Set networking variables to create NICs
+          set_fact:
+            azure_lb_network_interface_instances:
+              - "{{ resource_group }}-nic1"
+              - "{{ resource_group }}-nic2"
+              - "{{ resource_group }}-nic3"
+            azure_virtual_network: "{{ resource_group }}-vnet-00"
+            azure_subnet: "{{ resource_group }}-subnet-00"
+            azure_vnet_address_prefixes_cidr:
+              - 10.16.0.0/16
+            azure_subnet_address_prefixes_cidr: 10.16.0.0/24
+
+        - name: Create load balancer with supplied nics attached
+          include_role:
+            name: load_balancer
+          vars:
+            operation: "create"
+
+        - name: Get lb info
+          azure_rm_loadbalancer_info:
+            resource_group: '{{ azure_resource_group }}'
+          register: lb_info
+
+        - name: Assert that load balancer was successfully created & nics were attached
+          assert:
+            that:
+              - lb_info.ansible_info.azure_loadbalancers | length == 1
+              - "{{ lb_info.ansible_info.azure_loadbalancers[0].properties.backendAddressPools[0].properties.backendIPConfigurations | length == ( azure_lb_network_interface_instances | length ) }}"
     
   always:
     - name: Delete resource group

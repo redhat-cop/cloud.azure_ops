@@ -16,7 +16,7 @@ Role Variables
 * **azure_region**: An Azure location for the resources.
 * **azure_tags**: Dictionary of string:string pairs to assign as metadata to the object.
 * **azure_lb_name**: Name of the load balancer.
-* **azure_public_ip_name**: Name of load balancer's public ip. Will be defaulted to '**azure_lb_name**-ip' if omitted.
+* **azure_lb_pip_name**: Name of load balancer's public ip. Will be defaulted to '**azure_lb_name**-ip' if omitted.
 * **azure_lb_probes**: List of probe definitions used to check endpoint health. Each probe definition consists of:
   - **name**: Name of the probe.
   - **port**: Probe port for communicating the probe. Possible values range from 1 to 65535, inclusive.
@@ -27,8 +27,8 @@ Role Variables
 * **azure_lb_rules**: List of load balancing rules. Each rule consists of:
   - **name**: Name of the load balancing rule.
   - **probe**: Name of the load balancer probe this rule should use.
-  - **backend_address_pool**: A reference to a pool of DIPs. Inbound traffic is randomly load balanced across IPs in the backend IPs.
-  - **frontend_ip_configuration**: Reference to frontend IP addresses.
+  - **backend_address_pool**: Name of backend address pool, where inbound traffic is randomly load balanced across the IPs in the pool.
+  - **frontend_ip_configuration**: Name of frontend ip configuration to apply rule to.
   - **backend_port**: The port used for internal connections on the endpoint. Acceptable values are between 0 and 65535. Note that value 0 enables "Any Port".
   - **enable_floating_ip**: Configures a virtual machine's endpoint mapping to the Frontend IP address of the Load Balancer instead of backend instance's IP.
   - **frontend_port**: The port for the external endpoint. Frontend port numbers must be unique across all rules within the load balancer. Acceptable values are between 0 and 65534. Note that value 0 enables "Any Port".
@@ -36,9 +36,7 @@ Role Variables
   - **load_distribution**: Session persistence policy for this rule. Valid choices are 'Default' (no persistence), 'SourceIP', 'SourceIPProtocol'.
   - **protocol**: IP protocol for the rule. Valid choices are: 'Tcp', 'Udp', 'All'.
 * **azure_lb_sku**: Load balancer SKU. Valid choices are: 'Basic', 'Standard'.
-* **azure_vm_name**: Name of virtual machine to be load balanced.
-* **azure_virtual_network**: Name of virtual network where virtual machine to be load balanced resides.
-* **azure_subnet**: Name of subnet where virtual machine to be load balanced resides.
+* **azure_lb_network_interface_instances**: List of NIC names to be load balanced.
 
 
 Dependencies
@@ -56,6 +54,15 @@ Example Playbook
           azure_region: "canadacentral"
           azure_resource_group: "rg"
           azure_lb_name: testlb0
+          azure_lb_network_interface_instances:
+            - "{{ resource_group }}-nic1"
+            - "{{ resource_group }}-nic2"
+            - "{{ resource_group }}-nic3"
+          azure_virtual_network: "{{ resource_group }}-vnet-00"
+          azure_subnet: "{{ resource_group }}-subnet-00"
+          azure_vnet_address_prefixes_cidr:
+            - 10.16.0.0/16
+          azure_subnet_address_prefixes_cidr: 10.16.0.0/24          
 
 License
 -------

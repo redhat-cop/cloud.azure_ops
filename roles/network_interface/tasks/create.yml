@@ -85,7 +85,6 @@
               - "{{ lb_info.ansible_info.azure_loadbalancers[0].properties.backendAddressPools[0].id }}"
   when:
     - azure_lb_name is defined
-    - azure_lb_name != ''
 
 # Assert NIC is created and not attached to a lb
 - name: Create a Network Interface
@@ -100,4 +99,4 @@
         public_ip_address_name: "{{ azure_public_ip_name | default(omit) }}"
         primary: True    
   when:
-    - azure_lb_name is undefined or azure_lb_name == ''      
+    - azure_lb_name is undefined

@@ -56,15 +56,12 @@
 
     - name: Test updating network interface w/ load balancer
       block:
-        - name: Set load balancer name
-          set_fact:
-            azure_lb_name: "{{ resource_group }}-lb"
-
         - name: Update NICs
           include_role:
             name: network_interface
           vars:
             operation: "create"
+            azure_lb_name: "{{ resource_group }}-lb"
             azure_network_interface_name: "{{ resource_group }}-nic{{ idx }}"
           loop: "{{ range(0, (nic_instances | int)) | list }}"
           loop_control:
@@ -107,15 +104,12 @@
 
     - name: Test creating network interface w/ load balancer
       block:
-        - name: Set load balancer name
-          set_fact:
-            azure_lb_name: "{{ resource_group }}-lb"
-
         - name: Create NICs w/ load balancer
           include_role:
             name: network_interface
           vars:
             operation: "create"
+            azure_lb_name: "{{ resource_group }}-lb"
             azure_network_interface_name: "{{ resource_group }}-nic{{ idx }}"
           loop: "{{ range(0, (nic_instances | int)) | list }}"
           loop_control:
@@ -136,11 +130,7 @@
               - nics_info.networkinterfaces[0].ip_configurations[0].load_balancer_backend_address_pools is not none
 
     - name: Test updating network interface to remove load balancer
-      block:
-        - name: remove azure_lb_name var
-          set_fact:
-            azure_lb_name: ''
-            
+      block:            
         - name: Update NICs
           include_role:
             name: network_interface

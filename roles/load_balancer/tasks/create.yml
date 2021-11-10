@@ -35,3 +35,13 @@
     load_balancing_rules: "{{ azure_lb_rules | default(omit) }}"
     sku: "{{ azure_lb_sku | default(omit) }}"
     tags: "{{ azure_tags | default(omit) }}"
+
+- name: Attach NICs if input
+  include_role:
+    name: cloud.azure_roles.network_interface
+  with_items: "{{ azure_lb_network_interface_instances }}"
+  loop_control:
+    loop_var: azure_network_interface_name
+  when:
+    - azure_lb_network_interface_instances is defined
+    - azure_lb_network_interface_instances | length > 0
