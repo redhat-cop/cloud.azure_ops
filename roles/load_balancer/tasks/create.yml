@@ -1,10 +1,4 @@
 ---
-- fail:
-    msg: "Azure location must be defined as azure_region"
-  when:
-    - rg_info.resourcegroups | length == 0
-    - azure_region is not defined
-
 - name: Create resource group
   include_role:
     name: resource_group

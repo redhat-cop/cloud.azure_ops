@@ -1,4 +1,9 @@
 ---
+- name: Check name
+  fail:
+    msg: 'Azure network interface name must be specified as azure_network_interface_name'
+  when: azure_network_interface_name is undefined
+
 - name: Check operation validation
   fail:
     msg: "Please provide operation as 'create', 'delete', or 'attach'"

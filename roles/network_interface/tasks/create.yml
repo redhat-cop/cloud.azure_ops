@@ -1,8 +1,11 @@
 ---
-- name: Check Region Setting
-  fail:
-    msg: "Azure Region must be defined as azure_region"
-  when: azure_region is not defined
+- fail:
+    msg: 'Azure virtual network must be specified as azure_virtual_network when creating/updating network interface'
+  when: azure_virtual_network is undefined
+
+- fail:
+    msg: 'Azure subnet must be specified as azure_subnet when creating/updating network interface'
+  when: azure_subnet is undefined  
 
 - name: Check Resource Group Exists
   azure_rm_resourcegroup_info:
