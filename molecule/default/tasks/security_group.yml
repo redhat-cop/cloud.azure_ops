@@ -159,7 +159,7 @@
               publisher: RedHat
               sku: "7-LVM"
               version: latest
-            vm_size: Standard_D4
+            vm_size: Standard_DS1_v2
 
         - name: Get public ip info
           azure_rm_networkinterface_info:
