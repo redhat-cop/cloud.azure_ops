@@ -1,0 +1,47 @@
+---
+- name: Create resource group
+  include_role:
+    name: resource_group
+  when: rg_info.resourcegroups | length == 0
+
+- name: Create default public ip name
+  set_fact:
+    azure_lb_pip_name: "{{ azure_lb_name }}-ip"
+  when: azure_lb_pip_name is undefined  
+
+- name: Ensure public ip exists
+  block:
+    - azure_rm_publicipaddress_info:
+        resource_group: "{{ azure_resource_group }}"
+        name: "{{ azure_lb_pip_name }}"
+      register: lb_ip_info
+
+    - name: Create public ip
+      azure_rm_publicipaddress:
+        resource_group: "{{ azure_resource_group }}"
+        name: "{{ azure_lb_pip_name }}"
+      when: lb_ip_info.publicipaddresses | length == 0
+
+- name: Create/Update load balancer
+  azure_rm_loadbalancer:
+    resource_group: "{{ azure_resource_group }}"
+    name: "{{ azure_lb_name }}"
+    frontend_ip_configurations:
+      - name: "{{ azure_lb_name }}-ipconf"
+        public_ip_address: "{{ azure_lb_pip_name }}"
+    backend_address_pools:
+      - name: "{{ azure_lb_name }}-backendpool"
+    probes: "{{ azure_lb_probes | default(omit) }}"
+    load_balancing_rules: "{{ azure_lb_rules | default(omit) }}"
+    sku: "{{ azure_lb_sku | default(omit) }}"
+    tags: "{{ azure_tags | default(omit) }}"
+
+- name: Attach NICs if input
+  include_role:
+    name: cloud.azure_roles.network_interface
+  with_items: "{{ azure_lb_network_interface_instances }}"
+  loop_control:
+    loop_var: azure_network_interface_name
+  when:
+    - azure_lb_network_interface_instances is defined
+    - azure_lb_network_interface_instances | length > 0

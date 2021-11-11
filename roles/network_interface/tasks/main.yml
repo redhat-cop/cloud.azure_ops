@@ -1,0 +1,16 @@
+---
+- name: Check name
+  fail:
+    msg: 'Azure network interface name must be specified as azure_network_interface_name'
+  when: azure_network_interface_name is undefined
+
+- name: Check operation validation
+  fail:
+    msg: "Please provide operation as 'create', 'delete', or 'attach'"
+  when: operation not in ['create', 'delete', 'attach']
+
+- fail:
+    msg: "Azure Resource group name must be defined as azure_resource_group"
+  when: azure_resource_group is not defined
+
+- include_tasks: "{{ operation }}.yml"
