@@ -28,18 +28,16 @@
 
     - name: Test valid creation of security group
       block:
-        - name: Specify vars
-          set_fact:
-            azure_security_group: "{{ azure_resource_group }}-sg"
-
         - name: Create security group
           include_role:
             name: security_group
+          vars:
+            azure_security_group: "{{ azure_resource_group }}-sg"
 
         - name: Assert security group successfully was created
           azure_rm_securitygroup_info:
             resource_group: "{{ azure_resource_group }}"
-            name: "{{ azure_security_group }}"
+            name: "{{ azure_resource_group }}-sg"
           register: sg_info
 
         - assert:
@@ -78,11 +76,13 @@
         - name: Update security group with rules
           include_role:
             name: security_group
+          vars:
+            azure_security_group: "{{ azure_resource_group }}-sg"          
 
         - name: Get security group info
           azure_rm_securitygroup_info:
             resource_group: "{{ azure_resource_group }}"
-            name: "{{ azure_security_group }}"
+            name: "{{ azure_resource_group }}-sg"
           register: sg_rules
 
         - name: Assert 2 user rules exist
@@ -104,7 +104,7 @@
             name: "{{ azure_resource_group }}-subnet-00"  
             virtual_network_name: "{{ azure_resource_group }}-vnet"
             address_prefix_cidr: "10.16.0.0/24"
-            security_group: "{{ azure_security_group }}"
+            security_group: "{{ azure_resource_group }}-sg"
 
         - name: Create a public ip
           azure_rm_publicipaddress:
@@ -129,7 +129,7 @@
           azure_rm_networkinterface:
             resource_group: "{{ azure_resource_group }}"
             name: "{{ azure_resource_group }}-nic"
-            security_group: "{{ azure_security_group }}"
+            security_group: "{{ azure_resource_group }}-sg"
             ip_configurations:
               - name: ipconf0
                 public_ip_address_name: "{{ azure_resource_group }}-pip"
@@ -140,7 +140,7 @@
           azure_rm_networkinterface:
             resource_group: "{{ azure_resource_group }}"
             name: "{{ azure_resource_group }}-nic2"
-            security_group: "{{ azure_security_group }}"
+            security_group: "{{ azure_resource_group }}-sg"
             ip_configurations:
               - name: ipconf1
                 public_ip_address_name: "{{ azure_resource_group }}-pip2"
@@ -189,11 +189,13 @@
         - name: Update security group
           include_role:
             name: security_group
+          vars:
+            azure_security_group: "{{ azure_resource_group }}-sg"
 
         - name: Get security group info
           azure_rm_securitygroup_info:
             resource_group: "{{ azure_resource_group }}"
-            name: "{{ azure_security_group }}"
+            name: "{{ azure_resource_group }}-sg"
           register: sg_rules
 
         - name: Assert rule was deleted
@@ -204,14 +206,10 @@
 
     - name: Test deletion of security group
       block:
-        - name: Specify vars
-          set_fact:
-            azure_security_group: "{{ azure_resource_group }}-sg"
-
         - name: Get security group info
           azure_rm_securitygroup_info:
             resource_group: "{{ azure_resource_group }}"
-            name: "{{ azure_security_group }}"
+            name: "{{ azure_resource_group }}-sg"
           register: sg_rules
 
         - name: Assert security group exists
@@ -224,11 +222,12 @@
             name: security_group
           vars:
             state: "absent"
+            azure_security_group: "{{ azure_resource_group }}-sg"
 
         - name: Get security group info
           azure_rm_securitygroup_info:
             resource_group: "{{ azure_resource_group }}"
-            name: "{{ azure_security_group }}"
+            name: "{{ azure_resource_group }}-sg"
           register: sg_rules
 
         - name: Assert security group was deleted
@@ -241,11 +240,12 @@
             name: security_group
           vars:
             state: "absent"
+            azure_security_group: "{{ azure_resource_group }}-sg"
 
         - name: Get security group info
           azure_rm_securitygroup_info:
             resource_group: "{{ azure_resource_group }}"
-            name: "{{ azure_security_group }}"
+            name: "{{ azure_resource_group }}-sg"
           register: sg_rules
 
         - name: Assert security group was deleted
