@@ -59,7 +59,7 @@ Example Playbook
                 - 443
               access: Allow
               priority: 101
-              direction: Inbound   
+              direction: Inbound
           azure_tags:
             tag0: "tag0"
             tag1: "tag1"    
