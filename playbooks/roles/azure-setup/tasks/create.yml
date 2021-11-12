@@ -63,51 +63,96 @@
         probe: ping_server
   register: load_balancer
 
+- set_fact:
+    vm_availability_set: "{{ azure_vm_name }}-avset"
+
 # Create availability set for VMs
 - name: Create availability set for the VMs
   azure_rm_availabilityset:
     resource_group: "{{ azure_resource_group }}"
-    name: "{{ azure_vm_name }}-avset"
+    name: "{{ vm_availability_set }}"
     sku: Aligned
 
-# Create Network Interfaces for the VMs
-- name: Create network interfaces for the VMs
-  azure_rm_networkinterface:
+- name: List NICs for VMs
+  azure_rm_networkinterface_info:
     resource_group: "{{ azure_resource_group }}"
-    name: "{{ azure_vm_name }}{{ id }}-nic"
-    virtual_network: "{{ azure_virtual_network }}"
-    subnet_name: "{{ azure_subnet }}"
-    security_group: "{{ azure_security_group }}"
-    ip_configurations:
-      - name: load_balancer
-        load_balancer_backend_address_pools:
-          - "{{ load_balancer.state.backend_address_pools.0.id }}"
-        primary: True
-  with_sequence: start=0 count="{{ azure_number_vm }}"
-  loop_control:
-    loop_var: id
+  register: nics
 
-# Create RHEL app VMs into the subnet
-- name: Create Virtual Machine
-  azure_rm_virtualmachine:
-    resource_group: "{{ azure_resource_group }}"
-    name: "{{ azure_vm_name }}{{ id }}"
-    admin_username: "{{ azure_vm_user }}"
-    admin_password: "{{ azure_vm_user_password }}"
-    image: "{{ azure_vm_image }}"
-    vm_size: Standard_D4as_v4
-    ssh_password_enabled: yes
-    managed_disk_type: Standard_LRS
-    os_type: Linux
-    virtual_network_name: "{{ azure_virtual_network }}"
-    subnet_name: "{{ azure_subnet }}"
-    availability_set: "{{ azure_vm_name }}-avset"
-    network_interface_names:
-      - resource_group: "{{ azure_resource_group }}"
+- name: Defined actual number of VMs connected to the Pool
+  set_fact:
+    actual_vms_pool: "{{ nics.networkinterfaces | map(attribute='name') | map('regex_search', reg_pattern) | select('string') | list | length }}"
+  vars:
+    reg_pattern: "{{ azure_vm_name }}[0-9]*-nic"
+
+- name: Create new VMs for Pool
+  block:
+    # Create Network Interfaces for the VMs
+    - name: Create network interfaces for the VMs
+      azure_rm_networkinterface:
+        resource_group: "{{ azure_resource_group }}"
         name: "{{ azure_vm_name }}{{ id }}-nic"
-  with_sequence: start=0 count="{{ azure_number_vm }}"
-  loop_control:
-    loop_var: id
+        virtual_network: "{{ azure_virtual_network }}"
+        subnet_name: "{{ azure_subnet }}"
+        security_group: "{{ azure_security_group }}"
+        ip_configurations:
+          - name: load_balancer
+            load_balancer_backend_address_pools:
+              - "{{ load_balancer.state.backend_address_pools.0.id }}"
+            primary: True
+      with_sequence: start=0 count="{{ azure_number_vm }}"
+      loop_control:
+        loop_var: id
+
+    # Create RHEL app VMs into the subnet
+    - name: Create Virtual Machine
+      azure_rm_virtualmachine:
+        resource_group: "{{ azure_resource_group }}"
+        name: "{{ azure_vm_name }}{{ id }}"
+        admin_username: "{{ azure_vm_user }}"
+        admin_password: "{{ azure_vm_user_password }}"
+        image: "{{ azure_vm_image }}"
+        vm_size: Standard_D4as_v4
+        ssh_password_enabled: yes
+        managed_disk_type: Standard_LRS
+        os_type: Linux
+        virtual_network_name: "{{ azure_virtual_network }}"
+        subnet_name: "{{ azure_subnet }}"
+        availability_set: "{{ vm_availability_set }}"
+        network_interface_names:
+          - resource_group: "{{ azure_resource_group }}"
+            name: "{{ azure_vm_name }}{{ id }}-nic"
+      with_sequence: start=0 count="{{ azure_number_vm }}"
+      loop_control:
+        loop_var: id
+
+  when: (actual_vms_pool | int) <= (azure_number_vm | int)
+
+- name: "Delete {{ (actual_vms_pool | int) - (azure_number_vm | int) }} VMs from Pool"
+  block:
+    - set_fact:
+        number_to_delete: "{{ (actual_vms_pool | int) - (azure_number_vm | int) }}"
+
+    # Delete VM
+    - name: Delete Virtual Machine
+      azure_rm_virtualmachine:
+        resource_group: "{{ azure_resource_group }}"
+        name: "{{ azure_vm_name }}{{ (actual_vms_pool | int) - (item | int + 1) }}"
+        virtual_network_name: "{{ azure_virtual_network }}"
+        subnet_name: "{{ azure_subnet }}"
+        state: absent
+      with_sequence: start=0 count="{{ number_to_delete }}"
+
+    # Delete NIC
+    - name: Delete NIC
+      azure_rm_networkinterface:
+        resource_group: "{{ azure_resource_group }}"
+        name: "{{ azure_vm_name }}{{ (actual_vms_pool | int) - (item | int + 1) }}-nic"
+        virtual_network: "{{ azure_virtual_network }}"
+        subnet_name: "{{ azure_subnet }}"
+        state: absent
+      with_sequence: start=0 count="{{ number_to_delete }}"
+
+  when: (actual_vms_pool | int) > (azure_number_vm | int)
 
 - name: Create Bastion Host
   block:

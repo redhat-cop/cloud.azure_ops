@@ -7,37 +7,37 @@
   - azure.azcollection
 
   vars_files:
-    - vars/main.yml
+  - vars/main.yml
 
   tasks:
-    - fail:
-        msg: "Azure Resource group must be defined as azure_resource_group"
-      when: azure_resource_group is not defined
+  - fail:
+      msg: "Azure Resource group must be defined as azure_resource_group"
+    when: azure_resource_group is not defined
 
-    - name: Create application infrastructure
-      include_role:
-        name: azure-setup
+  - name: Create application infrastructure
+    include_role:
+      name: azure-setup
 
-    - name: Retrieve PostgreSQL Server info
-      azure_rm_postgresqlserver_info:
-        resource_group: '{{ azure_resource_group }}'
-        name: '{{ azure_postgresql_name }}'
-      register: _server
+  - name: Retrieve PostgreSQL Server info
+    azure_rm_postgresqlserver_info:
+      resource_group: '{{ azure_resource_group }}'
+      name: '{{ azure_postgresql_name }}'
+    register: _server
 
-    - name: Create PostgreSQL database instance
-      include_role:
-        name: managed_postgresql
-      when: _server.servers | length == 0
+  - name: Create PostgreSQL database instance
+    include_role:
+      name: managed_postgresql
+    when: _server.servers | length == 0
 
-    - name: Update inventory hosts
-      include_tasks: tasks/add-hosts.yml
+  - name: Update inventory hosts
+    include_tasks: tasks/add-hosts.yml
 
 - name: Configure Bastion Host
   hosts: bastion
   gather_facts: no
 
   tasks:
-    - include_tasks: tasks/update_ssh_config.yml
+  - include_tasks: tasks/update_ssh_config.yml
 
 
 - name: Configure workers
@@ -48,33 +48,55 @@
     app_data: "/tmp/demo"
 
   vars_files:
-    - vars/main.yml
+  - vars/main.yml
 
   tasks:
 
-    - include_tasks: tasks/update_ssh_config.yml
+  - include_tasks: tasks/update_ssh_config.yml
 
-    - name: Ensure Git is installed
-      yum:
-        name:
-          - git
-        state: present
-      become: true
+  - name: Ensure Git is installed
+    yum:
+      name:
+      - git
+      state: present
+    become: true
 
-    - name: Ensure docker
-      include_tasks: tasks/docker-setup.yml
+  - name: Ensure docker
+    include_tasks: tasks/docker-setup.yml
 
-    - name: Git clone application
-      git:
-        repo: "{{ application_src }}"
-        dest: "{{ app_data }}"
-        force: yes
+  - name: Git clone application
+    git:
+      repo: "{{ application_src }}"
+      dest: "{{ app_data }}"
+      force: yes
 
-    - name: Create Docker image
+  - name: Create Docker image
+    command:
+      cmd: "docker build -t {{ py_application.docker_image }} {{ app_data }}"
+
+  - name: Init Application db
+    shell: >-
+      docker run --rm
+      -e FLASK_APP="{{ py_application.docker_dir }}"
+      -e FLASK_ENV="{{ py_application.env }}"
+      -e DATABASE_HOST="{{ application_db.server }}"
+      -e DATABASE_INSTANCE="{{ application_db.instance }}"
+      -e DATABASE_USER="{{ application_db.user }}"
+      -e DATABASE_PASSWORD="{{ azure_postgresql_admin_password }}"
+      -e ADMIN_USER="{{ py_application.admin_user }}"
+      -e ADMIN_PASSWORD="{{ py_application.admin_password }}"
+      -e WORKER_HOSTNAME="{{ inventory_hostname }}"
+      {{ py_application.docker_image }} flask {{ application_force_init | bool | ternary('force-init-db', 'init-db') }}
+    run_once: yes
+
+  - name: Run application
+    block:
+    - name: Stop running container
       command:
-        cmd: "docker build -t {{ py_application.docker_image }} {{ app_data }}"
+        cmd: "docker container stop {{ py_application.container_name }}"
+      ignore_errors: true
 
-    - name: Init Application db
+    - name: Start container
       shell: >-
         docker run --rm
         -e FLASK_APP="{{ py_application.docker_dir }}"
@@ -86,35 +108,13 @@
         -e ADMIN_USER="{{ py_application.admin_user }}"
         -e ADMIN_PASSWORD="{{ py_application.admin_password }}"
         -e WORKER_HOSTNAME="{{ inventory_hostname }}"
-        {{ py_application.docker_image }} flask {{ application_force_init | bool | ternary('force-init-db', 'init-db') }}
-      run_once: yes
+        -p 5000:5000 --name {{ py_application.container_name }}
+        -d {{ py_application.docker_image }}
 
-    - name: Run application
-      block:
-        - name: Stop running container
-          command:
-            cmd: "docker container stop {{ py_application.container_name }}"
-          ignore_errors: true
-
-        - name: Start container
-          shell: >-
-            docker run --rm
-            -e FLASK_APP="{{ py_application.docker_dir }}"
-            -e FLASK_ENV="{{ py_application.env }}"
-            -e DATABASE_HOST="{{ application_db.server }}"
-            -e DATABASE_INSTANCE="{{ application_db.instance }}"
-            -e DATABASE_USER="{{ application_db.user }}"
-            -e DATABASE_PASSWORD="{{ azure_postgresql_admin_password }}"
-            -e ADMIN_USER="{{ py_application.admin_user }}"
-            -e ADMIN_PASSWORD="{{ py_application.admin_password }}"
-            -e WORKER_HOSTNAME="{{ inventory_hostname }}"
-            -p 5000:5000 --name {{ py_application.container_name }}
-            -d {{ py_application.docker_image }}
-    
 - hosts: localhost
   gather_facts: no
 
   tasks:
-    - debug:
-        msg: "Web application accessible at  http://{{ load_balancer_public_ip }}:5000"
-      when: load_balancer_public_ip is defined
+  - debug:
+      msg: "Web application accessible at  http://{{ load_balancer_public_ip }}:5000"
+    when: load_balancer_public_ip is defined
