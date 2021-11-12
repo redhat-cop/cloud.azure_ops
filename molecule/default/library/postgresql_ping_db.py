@@ -1,9 +1,7 @@
 #!/usr/bin/python
 # Copyright (c) 2021 Red Hat
-# GNU General Public License v3.0+ (see COPYING or https://www.gnu.org/licenses/gpl-3.0.txt)
-
-from __future__ import (absolute_import, division, print_function)
-__metaclass__ = type
+# GNU General Public License v3.0+
+# (see COPYING or https://www.gnu.org/licenses/gpl-3.0.txt)
 
 DOCUMENTATION = '''
 module: postgresql_ping_db.py
@@ -56,7 +54,7 @@ try:
 except ImportError:
     HAS_PSYCOPG2 = False
 
-from ansible.module_utils.basic import AnsibleModule
+from ansible.module_utils.basic import AnsibleModule  # noqa: E402
 
 
 def main():
@@ -72,16 +70,20 @@ def main():
     if not HAS_PSYCOPG2:
         module.fail_json(msg="This module requires psycopg2 module.")
 
-    conn_string = "host={0} user={1} dbname={2} password={3} sslmode='require'".format(module.params.get('host'),
-                                                                                       module.params.get('user'),
-                                                                                       module.params.get('dbname'),
-                                                                                       module.params.get('password'))
+    conn_string = [
+                    "host=%s" % module.params.get('host'),
+                    "user=%s" % module.params.get('user'),
+                    "dbname=%s" % module.params.get('dbname'),
+                    "password=%s" % module.params.get('password'),
+                    "sslmode='require'"
+                ]
     try:
-        conn = connect(conn_string)
+        conn = connect(" ".join(conn_string))
         conn.close()
         module.exit_json(changed=False, msg="Connection established.")
     except Exception as e:
         module.fail_json(msg="Connection failed due to: {0}".format(e))
+
 
 if __name__ == '__main__':
     main()
