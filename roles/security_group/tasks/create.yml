@@ -1,0 +1,33 @@
+---
+- name: Check Region Setting
+  fail:
+    msg: "Azure Region must be defined as azure_region"
+  when: azure_region is not defined
+
+- name: Create Resource Group
+  azure_rm_resourcegroup:
+    name: "{{ azure_resource_group }}"
+    location: "{{ azure_region }}"
+  when:
+    - rg_info.resourcegroups | length == 0
+
+- name: Create Security Group with Default Rules
+  azure_rm_securitygroup:
+    resource_group: "{{ azure_resource_group }}"
+    name: "{{ azure_security_group }}"
+    purge_rules: "{{ azure_security_group_purge_rules | default(omit) }}"
+    tags: "{{ azure_tags | default(omit) }}"
+  when:
+    - azure_security_group_rules | length == 0
+
+- name: Create/Update Security Group with Specified Rules
+  azure_rm_securitygroup:
+    resource_group: "{{ azure_resource_group }}"
+    name: "{{ azure_security_group }}"
+    purge_rules: "{{ azure_security_group_purge_rules | default(omit) }}"
+    rules: "{{ azure_security_group_rules }}"
+    tags: "{{ azure_tags | default(omit) }}"
+  when:
+    - azure_security_group_rules | length > 0    
+
+
