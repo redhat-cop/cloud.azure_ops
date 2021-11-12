@@ -1,7 +1,24 @@
 ---
-azure_vm_name: "webapp-vm-"
-azure_vm_user: "ansible"
-azure_vm_user_password: "4fB5In3ueO7,"
+# azure_resource_group: "demo-{{ lookup('password', '/dev/null chars=ascii_lowercase,digits length=6') }}"
+azure_resource_group: 'jtorcasso'
+azure_region: eastus
+
+# Security Group variables
+azure_security_group_rules:
+  - name: SSH
+    destination_port_range: 22
+    access: Allow
+    priority: 130
+    direction: Inbound
+  - name: Flask
+    destination_port_range: 5000
+    access: Allow
+    priority: 150
+    direction: Inbound
+
+base_vm_name: "webapp-vm"
+azure_vm_admin_username: "ansible"
+azure_vm_admin_password: "4fB5In3ueO7,"
 azure_vm_image:
   offer: CentOS
   publisher: OpenLogic

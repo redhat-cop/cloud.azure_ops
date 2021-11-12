@@ -80,4 +80,5 @@
     ssh_password_enabled: "{{ azure_vm_ssh_pw_enabled | default(omit) }}"
     ssh_public_keys: "{{ azure_vm_ssh_public_keys | default(omit) }}"
     data_disks: "{{ azure_vm_data_disks | default(omit) }}"
+    managed_disk_type: "{{ azure_vm_managed_disk_type | default(omit) }}"
     tags: "{{ azure_tags | default(omit) }}"

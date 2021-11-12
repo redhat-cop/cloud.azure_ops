@@ -5,106 +5,139 @@
 
 # Create a security group to restrict access to my VMs except within the VPC
 - name: Create Network security Group
-  azure_rm_securitygroup:
-    resource_group: "{{ azure_resource_group }}"
-    name: "{{ azure_security_group }}"
-    rules:
-      - name: SSH
-        destination_port_range: 22
-        access: Allow
-        priority: 130
-        direction: Inbound
-      - name: Flask
-        destination_port_range: 5000
-        access: Allow
-        priority: 150
-        direction: Inbound
+  include_role:
+    name: security_group
 
 # Create a virtual network
 - name: Create the networking stack
   include_role:
     name: networking_stack
 
-# Create a public IP address for the load balancer
-- name: Create a public ip address for the load balancer
-  azure_rm_publicipaddress:
-    resource_group: "{{ azure_resource_group }}"
-    allocation_method: static
-    name: "{{ azure_load_balancer.public_ip_name }}"
-    sku: Basic
-  register: public_ip
+# Create NIC names
+- name: Create nic names from number of instances
+  set_fact:
+    azure_network_interface_instances: "{{ azure_network_interface_instances + [ nic_name ] }}"
+  with_sequence: start=0 count="{{ azure_number_vm }}"
+  loop_control:
+    loop_var: id
+  vars:
+    nic_name: "{{ base_vm_name }}-{{ id }}-nic"
 
-- set_fact:
-    load_balancer_public_ip: "{{ public_ip.state.ip_address }}"
-
-# Deploy Load Balancer that provides public internet access to application routing back to app servers
-- name: Create load Balancer
-  azure_rm_loadbalancer:
-    resource_group: "{{ azure_resource_group }}"
-    name: "{{ azure_load_balancer.name }}"
-    sku: Basic
-    frontend_ip_configurations:
-      - name: frontend
-        public_ip_address: "{{ azure_load_balancer.public_ip_name }}"
-    backend_address_pools:
-      - name: '{{ azure_load_balancer.backend_address_pool }}'
-    probes:
+# Create Load Balancer and Attach NICs
+- name: Create LB w/ public ip
+  include_role:
+    name: load_balancer
+  vars:
+    azure_lb_network_interface_instances: "{{ azure_network_interface_instances }}"
+    azure_lb_pip_name: '{{ azure_lb_name }}-pip'
+    azure_lb_probes:
       - name: ping_server
         port: 5000
         protocol: Http
         request_path: "/"
-    load_balancing_rules:
+    azure_lb_rules:
       - name: flask
-        frontend_ip_configuration: frontend
-        backend_address_pool: '{{ azure_load_balancer.backend_address_pool }}'
+        frontend_ip_configuration: "{{ azure_lb_name }}-ipconf"
+        backend_address_pool: '{{ azure_lb_name }}-backendpool'
         protocol: Tcp
         frontend_port: 5000
         backend_port: 5000
-        probe: ping_server
-  register: load_balancer
+        probe: ping_server  
+
+# # Create a public IP address for the load balancer
+# - name: Create a public ip address for the load balancer
+#   azure_rm_publicipaddress:
+#     resource_group: "{{ azure_resource_group }}"
+#     allocation_method: static
+#     name: "{{ azure_load_balancer.public_ip_name }}"
+#     sku: Basic
+#   register: public_ip
+
+# - set_fact:
+#     load_balancer_public_ip: "{{ public_ip.state.ip_address }}"
+
+# # Deploy Load Balancer that provides public internet access to application routing back to app servers
+# - name: Create load Balancer
+#   azure_rm_loadbalancer:
+#     resource_group: "{{ azure_resource_group }}"
+#     name: "{{ azure_load_balancer.name }}"
+#     sku: Basic
+#     frontend_ip_configurations:
+#       - name: frontend
+#         public_ip_address: "{{ azure_load_balancer.public_ip_name }}"
+#     backend_address_pools:
+#       - name: '{{ azure_load_balancer.backend_address_pool }}'
+#     probes:
+#       - name: ping_server
+#         port: 5000
+#         protocol: Http
+#         request_path: "/"
+#     load_balancing_rules:
+#       - name: flask
+#         frontend_ip_configuration: frontend
+#         backend_address_pool: '{{ azure_load_balancer.backend_address_pool }}'
+#         protocol: Tcp
+#         frontend_port: 5000
+#         backend_port: 5000
+#         probe: ping_server
+#   register: load_balancer
 
 # Create availability set for VMs
 - name: Create availability set for the VMs
   azure_rm_availabilityset:
     resource_group: "{{ azure_resource_group }}"
-    name: "{{ azure_vm_name }}-avset"
+    name: "{{ base_vm_name }}-avset"
     sku: Aligned
 
-# Create Network Interfaces for the VMs
-- name: Create network interfaces for the VMs
-  azure_rm_networkinterface:
-    resource_group: "{{ azure_resource_group }}"
-    name: "{{ azure_vm_name }}{{ id }}-nic"
-    virtual_network: "{{ azure_virtual_network }}"
-    subnet_name: "{{ azure_subnet }}"
-    security_group: "{{ azure_security_group }}"
-    ip_configurations:
-      - name: load_balancer
-        load_balancer_backend_address_pools:
-          - "{{ load_balancer.state.backend_address_pools.0.id }}"
-        primary: True
-  with_sequence: start=0 count="{{ azure_number_vm }}"
-  loop_control:
-    loop_var: id
+# # Create Network Interfaces for the VMs
+# - name: Create network interfaces for the VMs
+#   azure_rm_networkinterface:
+#     resource_group: "{{ azure_resource_group }}"
+#     name: "{{ azure_vm_name }}{{ id }}-nic"
+#     virtual_network: "{{ azure_virtual_network }}"
+#     subnet_name: "{{ azure_subnet }}"
+#     security_group: "{{ azure_security_group }}"
+#     ip_configurations:
+#       - name: load_balancer
+#         load_balancer_backend_address_pools:
+#           - "{{ load_balancer.state.backend_address_pools.0.id }}"
+#         primary: True
+#   with_sequence: start=0 count="{{ azure_number_vm }}"
+#   loop_control:
+#     loop_var: id
 
 # Create RHEL app VMs into the subnet
-- name: Create Virtual Machine
-  azure_rm_virtualmachine:
-    resource_group: "{{ azure_resource_group }}"
-    name: "{{ azure_vm_name }}{{ id }}"
-    admin_username: "{{ azure_vm_user }}"
-    admin_password: "{{ azure_vm_user_password }}"
-    image: "{{ azure_vm_image }}"
-    vm_size: Standard_D4as_v4
-    ssh_password_enabled: yes
-    managed_disk_type: Standard_LRS
-    os_type: Linux
-    virtual_network_name: "{{ azure_virtual_network }}"
-    subnet_name: "{{ azure_subnet }}"
-    availability_set: "{{ azure_vm_name }}-avset"
-    network_interface_names:
-      - resource_group: "{{ azure_resource_group }}"
-        name: "{{ azure_vm_name }}{{ id }}-nic"
+# - name: Create Virtual Machine
+#   azure_rm_virtualmachine:
+#     resource_group: "{{ azure_resource_group }}"
+#     name: "{{ azure_vm_name }}-{{ id }}"
+#     admin_username: "{{ azure_vm_user }}"
+#     admin_password: "{{ azure_vm_user_password }}"
+#     image: "{{ azure_vm_image }}"
+#     vm_size: Standard_D4as_v4
+#     ssh_password_enabled: yes
+#     managed_disk_type: Standard_LRS
+#     os_type: Linux
+#     virtual_network_name: "{{ azure_virtual_network }}"
+#     subnet_name: "{{ azure_subnet }}"
+#     availability_set: "{{ azure_vm_name }}-avset"
+#     network_interface_names: "{{ azure_network_interface_instances[ ( id | int )] }}"
+#   with_sequence: start=0 count="{{ azure_number_vm }}"
+#   loop_control:
+#     loop_var: id
+
+# Create RHEL app VMs into the subnet
+- name: Create Virtual Machines
+  include_role:
+    name: virtual_machine
+  vars:
+    azure_vm_name: "{{ base_vm_name }}-{{ id }}"
+    azure_ssh_password_enabled: 'yes'
+    azure_vm_managed_disk_type: Standard_LRS
+    azure_vm_os: Linux
+    azure_vm_size: Standard_D4as_v4
+    azure_availability_set_name: "{{ base_vm_name }}-avset"
+    azure_network_interface_name: "{{ azure_network_interface_instances[ ( id | int )] }}"
   with_sequence: start=0 count="{{ azure_number_vm }}"
   loop_control:
     loop_var: id
@@ -112,8 +145,8 @@
 - name: Create Bastion Host
   block:
     - set_fact:
-        bastion_public_ip_name: "{{ azure_vm_name }}-bastion-ip"
-        bastion_nic_name: "{{ azure_vm_name }}-bastion-nic"
+        bastion_public_ip_name: "{{ base_vm_name }}-bastion-ip"
+        bastion_nic_name: "{{ base_vm_name }}-bastion-nic"
 
     - name: Create public ip for Bastion VM
       azure_rm_publicipaddress:
@@ -140,9 +173,9 @@
     - name: Create virtual machine
       azure_rm_virtualmachine:
         resource_group: "{{ azure_resource_group }}"
-        name: "{{ azure_vm_name }}-bastion"
-        admin_username: "{{ azure_vm_user }}"
-        admin_password: "{{ azure_vm_user_password }}"
+        name: "{{ base_vm_name }}-bastion"
+        admin_username: "{{ azure_vm_admin_username }}"
+        admin_password: "{{ azure_vm_admin_password }}"
         image: "{{ azure_vm_image }}"
         vm_size: Standard_D4as_v4
         ssh_password_enabled: yes

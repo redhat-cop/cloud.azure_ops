@@ -1,7 +1,7 @@
 - name: Get virtual network interfaces info
   azure_rm_networkinterface_info:
     resource_group: "{{ azure_resource_group }}"
-    name: "{{ azure_vm_name }}{{ id }}-nic"
+    name: "{{ base_vm_name }}{{ id }}-nic"
   register: nic_info
   with_sequence: start=0 count="{{ azure_number_vm }}"
   loop_control:
@@ -21,10 +21,10 @@
 - name: add workers hosts to inventory
   ansible.builtin.add_host:
     hostname: "host_{{ item }}"
-    ansible_ssh_user: "{{ azure_vm_user }}"
-    ansible_ssh_pass: "{{ azure_vm_user_password }}"
-    ansible_sudo_pass: "{{ azure_vm_user_password }}"
-    ansible_ssh_common_args: -o StrictHostKeyChecking=no -o ProxyCommand="sshpass -p '{{ azure_vm_user_password }}' ssh -W %h:%p {{ azure_vm_user }}@{{ bastion_public_ip }}"
+    ansible_ssh_user: "{{ azure_vm_admin_username }}"
+    ansible_ssh_pass: "{{ azure_vm_admin_password }}"
+    ansible_sudo_pass: "{{ azure_vm_admin_password }}"
+    ansible_ssh_common_args: -o StrictHostKeyChecking=no -o ProxyCommand="sshpass -p '{{ azure_vm_admin_password }}' ssh -W %h:%p {{ azure_vm_admin_username }}@{{ bastion_public_ip }}"
     ansible_host: "{{ item }}"
     groups: workers
     application_db:
@@ -37,8 +37,8 @@
 - name: add bastion host to inventory
   ansible.builtin.add_host:
     hostname: "bastion"
-    ansible_ssh_user: "{{ azure_vm_user }}"
-    ansible_ssh_pass: "{{ azure_vm_user_password }}"
-    ansible_sudo_pass: "{{ azure_vm_user_password }}"
+    ansible_ssh_user: "{{ azure_vm_admin_username }}"
+    ansible_ssh_pass: "{{ azure_vm_admin_password }}"
+    ansible_sudo_pass: "{{ azure_vm_admin_password }}"
     ansible_host: "{{ bastion_public_ip }}"
   # no_log: true
