@@ -5,7 +5,7 @@
     azure_tags:
       cloud.azure_roles: managed_postgresql
     azure_region: "eastus"
-    azure_postgresql_name: "dbserver-{{ lookup('password', '/dev/null chars=digits length=8') }}"
+    azure_postgresql_name: "ansible-cloud-postgresqldb-{{ lookup('password', '/dev/null chars=digits length=8') }}"
     azure_postgresql_admin_username: "test"
     azure_postgresql_admin_password: "4fB5In3ueO7,"
     test_database_instances:
@@ -207,7 +207,7 @@
         name: '{{ azure_resource_group }}'
       register: resource
 
-    - name: assert that resource group was found
+    - name: assert that resource group was not found
       assert:
         that:
           - resource.resourcegroups | length == 0

@@ -1,6 +1,5 @@
 ---
-# azure_resource_group: "demo-{{ lookup('password', '/dev/null chars=ascii_lowercase,digits length=6') }}"
-azure_resource_group: 'jtorcasso'
+azure_resource_group: 'webapp'
 azure_region: eastus
 
 # Security Group variables
@@ -24,7 +23,7 @@ azure_vm_image:
   publisher: OpenLogic
   sku: '7.5'
   version: latest
-azure_number_vm: 3
+azure_number_vm: 1
 
 # PostgreSQL Server variables
 azure_postgresql_name: "{{ azure_resource_group }}-dbserver"

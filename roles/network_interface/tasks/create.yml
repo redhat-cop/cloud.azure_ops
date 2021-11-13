@@ -85,6 +85,7 @@
               - "{{ lb_info.ansible_info.azure_loadbalancers[0].properties.backendAddressPools[0].id }}"
   when:
     - azure_lb_name is defined
+    - add_to_lb | bool
 
 # Assert NIC is created and not attached to a lb
 - name: Create a Network Interface
