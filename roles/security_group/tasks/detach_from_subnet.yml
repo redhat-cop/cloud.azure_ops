@@ -6,21 +6,21 @@
 
 - name: Extract vnet name from id
   set_fact:
-    vnet_name: "{{ vnet_name[((vnet_name | length) - 3 | int)] }}"    
+    vnet_name: "{{ vnet_name[((vnet_name | length) - 3 | int)] }}"
 
 - name: Get subnet info
   azure_rm_subnet_info:
     resource_group: "{{ azure_resource_group }}"
     name: "{{ subnet_name }}"
     virtual_network_name: "{{ vnet_name }}"
-  register: subnet_result    
-    
+  register: subnet_result
+
 - set_fact:
     subnet: {}
     params_to_exclude:
       - security_group
       - id
-      - provisioning_state 
+      - provisioning_state
 
 - name: Remove unsupported params from dictionary
   set_fact:

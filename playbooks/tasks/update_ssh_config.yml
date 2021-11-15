@@ -11,11 +11,3 @@
       line: "ClientAliveCountMax 3"
   become: true
   register: ssh_config
-
-- name: Assure docker.socket service is running
-  service:
-    name: sshd
-    enabled: yes
-    state: restarted
-  become: true
-  when: ssh_config is changed

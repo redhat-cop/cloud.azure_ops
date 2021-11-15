@@ -18,7 +18,7 @@
           azure_rm_securitygroup_info:
             resource_group: "{{ azure_resource_group }}"
           register: sg_info
-          ignore_errors: no 
+          ignore_errors: no
 
         - assert:
             that:
@@ -88,7 +88,7 @@
         - name: Assert 2 user rules exist
           assert:
             that:
-              - sg_rules.securitygroups[0].properties.securityRules | length == 2       
+              - sg_rules.securitygroups[0].properties.securityRules | length == 2
 
         - name: Create VNet
           azure_rm_virtualnetwork:
@@ -101,7 +101,7 @@
         - name: Create Subnet
           azure_rm_subnet:
             resource_group: "{{ azure_resource_group }}"
-            name: "{{ azure_resource_group }}-subnet-00"  
+            name: "{{ azure_resource_group }}-subnet-00"
             virtual_network_name: "{{ azure_resource_group }}-vnet"
             address_prefix_cidr: "10.16.0.0/24"
             security_group: "{{ azure_security_group }}"
@@ -145,7 +145,7 @@
               - name: ipconf1
                 public_ip_address_name: "{{ azure_resource_group }}-pip2"
             virtual_network: "{{ azure_resource_group }}-vnet"
-            subnet_name: "{{ azure_resource_group }}-subnet-00"  
+            subnet_name: "{{ azure_resource_group }}-subnet-00"
 
         - name: Create a VM
           azure_rm_virtualmachine:
@@ -218,7 +218,7 @@
           assert:
             that:
               - sg_rules.securitygroups | length == 1
-                
+
         - name: Delete security group & detach from any NICs or subnets
           include_role:
             name: security_group

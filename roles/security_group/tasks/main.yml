@@ -12,7 +12,7 @@
 - name: Check security group name
   fail:
     msg: "Azure security group name must be defined as azure_security_group"
-  when: azure_security_group is not defined  
+  when: azure_security_group is not defined
 
 - name: Get resource group info
   azure_rm_resourcegroup_info:

@@ -28,6 +28,4 @@
     rules: "{{ azure_security_group_rules }}"
     tags: "{{ azure_tags | default(omit) }}"
   when:
-    - azure_security_group_rules | length > 0    
-
-
+    - azure_security_group_rules | length > 0
