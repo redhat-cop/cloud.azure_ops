@@ -15,7 +15,6 @@ jobs:
     strategy:
       matrix:
         python_version: ['3.7']
-        ansible_version: ['stable-2.11', 'stable-2.10', 'stable-2.9', 'devel']
     steps:
       - name: Check out code
         uses: actions/checkout@v2
