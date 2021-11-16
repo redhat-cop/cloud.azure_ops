@@ -1,0 +1,92 @@
+---
+- name: Define facts to start webapp
+  hosts: localhost
+  gather_facts: no
+
+  tasks:
+    - set_fact:
+        azure_resource_group: "webapp-testing-{{ lookup('password', '/dev/null chars=digits length=4') }}"
+        azure_number_vm: 3
+
+- name: Run webapp demo for azure
+  import_playbook: cloud.azure_roles.webapp_demo
+
+- name: Validate application is running
+  hosts: localhost
+  gather_facts: no
+
+  collections:
+    - azure.azcollection
+
+  tasks:
+    - name: Get resource group info
+      azure_rm_resourcegroup_info:
+        name: '{{ azure_resource_group }}'
+      register: resource
+
+    - name: Assert that resource group was created
+      assert:
+        that:
+          - resource.resourcegroups | length == 1
+
+    - name: Test application load balancer
+      test_webapp:
+        url: "http://{{ load_balancer_public_ip }}:5000"
+        number_workers: "{{ azure_number_vm }}"
+
+- hosts: localhost
+  gather_facts: no
+
+  tasks:
+    - name: Define facts to scale up the application
+      set_fact:
+        azure_number_vm: 5
+
+- name: Run webapp demo for azure
+  import_playbook: cloud.azure_roles.webapp_demo
+
+
+- name: Validate application has been scale up
+  hosts: localhost
+  gather_facts: no
+
+  tasks:
+    - name: Test application load balancer
+      test_webapp:
+        url: "http://{{ load_balancer_public_ip }}:5000"
+        number_workers: "{{ azure_number_vm }}"
+
+- hosts: localhost
+  gather_facts: no
+
+  tasks:
+    - name: Define facts to scale down the application
+      set_fact:
+        azure_number_vm: 1
+
+- name: Run webapp demo for azure
+  import_playbook: cloud.azure_roles.webapp_demo
+
+
+- name: Validate application has been scale down
+  hosts: localhost
+  gather_facts: no
+
+  tasks:
+    - name: Test application load balancer
+      test_webapp:
+        url: "http://{{ load_balancer_public_ip }}:5000"
+        number_workers: "{{ azure_number_vm }}"
+
+
+- hosts: localhost
+  gather_facts: no
+
+  collections:
+  - cloud.azure_roles
+
+  tasks:
+    - import_role:
+        name: resource_group
+      vars:
+        operation: "delete"

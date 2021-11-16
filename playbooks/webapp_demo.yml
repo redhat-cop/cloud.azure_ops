@@ -15,101 +15,103 @@
     when: azure_resource_group is not defined
 
   - name: Create application infrastructure
-    include_role:
+    import_role:
       name: azure-setup
 
-  - name: Retrieve PostgreSQL Server info
-    azure_rm_postgresqlserver_info:
-      resource_group: '{{ azure_resource_group }}'
-      name: '{{ azure_postgresql_name }}'
-    register: _server
+  - block:
+    - name: Retrieve PostgreSQL Server info
+      azure_rm_postgresqlserver_info:
+        resource_group: '{{ azure_resource_group }}'
+        name: '{{ azure_postgresql_name }}'
+      register: _server
 
-  - name: Create PostgreSQL database instance
-    include_role:
-      name: managed_postgresql
-    when: _server.servers | length == 0
+    - name: Create PostgreSQL database instance
+      import_role:
+        name: managed_postgresql
+      when: _server.servers | length == 0
 
-  - name: Update inventory hosts
-    include_tasks: tasks/add-hosts.yml
+    when: operation | default('create') == 'create'
 
-- name: Configure Bastion Host
+- name: Deploy resource from Bastion Host
   hosts: bastion
   gather_facts: no
 
-  tasks:
-  - include_tasks: tasks/update_ssh_config.yml
-
-
-- name: Configure workers
-  hosts: workers
-  gather_facts: no
-
   vars:
-    app_data: "/tmp/demo"
+    ansible_venv_path: "~/venv"
 
   vars_files:
   - vars/main.yml
 
   tasks:
+  - name: Update ssh_config
+    lineinfile:
+      path: "/etc/ssh/sshd_config"
+      regex: "{{ item.regex }}"
+      line: "{{ item.line }}"
+    loop:
+      - regex: "^(# *)?ClientAliveInterval"
+        line: "ClientAliveInterval  1200"
+      - regex: "^(# *)?ClientAliveCountMax"
+        line: "ClientAliveCountMax 3"
+    become: true
 
-  - include_tasks: tasks/update_ssh_config.yml
-
-  - name: Ensure Git is installed
+  - name: Ensure python3 is installed
     yum:
       name:
-      - git
+        - python3
+        - python-virtualenv
+        - sshpass
+        - git
       state: present
     become: true
 
-  - name: Ensure docker
-    include_tasks: tasks/docker-setup.yml
+  - name: Create virtualenv
+    shell: "virtualenv --python python3 {{ ansible_venv_path }}"
 
-  - name: Git clone application
+  - name: Upgrade pip
+    shell: "{{ ansible_venv_path }}/bin/pip install --upgrade pip"
+
+  - name: Install Ansible into virtualenv
+    shell: '{{ ansible_venv_path }}/bin/pip install "ansible==2.10.*"'
+
+  - name: Create application directories
+    file:
+      path: "{{ item }}"
+      state: directory
+    with_items:
+      - "{{ ansible_venv_path }}/playbook"
+      - "{{ ansible_venv_path }}/playbook/tasks"
+
+  - name: Create inventory file
+    template:
+      src: workers-inventory.j2
+      dest: "{{ ansible_venv_path }}/playbook/inventory.yaml"
+
+  - name: Create vars file
+    template:
+      src: application-data.j2
+      dest: "{{ ansible_venv_path }}/playbook/vars.yaml"
+
+  - name: Copy playbook file
+    copy:
+      src: deploy-app.yml
+      dest: "{{ ansible_venv_path }}/playbook/play.yaml"
+
+  # - name: Copy tasks file
+  #   copy:
+  #     src: docker-setup.yml
+  #     dest: "{{ ansible_venv_path }}/playbook/tasks/"
+  - name: Git clone ensure-docker role
     git:
-      repo: "{{ application_src }}"
-      dest: "{{ app_data }}"
-      force: yes
+      repo: "https://opendev.org/zuul/zuul-jobs.git"
+      dest: "{{ ansible_venv_path }}/playbook/zuul-jobs"
 
-  - name: Create Docker image
-    command:
-      cmd: "docker build -t {{ py_application.docker_image }} {{ app_data }}"
-
-  - name: Init Application db
-    shell: >-
-      docker run --rm
-      -e FLASK_APP="{{ py_application.docker_dir }}"
-      -e FLASK_ENV="{{ py_application.env }}"
-      -e DATABASE_HOST="{{ application_db.server }}"
-      -e DATABASE_INSTANCE="{{ application_db.instance }}"
-      -e DATABASE_USER="{{ application_db.user }}"
-      -e DATABASE_PASSWORD="{{ azure_postgresql_admin_password }}"
-      -e ADMIN_USER="{{ py_application.admin_user }}"
-      -e ADMIN_PASSWORD="{{ py_application.admin_password }}"
-      -e WORKER_HOSTNAME="{{ inventory_hostname }}"
-      {{ py_application.docker_image }} flask {{ application_force_init | bool | ternary('force-init-db', 'init-db') }}
-    run_once: yes
-
-  - name: Run application
-    block:
-    - name: Stop running container
-      command:
-        cmd: "docker container stop {{ py_application.container_name }}"
-      ignore_errors: true
-
-    - name: Start container
-      shell: >-
-        docker run --rm
-        -e FLASK_APP="{{ py_application.docker_dir }}"
-        -e FLASK_ENV="{{ py_application.env }}"
-        -e DATABASE_HOST="{{ application_db.server }}"
-        -e DATABASE_INSTANCE="{{ application_db.instance }}"
-        -e DATABASE_USER="{{ application_db.user }}"
-        -e DATABASE_PASSWORD="{{ azure_postgresql_admin_password }}"
-        -e ADMIN_USER="{{ py_application.admin_user }}"
-        -e ADMIN_PASSWORD="{{ py_application.admin_password }}"
-        -e WORKER_HOSTNAME="{{ inventory_hostname }}"
-        -p 5000:5000 --name {{ py_application.container_name }}
-        -d {{ py_application.docker_image }}
+  - name: Deploy application
+    shell: "source {{ ansible_venv_path }}/bin/activate; ansible-playbook play.yaml -i inventory.yaml -e '@vars.yaml' -v"
+    environment:
+      ANSIBLE_ROLES_PATH: "{{ ansible_venv_path }}/playbook/zuul-jobs/roles"
+    args:
+      chdir: "{{ ansible_venv_path }}/playbook"
 
 - hosts: localhost
   gather_facts: no

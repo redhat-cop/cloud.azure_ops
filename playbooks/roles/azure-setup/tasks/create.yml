@@ -198,3 +198,27 @@
         network_interface_names:
           - resource_group: "{{ azure_resource_group }}"
             name: "{{ bastion_nic_name }}"
+
+- name: Get virtual network interfaces info
+  azure_rm_networkinterface_info:
+    resource_group: "{{ azure_resource_group }}"
+    name: "{{ azure_vm_name }}{{ item }}-nic"
+  register: nic_info
+  with_sequence: start=0 count="{{ azure_number_vm }}"
+
+- name: Define Workers private IP list
+  set_fact:
+    workers_private_ip: >-
+      {{ nic_info.results | map(attribute="networkinterfaces") | flatten
+        | map(attribute="ip_configurations") | flatten | map(attribute="private_ip_address") }}
+
+- name: add bastion host to inventory
+  ansible.builtin.add_host:
+    hostname: bastion
+    ansible_ssh_user: "{{ azure_vm_user }}"
+    ansible_ssh_pass: "{{ azure_vm_user_password }}"
+    ansible_sudo_pass: "{{ azure_vm_user_password }}"
+    ansible_host: "{{ bastion_public_ip }}"
+    ansible_ssh_common_args: -o "UserKnownHostsFile=/dev/null" -o StrictHostKeyChecking=no
+    workers: "{{ workers_private_ip }}"
+    azure_resource_group: "{{ azure_resource_group }}"
