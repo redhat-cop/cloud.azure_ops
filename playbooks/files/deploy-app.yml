@@ -1,0 +1,79 @@
+---
+- name: Configure workers
+  hosts: workers
+  gather_facts: yes
+
+  vars:
+    app_data: "/tmp/demo"
+
+  tasks:
+
+  - name: Update ssh_config
+    lineinfile:
+      path: "/etc/ssh/sshd_config"
+      regex: "{{ item.regex }}"
+      line: "{{ item.line }}"
+    loop:
+      - regex: "^(# *)?ClientAliveInterval"
+        line: "ClientAliveInterval  1200"
+      - regex: "^(# *)?ClientAliveCountMax"
+        line: "ClientAliveCountMax 3"
+    become: true
+
+  - name: Ensure Git is installed
+    yum:
+      name:
+      - git
+      state: present
+    become: true
+
+  - name: Run ensure-docker role
+    include_role:
+      name: ensure-docker
+
+  - name: Git clone application
+    git:
+      repo: "{{ application_src }}"
+      dest: "{{ app_data }}"
+      force: yes
+
+  - name: Create Docker image
+    command:
+      cmd: "docker build -t {{ docker_image }} {{ app_data }}"
+
+  - name: Init Application db
+    shell: >-
+      docker run --rm
+      -e FLASK_APP="{{ docker_dir }}"
+      -e FLASK_ENV="{{ docker_env }}"
+      -e DATABASE_HOST="{{ dbserver }}"
+      -e DATABASE_INSTANCE="{{ dbinstance }}"
+      -e DATABASE_USER="{{ dbuser }}"
+      -e DATABASE_PASSWORD="{{ dbpassword }}"
+      -e ADMIN_USER="{{ admin_user }}"
+      -e ADMIN_PASSWORD="{{ admin_password }}"
+      -e WORKER_HOSTNAME="{{ inventory_hostname }}"
+      {{ docker_image }} flask {{ app_force_init | bool | ternary('force-init-db', 'init-db') }}
+    run_once: yes
+
+  - name: Run application
+    block:
+    - name: Stop running container
+      command:
+        cmd: "docker container stop {{ docker_container_name }}"
+      ignore_errors: true
+
+    - name: Start container
+      shell: >-
+        docker run --rm
+        -e FLASK_APP="{{ docker_dir }}"
+        -e FLASK_ENV="{{ docker_env }}"
+        -e DATABASE_HOST="{{ dbserver }}"
+        -e DATABASE_INSTANCE="{{ dbinstance }}"
+        -e DATABASE_USER="{{ dbuser }}"
+        -e DATABASE_PASSWORD="{{ dbpassword }}"
+        -e ADMIN_USER="{{ admin_user }}"
+        -e ADMIN_PASSWORD="{{ admin_password }}"
+        -e WORKER_HOSTNAME="{{ inventory_hostname }}"
+        -p 5000:5000 --name {{ docker_container_name }}
+        -d {{ docker_image }}

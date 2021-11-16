@@ -1,0 +1,12 @@
+---
+- name: Define facts to start webapp
+  hosts: localhost
+  gather_facts: no
+
+  tasks:
+    - set_fact:
+        azure_resource_group: "webapp-testing-{{ lookup('password', '/dev/null chars=digits length=4') }}"
+        azure_number_vm: 3
+
+- name: Run webapp demo for azure
+  import_playbook: cloud.azure_roles.webapp_demo

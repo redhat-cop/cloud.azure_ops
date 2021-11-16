@@ -1,0 +1,13 @@
+---
+dbserver: "{{ azure_postgresql_name }}"
+dbuser: {{ azure_postgresql_admin_username }}
+dbinstance: {{ azure_postgresql_database_instances[0].name }}
+dbpassword: "{{ azure_postgresql_admin_password }}"
+docker_dir: {{ py_application.docker_dir }}
+docker_env: {{ py_application.env }}
+docker_image: {{ py_application.docker_image }}
+docker_container_name: {{ py_application.container_name }}
+admin_user: {{ py_application.admin_user }}
+admin_password: "{{ py_application.admin_password }}"
+app_force_init: "{{ application_force_init | default('false') }}"
+application_src: "{{ application_src }}"
