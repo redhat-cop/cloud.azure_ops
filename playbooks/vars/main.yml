@@ -3,9 +3,9 @@ azure_vm_name: "webapp-vm-"
 azure_vm_user: "ansible"
 azure_vm_user_password: "4fB5In3ueO7,"
 azure_vm_image:
-  offer: CentOS
-  publisher: OpenLogic
-  sku: '7.5'
+  offer: RHEL
+  publisher: RedHat
+  sku: '7-LVM'
   version: latest
 azure_number_vm: 3
 
