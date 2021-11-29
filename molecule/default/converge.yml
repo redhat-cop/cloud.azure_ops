@@ -40,20 +40,20 @@
       tags:
         - always
 
-    # - name: test network_interface role
-    #   include_tasks:
-    #     file: tasks/network_interface.yml
-    #     apply:
-    #       tags:
-    #         - network_interface
-    #   tags:
-    #     - always
+    - name: test network_interface role
+      include_tasks:
+        file: tasks/network_interface.yml
+        apply:
+          tags:
+            - network_interface
+      tags:
+        - always
 
-    # - name: test load_balancer role
-    #   include_tasks:
-    #     file: tasks/load_balancer.yml
-    #     apply:
-    #       tags:
-    #         - load_balancer
-    #   tags:
-    #     - always
+    - name: test load_balancer role
+      include_tasks:
+        file: tasks/load_balancer.yml
+        apply:
+          tags:
+            - load_balancer
+      tags:
+        - always

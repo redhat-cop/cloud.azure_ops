@@ -7,11 +7,12 @@
 - name: Create default public ip name
   set_fact:
     azure_lb_pip_name: "{{ azure_lb_name }}-ip"
-  when: azure_lb_pip_name is undefined  
+  when: azure_lb_pip_name is undefined
 
 - name: Ensure public ip exists
   block:
-    - azure_rm_publicipaddress_info:
+    - name: Get public ip info
+      azure_rm_publicipaddress_info:
         resource_group: "{{ azure_resource_group }}"
         name: "{{ azure_lb_pip_name }}"
       register: lb_ip_info
