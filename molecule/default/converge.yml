@@ -4,32 +4,32 @@
   collections:
     - azure.azcollection
   tasks:
-    # - name: test resource_group role
-    #   include_tasks:
-    #     file: tasks/resource_group.yml
-    #     apply:
-    #       tags:
-    #         - resource_group
-    #   tags:
-    #     - always
+    - name: test resource_group role
+      include_tasks:
+        file: tasks/resource_group.yml
+        apply:
+          tags:
+            - resource_group
+      tags:
+        - always
 
-    # - name: test networking_stack role
-    #   include_tasks:
-    #     file: tasks/networking_stack.yml
-    #     apply:
-    #       tags:
-    #         - networking_stack
-    #   tags:
-    #     - always
-        
-    # - name: test managed_postgresql role
-    #   include_tasks:
-    #     file: tasks/managed_postgresql.yml
-    #     apply:
-    #       tags:
-    #         - managed_postgresql
-    #   tags:
-    #     - always
+    - name: test networking_stack role
+      include_tasks:
+        file: tasks/networking_stack.yml
+        apply:
+          tags:
+            - networking_stack
+      tags:
+        - always
+
+    - name: test managed_postgresql role
+      include_tasks:
+        file: tasks/managed_postgresql.yml
+        apply:
+          tags:
+            - managed_postgresql
+      tags:
+        - always
 
     - name: test virtual_machine role
       include_tasks:
