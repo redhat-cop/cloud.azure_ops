@@ -1,0 +1,15 @@
+---
+- hosts: localhost
+  gather_facts: no
+  tasks:
+    - include_role: 
+        name: vm_migrate
+      vars:
+        src_name: srcvm2
+        src_region: canadacentral
+        src_rg_name: akasurde_test_arm_vscode
+        dst_region: eastus2
+        dst_rg_name: akasurde_dest_rg
+        dst_public_ip: akasurde_dest_pip_1
+        dst_net_int: akasurde_dst_net_int_1
+        app_domain_name: app1

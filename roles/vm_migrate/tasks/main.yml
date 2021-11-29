@@ -1,0 +1,114 @@
+---
+- name: Gather information about Source VM
+  azure_rm_virtualmachine_info:
+    resource_group: "{{ src_rg_name }}"
+    name: "{{ src_name }}"
+  register: src_vm_info
+  ignore_errors: true
+
+- fail:
+    msg: "Failed to find source VM {{ src_name }}"
+  when: src_vm_info.failed
+
+- debug:
+    msg: "{{ src_vm_info }}"
+
+- name: Create destination resource group
+  azure_rm_resourcegroup:
+    name: "{{ dst_rg_name }}"
+    location: "{{ dst_region }}"
+
+- name: Gather information about the network interface from the source VM
+  azure_rm_networkinterface_info:
+    name: "{{ src_vm_info.vms[0].network_interface_names[0] }}"
+    resource_group: "{{ src_rg_name }}"
+  register: dst_nw_int_info
+
+- debug:
+    msg: "{{ dst_nw_int_info }}"
+
+- name: Set destination virtual network name
+  set_fact:
+    dst_vnet_name: "{{ dst_nw_int_info.networkinterfaces[0].virtual_network.name }}"
+
+- name: Gather information about the source virtual network
+  azure_rm_virtualnetwork_info:
+    resource_group: "{{ src_rg_name }}"
+    name: "{{ dst_vnet_name }}"
+  register: dst_vnet_info
+
+- debug:
+    msg: "{{ dst_vnet_info }}"
+
+- set_fact:
+    dst_subnet_name: "{{ dst_vnet_info.virtualnetworks[0].subnets[0].name }}"
+    dst_subnet_prefix: "{{ dst_vnet_info.virtualnetworks[0].subnets[0].address_prefix }}"
+
+- name: Create destination virtual network
+  azure_rm_virtualnetwork:
+    resource_group: "{{ dst_rg_name }}"
+    name: "{{ dst_vnet_name }}"
+    address_prefixes_cidr: "{{ dst_vnet_info.virtualnetworks[0].address_prefixes }}"
+
+- name: Create destination subnet
+  azure_rm_subnet:
+    resource_group: "{{ dst_rg_name }}"
+    virtual_network_name: "{{ dst_vnet_name }}"
+    name: "{{ dst_subnet_name }}"
+    address_prefix_cidr: "{{ dst_subnet_prefix }}"
+
+- name: Create a public IP address
+  azure_rm_publicipaddress:
+    resource_group: "{{ dst_rg_name }}"
+    name: "{{ dst_public_ip }}"
+    allocation_method: static
+    domain_name: "{{ app_domain_name }}"
+
+- name: Get network security group
+  set_fact:
+    dst_security_group: "{{ dst_nw_int_info.networkinterfaces[0].security_group.split('/')[-1] }}"
+
+- name: Gather information about the network security group associate with the network interface
+  azure_rm_securitygroup_info:
+    name: "{{ dst_security_group }}"
+    resource_group: "{{ src_rg_name }}"
+  register: dst_sg_info
+
+- debug:
+    msg: "{{ dst_sg_info }}"
+
+- name: Create a list of security rules 
+  set_fact:
+    dst_security_group_rules: "{{ dst_security_group_rules | default([]) + [{ 'name': item.name, 'protocol': item.properties.protocol, 'direction': item.properties.direction, 'access': item.properties.access, 'priority': item.properties.priority, 'destination_port_range': item.properties.destinationPortRange,  }] }}"
+  loop: "{{ dst_sg_info.securitygroups[0].properties.defaultSecurityRules }}"
+
+- debug:
+    msg: "{{ dst_security_group_rules }}"
+
+- name: Create a network security group
+  azure_rm_securitygroup:
+    resource_group: "{{ dst_rg_name }}"
+    name: "{{ dst_security_group }}"
+    default_rules: "{{ dst_security_group_rules }}"
+
+- name: Create a network interface using existing security group and public IP
+  azure_rm_networkinterface:
+    name: "{{ dst_net_int }}"
+    resource_group: "{{ dst_rg_name }}"
+    virtual_network: "{{ dst_vnet_name }}"
+    subnet_name: "{{ dst_subnet_name }}"
+    security_group: "{{ dst_security_group }}"
+    ip_configurations:
+      - name: "{{ src_name }}_ipconfig1"
+        public_ip_address_name: "{{ dst_public_ip }}"
+        primary: True
+
+- name: Create a destination VM
+  azure_rm_virtualmachine:
+    name: "{{ src_name }}"
+    resource_group: "{{ dst_rg_name }}"
+    vm_size: "{{ src_vm_info.vms[0].vm_size }}"
+    admin_username: "azureadmin"
+    admin_password: "Pas5w0rd!"
+    image: "{{ src_vm_info.vms[0].image }}"
+    network_interfaces: "{{ dst_net_int }}"
