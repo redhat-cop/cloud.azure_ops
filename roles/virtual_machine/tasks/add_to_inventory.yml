@@ -23,14 +23,15 @@
     name: "{{ vm_info.vms[0].tags._own_pip_ }}"
   register: pip_info
 
-- fail:
+- name: Fail if VM does not have public ip
+  fail:
     msg: Unable to find VM's public ip address
   when:
     - pip_info.publicipaddresses | length == 0
 
 - name: Add VM to Inventory
-  add_host: 
-    name: "{{ pip_info.publicipaddresses[0].ip_address }}" 
+  add_host:
+    name: "{{ pip_info.publicipaddresses[0].ip_address }}"
     groups: "{{ azure_vm_group }}"
     ansible_ssh_user: "{{ azure_vm_admin_username }}"
     ansible_ssh_pass: "{{ azure_vm_admin_password }}"

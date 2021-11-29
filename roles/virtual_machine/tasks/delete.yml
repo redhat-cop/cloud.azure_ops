@@ -9,9 +9,10 @@
     name: "{{ azure_resource_group }}"
   register: result
 
-- fail:
+- name: Fail when resource group doesn't exist
+  fail:
     msg: 'Resource group {{ azure_resource_group }} does not exist.'
-  when: result.resourcegroups | length == 0  
+  when: result.resourcegroups | length == 0
 
 - name: Delete Virtual Machine and specified associated resources
   azure_rm_virtualmachine:
