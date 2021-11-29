@@ -100,7 +100,7 @@
         - name: Assert that network interfaces were successfully deleted
           assert:
             that:
-              - nics_info.networkinterfaces | length == 0            
+              - nics_info.networkinterfaces | length == 0
 
     - name: Test creating network interface w/ load balancer
       block:
@@ -130,7 +130,7 @@
               - nics_info.networkinterfaces[0].ip_configurations[0].load_balancer_backend_address_pools is not none
 
     - name: Test updating network interface to remove load balancer
-      block:            
+      block:
         - name: Update NICs
           include_role:
             name: network_interface

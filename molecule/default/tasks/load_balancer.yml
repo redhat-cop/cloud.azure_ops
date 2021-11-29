@@ -153,7 +153,24 @@
             that:
               - lb_info.ansible_info.azure_loadbalancers | length == 1
               - "{{ lb_info.ansible_info.azure_loadbalancers[0].properties.backendAddressPools[0].properties.backendIPConfigurations | length == ( azure_lb_network_interface_instances | length ) }}"
-    
+
+        - name: Test deleting NIC when attached to LB
+          include_role:
+            name: network_interface
+          vars:
+            operation: 'delete'
+            azure_network_interface_name: "{{ resource_group }}-nic1"
+
+        - name: Assert that NIC was deleted
+          azure_rm_networkinterface_info:
+            resource_group: '{{ azure_resource_group }}'
+            name: "{{ resource_group }}-nic1"
+          register: nic_info
+
+        - assert:
+            that:
+              - nic_info.networkinterfaces | length == 0
+
   always:
     - name: Delete resource group
       azure_rm_resourcegroup:

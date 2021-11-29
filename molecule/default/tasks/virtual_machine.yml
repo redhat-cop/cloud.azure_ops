@@ -120,7 +120,7 @@
           include_role:
             name: virtual_machine
           vars:
-            operation: 'power_off'   
+            operation: 'power_off'
 
         - name: Assert that VM was successfully powered off
           azure_rm_virtualmachine_info:
@@ -150,7 +150,7 @@
           include_role:
             name: virtual_machine
           vars:
-            operation: 'restart'     
+            operation: 'restart'
 
         - name: Assert that VM was successfully restarted
           azure_rm_virtualmachine_info:

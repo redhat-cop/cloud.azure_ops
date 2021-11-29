@@ -1,11 +1,13 @@
 ---
-- fail:
+- name: Ensure vnet is specified
+  fail:
     msg: 'Azure virtual network must be specified as azure_virtual_network when creating/updating network interface'
   when: azure_virtual_network is undefined
 
-- fail:
+- name: Ensure subnet is specified
+  fail:
     msg: 'Azure subnet must be specified as azure_subnet when creating/updating network interface'
-  when: azure_subnet is undefined  
+  when: azure_subnet is undefined
 
 - name: Check Resource Group Exists
   azure_rm_resourcegroup_info:
@@ -43,13 +45,13 @@
   when: azure_security_group_name is defined
 
 # Assert NIC is created and attached to lb specified if specified
-- name: Create/update network interface and attach to load balancer 
+- name: Create/update network interface and attach to load balancer
   block:
     - name: Get load balancer info
       azure_rm_loadbalancer_info:
         name: "{{ azure_lb_name }}"
         resource_group: "{{ azure_resource_group }}"
-      register: lb_info      
+      register: lb_info
 
     - block:
         - name: Create load balancer
@@ -65,7 +67,8 @@
       when:
         - lb_info.ansible_info.azure_loadbalancers | length == 0
 
-    - set_fact:
+    - name: Get lb info
+      set_fact:
         lb_info: "{{ new_lb_info }}"
       when:
         - new_lb_info.skipped is not defined
