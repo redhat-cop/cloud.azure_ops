@@ -42,6 +42,10 @@ Role Variables
 * **azure_vnet_address_prefixes_cidr** - List of IPv4 address ranges for virtual network where each is formatted using CIDR notation. Required when **azure_virtual_network** does not yet exist.
 * **azure_subnet_address_prefixes_cidr** - CIDR defining the IPv4 and IPv6 address space of the subnet. Must be valid within the context of the virtual network. Required when **azure_subnet** does not yet exist.
 
+Limitations
+------------
+
+- Cannot 'remove' any ip configurations, backend pools, probes, or rules from a load balancer. Instead, `tasks/create.yml` needs to be used to update the load balancer with the desired state.
 
 Dependencies
 ------------
@@ -66,10 +70,10 @@ Example Playbook
           azure_subnet: "rg-subnet-00"
           azure_vnet_address_prefixes_cidr:
             - 10.16.0.0/16
-          azure_subnet_address_prefixes_cidr: 10.16.0.0/24    
+          azure_subnet_address_prefixes_cidr: 10.16.0.0/24
           azure_tags:
             tag0: "tag0"
-            tag1: "tag1" 
+            tag1: "tag1"
 
 License
 -------

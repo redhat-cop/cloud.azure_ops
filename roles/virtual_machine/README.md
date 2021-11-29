@@ -35,6 +35,10 @@ Role Variables
   - **storage_blob_name**: Name of storage blob used to hold the OS disk image of the VM.
   - **storage_container_name**: Name of the container to use within the storage account to store VHD blobs. Default is 'vhds'
 
+Limitations
+------------
+
+- In order to add a VM to an inventory via `tasks/add_to_inventory.yml`, the VM's associated NIC must have a public ip address.
 
 Dependencies
 ------------
