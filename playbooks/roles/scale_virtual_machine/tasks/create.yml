@@ -1,0 +1,126 @@
+# Create Azure ResourceGroup
+- name: Create resource group
+  include_role:
+    name: resource_group
+
+# Create a security group to restrict access to my VMs except within the VPC
+- name: Create Network security Group
+  azure_rm_securitygroup:
+    resource_group: "{{ azure_resource_group }}"
+    name: "{{ azure_security_group }}"
+    rules:
+      - name: SSH
+        destination_port_range: 22
+        access: Allow
+        priority: 130
+        direction: Inbound
+      - name: Flask
+        destination_port_range: 5000
+        access: Allow
+        priority: 150
+        direction: Inbound
+
+# Create a virtual network
+- name: Create the networking stack
+  include_role:
+    name: networking_stack
+
+# Create a public IP address for the load balancer
+- name: Create a public ip address for the load balancer
+  azure_rm_publicipaddress:
+    resource_group: "{{ azure_resource_group }}"
+    allocation_method: static
+    name: "{{ azure_load_balancer.public_ip_name }}"
+    sku: Basic
+  register: public_ip
+
+- name: Define load balancer ip address
+  set_fact:
+    load_balancer_public_ip: "{{ public_ip.state.ip_address }}"
+
+# Deploy Load Balancer that provides public internet access to application routing back to app servers
+- name: Create load Balancer
+  azure_rm_loadbalancer:
+    resource_group: "{{ azure_resource_group }}"
+    name: "{{ azure_load_balancer.name }}"
+    sku: Basic
+    frontend_ip_configurations:
+      - name: frontend
+        public_ip_address: "{{ azure_load_balancer.public_ip_name }}"
+    backend_address_pools:
+      - name: '{{ azure_load_balancer.backend_address_pool }}'
+    probes:
+      - name: ping_server
+        port: 5000
+        protocol: Http
+        request_path: "/"
+    load_balancing_rules:
+      - name: flask
+        frontend_ip_configuration: frontend
+        backend_address_pool: '{{ azure_load_balancer.backend_address_pool }}'
+        protocol: Tcp
+        frontend_port: 5000
+        backend_port: 5000
+        probe: ping_server
+  register: load_balancer
+
+# Create Bastion Host
+- include_tasks: tasks/create_bastion.yml
+
+# Create VM Scale Set
+- name: Create Virtual machine scale set
+  azure_rm_virtualmachinescaleset:
+    resource_group: "{{ azure_resource_group }}"
+    name: "{{ azure_vm_name }}ss"
+    vm_size: "{{ azure_vm_size }}"
+    capacity: "{{ azure_number_vm }}"
+    tier: "{{ azure_vm_size | regex_search('(Standard|Basic)_*', '\\1') | first }}"
+    upgrade_policy: Manual
+    admin_username: "{{ azure_vm_user }}"
+    admin_password: "{{ azure_vm_user_password }}"
+    ssh_password_enabled: true
+    image: "{{ azure_vm_image }}"
+    os_type: Linux
+    managed_disk_type: Standard_LRS
+    virtual_network_resource_group: "{{ azure_resource_group }}"
+    virtual_network_name: "{{ azure_virtual_network }}"
+    subnet_name: "{{ azure_subnet }}"
+    public_ip_per_vm: False
+    load_balancer: "{{ azure_load_balancer.name }}"
+    security_group: "{{ azure_security_group }}"
+    scale_in_policy: Default
+
+- name: Get virtual machine scale set instance info
+  azure_rm_virtualmachinescalesetinstance_info:
+    resource_group: "{{ azure_resource_group }}"
+    vmss_name: "{{ azure_vm_name }}ss"
+  register: result
+
+- name: Init vm instance list
+  set_fact:
+    vm_instances: []
+
+- name: add host to vm instances list
+  include_tasks: tasks/add_host.yml
+  with_items: "{{ result.instances }}"
+
+- name: Init join_instances
+  set_fact:
+    join_instances: []
+
+- name: Update join_instances
+  set_fact:
+    join_instances: "{{ join_instances + [ item.name + ':' + item.host ] }}"
+  with_items: "{{ vm_instances }}"
+
+- name: add bastion host to inventory
+  ansible.builtin.add_host:
+    hostname: bastion
+    ansible_ssh_user: "{{ azure_vm_user }}"
+    ansible_ssh_pass: "{{ azure_vm_user_password }}"
+    ansible_sudo_pass: "{{ azure_vm_user_password }}"
+    ansible_host: "{{ bastion_public_ip }}"
+    ansible_ssh_common_args: -o "UserKnownHostsFile=/dev/null" -o StrictHostKeyChecking=no
+    workers: "{{ vm_instances }}"
+    workers_join: "{{ join_instances | join(',') }}"
+    azure_resource_group: "{{ azure_resource_group }}"

@@ -16,7 +16,7 @@
 
   - name: Create application infrastructure
     import_role:
-      name: azure-setup
+      name: scale_virtual_machine
 
   - block:
     - name: Retrieve PostgreSQL Server info
@@ -38,6 +38,10 @@
 
   vars:
     ansible_venv_path: "~/venv"
+    application_data: "/tmp/controller"
+    application_image: "controller-image"
+    application_container: "controller-container"
+    application_config: "/tmp/controller/config.txt"
 
   vars_files:
   - vars/main.yml
@@ -84,7 +88,7 @@
 
   - name: Create inventory file
     template:
-      src: workers-inventory.j2
+      src: workers.j2
       dest: "{{ ansible_venv_path }}/playbook/inventory.yaml"
 
   - name: Create vars file
@@ -97,17 +101,13 @@
       src: deploy-app.yml
       dest: "{{ ansible_venv_path }}/playbook/play.yaml"
 
-  # - name: Copy tasks file
-  #   copy:
-  #     src: docker-setup.yml
-  #     dest: "{{ ansible_venv_path }}/playbook/tasks/"
   - name: Git clone ensure-docker role
     git:
       repo: "https://opendev.org/zuul/zuul-jobs.git"
       dest: "{{ ansible_venv_path }}/playbook/zuul-jobs"
 
   - name: Deploy application
-    shell: "source {{ ansible_venv_path }}/bin/activate; ansible-playbook play.yaml -i inventory.yaml -e '@vars.yaml' -v"
+    shell: "source {{ ansible_venv_path }}/bin/activate; ansible-playbook play.yaml -i inventory.yaml -e '@vars.yaml' -v -f {{ playbook_number_forks }}"
     environment:
       ANSIBLE_ROLES_PATH: "{{ ansible_venv_path }}/playbook/zuul-jobs/roles"
     args:

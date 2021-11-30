@@ -1,7 +1,8 @@
 ---
 - name: Configure workers
-  hosts: workers
+  hosts: all
   gather_facts: yes
+  strategy: free
 
   vars:
     app_data: "/tmp/demo"
@@ -53,6 +54,7 @@
       -e ADMIN_USER="{{ admin_user }}"
       -e ADMIN_PASSWORD="{{ admin_password }}"
       -e WORKER_HOSTNAME="{{ inventory_hostname }}"
+      -e WORKERS_HOSTS="{{ workers_hosts }}"
       {{ docker_image }} flask {{ app_force_init | bool | ternary('force-init-db', 'init-db') }}
     run_once: yes
 
@@ -75,5 +77,6 @@
         -e ADMIN_USER="{{ admin_user }}"
         -e ADMIN_PASSWORD="{{ admin_password }}"
         -e WORKER_HOSTNAME="{{ inventory_hostname }}"
+        -e WORKERS_HOSTS="{{ workers_hosts }}"
         -p 5000:5000 --name {{ docker_container_name }}
         -d {{ docker_image }}

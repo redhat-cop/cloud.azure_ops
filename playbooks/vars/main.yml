@@ -7,6 +7,7 @@ azure_vm_image:
   publisher: RedHat
   sku: '7-LVM'
   version: latest
+azure_vm_size: "Standard_A2"
 azure_number_vm: 3
 
 # PostgreSQL Server variables
@@ -34,3 +35,5 @@ py_application:
 application_force_init: false
 
 application_src: "https://github.com/abikouo/webapp_pyflask_demo.git"
+
+playbook_number_forks: 15

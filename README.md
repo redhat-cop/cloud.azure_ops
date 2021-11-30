@@ -25,7 +25,7 @@ Name | Description
 ### Playbooks
 Name | Description
 --- | ---
-cloud.azure_roles.webapp_demo|A playbook to create a webapp on Azure.
+cloud.azure_roles.webapp|A playbook to create a webapp on Azure.
 <!--end collection content-->
 
 ## Installation and Usage
