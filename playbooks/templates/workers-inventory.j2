@@ -1,4 +1,0 @@
-[workers]
-{% for private_ip in workers %}
-{{ private_ip }} ansible_ssh_user="{{ azure_vm_user }}" ansible_ssh_pass="{{ azure_vm_user_password }}" ansible_sudo_pass="{{ azure_vm_user_password }}"  ansible_ssh_common_args='-o "UserKnownHostsFile=/dev/null" -o StrictHostKeyChecking=no' ansible_host="{{ private_ip }}"
-{% endfor %}

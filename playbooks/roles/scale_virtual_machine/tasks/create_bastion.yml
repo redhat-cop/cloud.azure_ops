@@ -1,0 +1,44 @@
+---
+- name: Define Bastion facts
+  set_fact:
+    bastion_public_ip_name: "{{ azure_vm_name }}bastion-ip"
+    bastion_nic_name: "{{ azure_vm_name }}bastion-nic"
+
+- name: Create public ip for Bastion VM
+  azure_rm_publicipaddress:
+    resource_group: "{{ azure_resource_group }}"
+    allocation_method: static
+    name: "{{ bastion_public_ip_name }}"
+    sku: Basic
+  register: public_ip
+
+- set_fact:
+    bastion_public_ip: "{{ public_ip.state.ip_address }}"
+
+- name: Create network interface for Bastion host
+  azure_rm_networkinterface:
+    resource_group: "{{ azure_resource_group }}"
+    name: "{{ bastion_nic_name }}"
+    virtual_network: "{{ azure_virtual_network }}"
+    subnet_name: "{{ azure_subnet }}"
+    security_group: "{{ azure_security_group }}"
+    ip_configurations:
+      - name: public_ip
+        public_ip_address_name: "{{ bastion_public_ip_name }}"
+
+- name: Create virtual machine
+  azure_rm_virtualmachine:
+    resource_group: "{{ azure_resource_group }}"
+    name: "{{ azure_vm_name }}bastion"
+    admin_username: "{{ azure_vm_user }}"
+    admin_password: "{{ azure_vm_user_password }}"
+    image: "{{ azure_vm_image }}"
+    vm_size: Standard_DS4_v2
+    ssh_password_enabled: yes
+    managed_disk_type: Standard_LRS
+    os_type: Linux
+    virtual_network_name: "{{ azure_virtual_network }}"
+    subnet_name: "{{ azure_subnet }}"
+    network_interface_names:
+      - resource_group: "{{ azure_resource_group }}"
+        name: "{{ bastion_nic_name }}"
