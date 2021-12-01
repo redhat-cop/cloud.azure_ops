@@ -1,0 +1,22 @@
+---
+# Azure resource group
+azure_resource_group: 'webapp-wus-ss-01'
+
+# PostgreSQL Server variables
+azure_postgresql_name: "{{ azure_resource_group }}-dbserver"
+azure_postgresql_admin_username: "ansible"
+azure_postgresql_admin_password: "4fB5In3ueO7,"
+azure_postgresql_database_instances:
+  - name: pyapp
+    charset: UTF8
+
+# Application variables
+azure_app_src: "https://github.com/abikouo/webapp_pyflask_demo.git"
+py_application:
+  env: "development"
+  admin_user: "admin"
+  admin_password: "admin"
+  docker_image: "pywebapp"
+  docker_dir: "/app/pyapp"
+  data_dir: "/tmp/myapp_data"
+  container_name: "myapp-container"

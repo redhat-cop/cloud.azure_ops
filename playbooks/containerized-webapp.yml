@@ -1,0 +1,108 @@
+- name: Deploy existing python app to an aks cluster on azure
+  hosts: localhost
+  gather_facts: no
+
+  collections:
+  - cloud.azure_roles
+  - azure.azcollection
+
+  vars_files:
+  - vars/containerized-webapp.yml
+
+  tasks:
+  - name: Ensure resource group is defined
+    fail:
+      msg: "Azure Resource group must be defined as azure_resource_group"
+    when: azure_resource_group is not defined
+
+  - name: Ensure pgsql server name is defined
+    fail:
+      msg: 'Azure PostgreSQL server name must be defined as azure_postgresql_name'
+    when: azure_postgresql_name is not defined
+
+  - name: Ensure pgsql admin username is defined
+    fail:
+      msg: 'Azure PostgreSQL admin username must be defined as azure_postgresql_admin_username'
+    when: azure_postgresql_admin_username is not defined
+
+  - name: Ensure pgsql admin password is defined
+    fail:
+      msg: 'Azure PostgreSQL admin password must be defined as azure_postgresql_admin_password'
+    when: azure_postgresql_admin_password is not defined
+
+  - name: Get pgsql info
+    azure_rm_postgresqlserver_info:
+      resource_group: '{{ azure_resource_group }}'
+      name: '{{ azure_postgresql_name }}'
+    register: psql_info
+
+  - name: Ensure PostgreSQL server exists
+    fail:
+      msg: 'No PostgreSQL instance found in resource group'
+    when: psql_info.servers | length == 0
+
+  # - name: Create an azure container registry
+  #   azure_rm_containerregistry:
+  #     name: '{{ azure_container_registry }}'
+  #     resource_group: '{{ azure_resource_group }}'
+  #     admin_user_enabled: yes
+  #   register: cr
+
+  # - name: Git clone application
+  #   git:
+  #     repo: "{{ application_src }}"
+  #     dest: "{{ app_data }}"
+  #     force: yes
+
+  # - name: Docker login
+  #   command:
+  #     cmd: "docker login {{ azure_container_registry }}.azurecr.io --username {{ azure_container_registry }} --password {{ cr.credentials.password }}"
+
+  # - name: Create Docker image
+  #   command:
+  #     cmd: "docker build -t {{ docker_image }} {{ app_data }}"
+
+  # - name: Tag Docker image
+  #   command:
+  #     cmd: "docker tag {{ docker_image }} {{ azure_container_registry }}.azurecr.io/{{ docker_image }}:latest"
+
+  # - name: Push Docker image
+  #   command:
+  #     cmd: "docker push {{ azure_container_registry }}.azurecr.io/{{ docker_image }}:latest"
+
+  - name: Create container group
+    azure_rm_containerinstance:
+      resource_group: '{{ azure_resource_group }}'
+      name: '{{ azure_resource_group }}-container-group'
+      os_type: linux
+      ip_address: public
+      containers:
+        - name: mycontainer1
+          image: 'quay.io/jtorcass/{{ py_application.docker_image }}'
+          memory: 1
+          volume_mounts:
+            - name: src
+              mount_path: "/mnt/src"
+          ports:
+            - 5000
+          environment_variables:
+            - name: FLASK_APP
+              value: '{{ py_application.docker_dir }}'
+            - name: FLASK_ENV
+              value: '{{ py_application }}'
+            - name: DATABASE_HOST
+              value: '{{ azure_postgresql_name }}'
+            - name: DATABASE_INSTANCE
+              value: '{{ azure_postgresql_database_instances[0].name }}'
+            - name: DATABASE_USER
+              value: '{{ azure_postgresql_admin_username }}'
+            - name: DATABASE_PASSWORD
+              value: '{{ azure_postgresql_admin_password }}'
+            - name: ADMIN_USER
+              value: '{{ py_application.admin_user }}'
+            - name: ADMIN_PASSWORD
+              value: '{{ py_application.admin_password }}'
+      volumes:
+        - name: src
+          git_repo:
+            repository: "{{ azure_app_src }}"
