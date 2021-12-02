@@ -1,0 +1,12 @@
+---
+- name: Assert resource group '{{ azure_resource_group }}' exists
+  fail:
+    msg: "Resource group '{{ azure_resource_group }}' does not exist."
+  when:
+    - rg_info.resourcegroups | length == 0
+
+- name: Delete load balancer
+  azure_rm_loadbalancer:
+    resource_group: "{{ azure_resource_group }}"
+    name: "{{ azure_lb_name }}"
+    state: absent
