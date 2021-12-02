@@ -1,0 +1,26 @@
+---
+- name: Check state validation
+  fail:
+    msg: "Please provide state as 'present' or 'absent'"
+  when: state not in ['present', 'absent']
+
+- name: Check resource group name
+  fail:
+    msg: "Azure Resource group name must be defined as azure_resource_group"
+  when: azure_resource_group is not defined
+
+- name: Check security group name
+  fail:
+    msg: "Azure security group name must be defined as azure_security_group"
+  when: azure_security_group is not defined
+
+- name: Get resource group info
+  azure_rm_resourcegroup_info:
+    name: "{{ azure_resource_group }}"
+  register: rg_info
+
+- include_tasks: create.yml
+  when: state == 'present'
+
+- include_tasks: delete.yml
+  when: state == 'absent'

@@ -1,0 +1,5 @@
+- name: Delete resource group
+  include_role:
+    name: resource_group
+  vars:
+    azure_force_delete_nonempty: yes

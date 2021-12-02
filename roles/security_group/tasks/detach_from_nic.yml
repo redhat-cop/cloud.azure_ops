@@ -1,0 +1,64 @@
+---
+- name: Get nic resource
+  azure_rm_resource_info:
+    url: "{{ nic_id['id'] }}"
+  register: nic_obj
+
+- name: Extract NIC name from resource
+  set_fact:
+    nic_name: "{{ nic_obj.response[0].name }}"
+
+- name: Get NIC info
+  azure_rm_networkinterface_info:
+    resource_group: "{{ azure_resource_group }}"
+    name: "{{ nic_name }}"
+  register: nic_result
+
+- set_fact:
+    nic: "{{ nic_result.networkinterfaces[0] }}"
+    params_to_exclude:
+      - security_group
+      - dns_settings
+      - id
+      - mac_address
+      - provisioning_state
+
+- name: Remove unsupported params from dictionary
+  set_fact:
+    nic: "{{ nic | dict2items | rejectattr('key', 'search', param_to_exclude) | list | items2dict }}"
+  with_items: "{{ params_to_exclude }}"
+  loop_control:
+    loop_var: param_to_exclude
+
+### Only works for 1 ip configuration. If we want to keep this we can just loop ip configs, but didnt want to spend too much time here.
+- name: Remove ip_configurations from dict
+  set_fact:
+    ipconf: "{{ nic['ip_configurations'][0] }}"
+    nic: "{{ nic | dict2items | rejectattr('key', 'search', 'ip_configurations') | list | items2dict }}"
+
+- name: Remove null params
+  set_fact:
+    ipconf: "{{ ipconf | dict2items | rejectattr('key', 'search', item.key) | list | items2dict }}"
+  with_dict: "{{ ipconf }}"
+  when: item.value is none
+
+### TODO: Rest of this is converting the public_ip_address parameter to public_ip_address_name, because the module requires the name, not ID of the resource.
+### Has to be a better way to do this
+- name: Get public ip address name from id
+  set_fact:
+    pip_name: "{{ ipconf['public_ip_address'] | regex_search('[^/]+$') }}"
+
+- name: Remove invalid parameter name
+  set_fact:
+    ipconf: "{{ ipconf | dict2items | rejectattr('key', 'search', 'public_ip_address') | list | items2dict }}"
+
+- name: Update to correct ip param name
+  set_fact:
+    ipconf: "{{ ipconf | combine({ 'public_ip_address_name': pip_name }) }}"
+
+- name: Ensure default security group disabled
+  set_fact:
+    nic: "{{ nic | combine({ 'ip_configurations': [ ipconf ] }) | combine({ 'create_with_security_group': false }) }}"
+
+- name: Update NIC to detach from security group
+  azure_rm_networkinterface: "{{ nic }}"

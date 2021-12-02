@@ -57,3 +57,12 @@
             - load_balancer
       tags:
         - always
+
+    - name: test security_group role
+      include_tasks:
+        file: tasks/security_group.yml
+        apply:
+          tags:
+            - security_group
+      tags:
+        - always

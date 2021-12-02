@@ -1,0 +1,24 @@
+---
+namespace: cloud
+name: azure_roles
+version: 0.1.0
+authors:
+  - Ansible (https://github.com/ansible)
+description: A collection of content (roles, playbooks, etc) for Ansible Automation Platform on Azure.
+documentation: ''
+homepage: https://github.com/ansible-collections/cloud.azure_roles
+issues: https://github.com/ansible-collections/cloud.azure_roles/issues
+license_file: LICENSE
+readme: README.md
+repository: https://github.com/ansible-collections/cloud.azure_roles
+tags:
+  - cloud
+  - azure
+  - infrastructure
+dependencies:
+  azure.azcollection: '*'
+build_ignore:
+  - '.tox'
+  - '.git'
+  - '.github'
+  - '.gitignore'

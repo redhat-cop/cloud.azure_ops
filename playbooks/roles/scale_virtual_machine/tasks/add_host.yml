@@ -1,0 +1,26 @@
+---
+- name: Update vm instances list
+  block:
+    # Get Virtual machine info
+    - name: Get Virtual machine resource info
+      azure_rm_resource_info:
+        url: "{{ item.id }}"
+      register: vm_info
+
+    # Get Network interface info
+    - name: Get network interface resource info
+      azure_rm_resource_info:
+        url: "{{ vm_nic }}"
+      register: nic_info
+      vars:
+        vm_nic: "{{ vm_info.response.0.properties.networkProfile.networkInterfaces.0.id }}"
+
+    - name: Update VM list
+      set_fact:
+        vm_instances: "{{ vm_instances + [ host_info ] }}"
+      vars:
+        host_info:
+          host: "{{ nic_info.response.0.properties.ipConfigurations.0.properties.privateIPAddress }}"
+          name: "{{ item.computer_name }}"
+
+  when: vm_instances is defined

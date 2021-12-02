@@ -1,0 +1,263 @@
+---
+- name: Define variables
+  set_fact:
+    azure_resource_group: "sg-{{ lookup('password', '/dev/null chars=ascii_lowercase,digits length=6') }}"
+    azure_tags:
+      cloud.azure_roles: security_group
+    azure_region: "canadacentral"
+
+- name: Test security_group role
+  block:
+    - name: Test invalid creation of security group
+      block:
+        - name: Attempt to create security group without name (should fail)
+          include_role:
+            name: security_group
+
+        - name: Assert security group did not get created
+          azure_rm_securitygroup_info:
+            resource_group: "{{ azure_resource_group }}"
+          register: sg_info
+          ignore_errors: no
+
+        - assert:
+            that:
+              - sg_info.securitygroups | length == 0
+          ignore_errors: no
+      ignore_errors: yes
+
+    - name: Test valid creation of security group
+      block:
+        - name: Specify vars
+          set_fact:
+            azure_security_group: "{{ azure_resource_group }}-sg"
+
+        - name: Create security group
+          include_role:
+            name: security_group
+
+        - name: Assert security group successfully was created
+          azure_rm_securitygroup_info:
+            resource_group: "{{ azure_resource_group }}"
+            name: "{{ azure_security_group }}"
+          register: sg_info
+
+        - assert:
+            that:
+              - sg_info.securitygroups | length == 1
+
+        - name: Get resource group info
+          azure_rm_resourcegroup_info:
+            name: '{{ azure_resource_group }}'
+          register: rg
+
+        - name: Assert that resource group exists
+          assert:
+            that:
+              - rg.resourcegroups | length == 1
+
+        - name: Specify vars
+          set_fact:
+            azure_security_group_rules:
+              - name: 'allow_ssh'
+                protocol: Tcp
+                destination_port_range:
+                  - 22
+                access: Allow
+                priority: 100
+                direction: Inbound
+              - name: 'allow_web_traffic'
+                protocol: Tcp
+                destination_port_range:
+                  - 80
+                  - 443
+                access: Allow
+                priority: 101
+                direction: Inbound
+
+        - name: Update security group with rules
+          include_role:
+            name: security_group
+
+        - name: Get security group info
+          azure_rm_securitygroup_info:
+            resource_group: "{{ azure_resource_group }}"
+            name: "{{ azure_security_group }}"
+          register: sg_rules
+
+        - name: Assert 2 user rules exist
+          assert:
+            that:
+              - sg_rules.securitygroups[0].properties.securityRules | length == 2
+
+        - name: Create VNet
+          azure_rm_virtualnetwork:
+            resource_group: "{{ azure_resource_group }}"
+            name: "{{ azure_resource_group }}-vnet"
+            address_prefixes_cidr:
+              - "10.16.0.0/16"
+              - "172.100.0.0/16"
+
+        - name: Create Subnet
+          azure_rm_subnet:
+            resource_group: "{{ azure_resource_group }}"
+            name: "{{ azure_resource_group }}-subnet-00"
+            virtual_network_name: "{{ azure_resource_group }}-vnet"
+            address_prefix_cidr: "10.16.0.0/24"
+            security_group: "{{ azure_security_group }}"
+
+        - name: Create a public ip
+          azure_rm_publicipaddress:
+            resource_group: "{{ azure_resource_group }}"
+            name: "{{ azure_resource_group }}-pip"
+            sku: Standard
+            allocation_method: Static
+          register: ip
+
+        - name: Set ip
+          set_fact:
+            ip: "{{ ip.state.ip_address }}"
+
+        - name: Create another public ip
+          azure_rm_publicipaddress:
+            resource_group: "{{ azure_resource_group }}"
+            name: "{{ azure_resource_group }}-pip2"
+            sku: Standard
+            allocation_method: Static
+
+        - name: Create Network Interface
+          azure_rm_networkinterface:
+            resource_group: "{{ azure_resource_group }}"
+            name: "{{ azure_resource_group }}-nic"
+            security_group: "{{ azure_security_group }}"
+            ip_configurations:
+              - name: ipconf0
+                public_ip_address_name: "{{ azure_resource_group }}-pip"
+            virtual_network: "{{ azure_resource_group }}-vnet"
+            subnet_name: "{{ azure_resource_group }}-subnet-00"
+
+        - name: Create Another Network Interface
+          azure_rm_networkinterface:
+            resource_group: "{{ azure_resource_group }}"
+            name: "{{ azure_resource_group }}-nic2"
+            security_group: "{{ azure_security_group }}"
+            ip_configurations:
+              - name: ipconf1
+                public_ip_address_name: "{{ azure_resource_group }}-pip2"
+            virtual_network: "{{ azure_resource_group }}-vnet"
+            subnet_name: "{{ azure_resource_group }}-subnet-00"
+
+        - name: Create a VM
+          azure_rm_virtualmachine:
+            resource_group: "{{ azure_resource_group }}"
+            name: "{{ azure_resource_group }}-vm"
+            network_interfaces: "{{ azure_resource_group }}-nic"
+            admin_username: 'testuser'
+            admin_password: '4fB5In3ueO7,'
+            image:
+              offer: RHEL
+              publisher: RedHat
+              sku: "7-LVM"
+              version: latest
+            vm_size: Standard_DS1_v2
+
+        - name: Get public ip info
+          azure_rm_networkinterface_info:
+            resource_group: "{{ azure_resource_group }}"
+            name: "{{ azure_resource_group }}-pip"
+          register: pip_info
+
+        - name: Test SSH access to VM
+          wait_for:
+            host: "{{ ip }}"
+            port: 22
+            timeout: 5
+
+        - name: Delete rule that allows ssh
+          set_fact:
+            azure_security_group_rules:
+              - name: 'allow_web_traffic'
+                protocol: Tcp
+                destination_port_range:
+                  - 80
+                  - 443
+                access: Allow
+                priority: 101
+                direction: Inbound
+            azure_security_group_purge_rules: yes
+
+        - name: Update security group
+          include_role:
+            name: security_group
+
+        - name: Get security group info
+          azure_rm_securitygroup_info:
+            resource_group: "{{ azure_resource_group }}"
+            name: "{{ azure_security_group }}"
+          register: sg_rules
+
+        - name: Assert rule was deleted
+          assert:
+            that:
+              - sg_rules.securitygroups[0].properties.securityRules | length == 1
+              - sg_rules.securitygroups[0].properties.securityRules[0].name == 'allow_web_traffic'
+
+    - name: Test deletion of security group
+      block:
+        - name: Specify vars
+          set_fact:
+            azure_security_group: "{{ azure_resource_group }}-sg"
+
+        - name: Get security group info
+          azure_rm_securitygroup_info:
+            resource_group: "{{ azure_resource_group }}"
+            name: "{{ azure_security_group }}"
+          register: sg_rules
+
+        - name: Assert security group exists
+          assert:
+            that:
+              - sg_rules.securitygroups | length == 1
+
+        - name: Delete security group & detach from any NICs or subnets
+          include_role:
+            name: security_group
+          vars:
+            state: "absent"
+
+        - name: Get security group info
+          azure_rm_securitygroup_info:
+            resource_group: "{{ azure_resource_group }}"
+            name: "{{ azure_security_group }}"
+          register: sg_rules
+
+        - name: Assert security group was deleted
+          assert:
+            that:
+              - sg_rules.securitygroups | length == 0
+
+        - name: Delete security group that does not exist
+          include_role:
+            name: security_group
+          vars:
+            state: "absent"
+
+        - name: Get security group info
+          azure_rm_securitygroup_info:
+            resource_group: "{{ azure_resource_group }}"
+            name: "{{ azure_security_group }}"
+          register: sg_rules
+
+        - name: Assert security group was deleted
+          assert:
+            that:
+              - sg_rules.securitygroups | length == 0
+
+
+  always:
+    - name: Delete resource group and all its content
+      azure_rm_resourcegroup:
+        name: "{{ azure_resource_group }}"
+        state: absent
+        force_delete_nonempty: yes
+      ignore_errors: yes

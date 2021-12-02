@@ -23,3 +23,4 @@
     virtual_network: "{{ azure_virtual_network }}"
     address_prefix_cidr: "{{ azure_subnet_address_prefixes_cidr }}"
     resource_group: "{{ azure_resource_group }}"
+    security_group: "{{ azure_security_group | default(omit) }}"
