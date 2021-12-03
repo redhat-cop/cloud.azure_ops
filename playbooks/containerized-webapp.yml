@@ -41,44 +41,43 @@
       msg: 'No PostgreSQL instance found in resource group'
     when: psql_info.servers | length == 0
 
-  # - name: Create an azure container registry
-  #   azure_rm_containerregistry:
-  #     name: '{{ azure_container_registry }}'
-  #     resource_group: '{{ azure_resource_group }}'
-  #     admin_user_enabled: yes
-  #   register: cr
+  - name: Create an azure container registry
+    azure_rm_containerregistry:
+      name: '{{ azure_container_registry }}'
+      resource_group: '{{ azure_resource_group }}'
+      admin_user_enabled: yes
+    register: cr
 
-  # - name: Git clone application
-  #   git:
-  #     repo: "{{ application_src }}"
-  #     dest: "{{ app_data }}"
-  #     force: yes
+  - name: Git clone application
+    git:
+      repo: "{{ azure_app.src_repo }}"
+      dest: "{{ azure_app.src_dest }}"
 
-  # - name: Docker login
-  #   command:
-  #     cmd: "docker login {{ azure_container_registry }}.azurecr.io --username {{ azure_container_registry }} --password {{ cr.credentials.password }}"
+  - name: Podman login to Azure container registry
+    containers.podman.podman_login:
+      registry: "{{ azure_container_registry }}.azurecr.io"
+      username: "{{ azure_container_registry }}"
+      password: "{{ cr.credentials.password }}"
 
-  # - name: Create Docker image
-  #   command:
-  #     cmd: "docker build -t {{ docker_image }} {{ app_data }}"
-
-  # - name: Tag Docker image
-  #   command:
-  #     cmd: "docker tag {{ docker_image }} {{ azure_container_registry }}.azurecr.io/{{ docker_image }}:latest"
-
-  # - name: Push Docker image
-  #   command:
-  #     cmd: "docker push {{ azure_container_registry }}.azurecr.io/{{ docker_image }}:latest"
+  - name: Podman build and push image to Azure container registry
+    containers.podman.podman_image:
+      path: "{{ azure_app.src_dest }}"
+      name: "{{ azure_container_registry }}.azurecr.io/{{ azure_app.docker_image }}:latest"
+      push: yes
 
   - name: Create container group
     azure_rm_containerinstance:
       resource_group: '{{ azure_resource_group }}'
       name: '{{ azure_resource_group }}-container-group'
+      force_update: yes
       os_type: linux
       ip_address: public
+      registry_login_server: "{{ azure_container_registry }}.azurecr.io"
+      registry_username: "{{ azure_container_registry }}"
+      registry_password: "{{ cr.credentials.password }}"
       containers:
-        - name: mycontainer1
-          image: 'quay.io/jtorcass/{{ py_application.docker_image }}'
+        - name: '{{ azure_app.container_name }}'
+          image: '{{ azure_container_registry }}.azurecr.io/{{ azure_app.docker_image }}:latest'
           memory: 1
           volume_mounts:
             - name: src
@@ -87,9 +86,9 @@
             - 5000
           environment_variables:
             - name: FLASK_APP
-              value: '{{ py_application.docker_dir }}'
+              value: '{{ azure_app.docker_dir }}'
             - name: FLASK_ENV
-              value: '{{ py_application }}'
+              value: '{{ azure_app.env }}'
             - name: DATABASE_HOST
               value: '{{ azure_postgresql_name }}'
             - name: DATABASE_INSTANCE
@@ -99,10 +98,15 @@
             - name: DATABASE_PASSWORD
               value: '{{ azure_postgresql_admin_password }}'
             - name: ADMIN_USER
-              value: '{{ py_application.admin_user }}'
+              value: '{{ azure_app.admin_user }}'
             - name: ADMIN_PASSWORD
-              value: '{{ py_application.admin_password }}'
+              value: '{{ azure_app.admin_password }}'
       volumes:
         - name: src
           git_repo:
-            repository: "{{ azure_app_src }}"
+            repository: "{{ azure_app.src_repo }}"
+    register: app
+
+  - name: Print application ip
+    debug:
+      msg: "Web application accessible at  http://{{ app.ip_address }}:5000"
