@@ -1,7 +1,6 @@
 ---
 # Azure resource group
 azure_resource_group: 'webapp-jt'
-azure_region: canadacentral
 
 # PostgreSQL Server variables
 azure_postgresql_name: "{{ azure_resource_group }}-dbserver"
@@ -11,14 +10,25 @@ azure_postgresql_database_instances:
   - name: pyapp
     charset: UTF8
 
-# Application variables
 azure_container_registry: "jtwebappcr"
-azure_app:
-  src_repo: "https://github.com/joseph-torcasso/webapp_pyflask_demo.git"
-  src_dest: ./webapp_src
-  env: "development"
-  admin_user: "admin"
-  admin_password: "admin"
-  docker_image: "pywebapp"
-  docker_dir: "/app/pyapp"
-  container_name: "myapp-container"
+azure_app_src_repo: "https://github.com/joseph-torcasso/webapp_pyflask_demo.git"
+azure_app_image_name: "pywebapp"
+
+# Application variables
+azure_app_env_vars:
+  - name: FLASK_APP
+    value: "/app/pyapp"
+  - name: FLASK_ENV
+    value: "development"
+  - name: DATABASE_HOST
+    value: "{{ azure_postgresql_name }}"
+  - name: DATABASE_INSTANCE
+    value: "{{ azure_postgresql_database_instances[0].name }}"
+  - name: DATABASE_USER
+    value: "{{ azure_postgresql_admin_username }}"
+  - name: DATABASE_PASSWORD
+    value: "{{ azure_postgresql_admin_password }}"
+  - name: ADMIN_USER
+    value: "admin"
+  - name: ADMIN_PASSWORD
+    value: "admin"

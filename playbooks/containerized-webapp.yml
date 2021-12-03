@@ -30,6 +30,16 @@
       msg: 'Azure PostgreSQL admin password must be defined as azure_postgresql_admin_password'
     when: azure_postgresql_admin_password is not defined
 
+  - name: Ensure source repo is defined
+    fail:
+      msg: 'Application source repository must be defined as azure_app_src_repo'
+    when: azure_app_src_repo is not defined
+
+  - name: Ensure application image name is defined
+    fail:
+      msg: 'Application image must be defined as azure_app_image_name'
+    when: azure_app_image_name is not defined
+
   - name: Get pgsql info
     azure_rm_postgresqlserver_info:
       resource_group: '{{ azure_resource_group }}'
@@ -50,8 +60,8 @@
 
   - name: Git clone application
     git:
-      repo: "{{ azure_app.src_repo }}"
-      dest: "{{ azure_app.src_dest }}"
+      repo: "{{ azure_app_src_repo }}"
+      dest: "/tmp/webapp_src"
 
   - name: Podman login to Azure container registry
     containers.podman.podman_login:
@@ -61,11 +71,16 @@
 
   - name: Podman build and push image to Azure container registry
     containers.podman.podman_image:
-      path: "{{ azure_app.src_dest }}"
-      name: "{{ azure_container_registry }}.azurecr.io/{{ azure_app.docker_image }}:latest"
+      path: "/tmp/webapp_src"
+      name: "{{ azure_container_registry }}.azurecr.io/{{ azure_app_image_name }}:latest"
       push: yes
 
-  - name: Create container group
+  - name: Remove cloned repo
+    file:
+      path: "/tmp/webapp_src"
+      state: absent
+
+  - name: Create containerized application
     azure_rm_containerinstance:
       resource_group: '{{ azure_resource_group }}'
       name: '{{ azure_resource_group }}-container-group'
@@ -76,35 +91,19 @@
       registry_username: "{{ azure_container_registry }}"
       registry_password: "{{ cr.credentials.password }}"
       containers:
-        - name: '{{ azure_app.container_name }}'
-          image: '{{ azure_container_registry }}.azurecr.io/{{ azure_app.docker_image }}:latest'
+        - name: '{{ azure_resource_group }}-container'
+          image: '{{ azure_container_registry }}.azurecr.io/{{ azure_app_image_name }}:latest'
           memory: 1
           volume_mounts:
             - name: src
               mount_path: "/mnt/src"
           ports:
             - 5000
-          environment_variables:
-            - name: FLASK_APP
-              value: '{{ azure_app.docker_dir }}'
-            - name: FLASK_ENV
-              value: '{{ azure_app.env }}'
-            - name: DATABASE_HOST
-              value: '{{ azure_postgresql_name }}'
-            - name: DATABASE_INSTANCE
-              value: '{{ azure_postgresql_database_instances[0].name }}'
-            - name: DATABASE_USER
-              value: '{{ azure_postgresql_admin_username }}'
-            - name: DATABASE_PASSWORD
-              value: '{{ azure_postgresql_admin_password }}'
-            - name: ADMIN_USER
-              value: '{{ azure_app.admin_user }}'
-            - name: ADMIN_PASSWORD
-              value: '{{ azure_app.admin_password }}'
+          environment_variables: "{{ azure_app_env_vars }}"
       volumes:
         - name: src
           git_repo:
-            repository: "{{ azure_app.src_repo }}"
+            repository: "{{ azure_app_src_repo }}"
     register: app
 
   - name: Print application ip
