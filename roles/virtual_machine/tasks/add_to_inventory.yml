@@ -1,0 +1,37 @@
+---
+- name: Lookup VM
+  azure_rm_virtualmachine_info:
+    resource_group: "{{ azure_resource_group }}"
+    name: "{{ azure_vm_name }}"
+  register: vm_info
+
+- name: Check vm name
+  fail:
+    msg: Unable to find VM '{{ azure_vm_name }}'
+  when:
+    - vm_info.vms | length == 0
+
+- name: Check vm's _own_pip_ tag
+  fail:
+    msg: Unable to find VM '{{ azure_vm_name }}' ip. Must be tagged as _own_pip_
+  when:
+    - vm_info.vms[0].tags._own_pip_ is undefined
+
+- name: Lookup VM's public ip
+  azure_rm_publicipaddress_info:
+    resource_group: "{{ azure_resource_group }}"
+    name: "{{ vm_info.vms[0].tags._own_pip_ }}"
+  register: pip_info
+
+- name: Fail if VM does not have public ip
+  fail:
+    msg: Unable to find VM's public ip address
+  when:
+    - pip_info.publicipaddresses | length == 0
+
+- name: Add VM to Inventory
+  add_host:
+    name: "{{ pip_info.publicipaddresses[0].ip_address }}"
+    groups: "{{ azure_vm_group }}"
+    ansible_ssh_user: "{{ azure_vm_admin_username }}"
+    ansible_ssh_pass: "{{ azure_vm_admin_password }}"

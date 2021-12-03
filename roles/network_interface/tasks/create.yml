@@ -1,0 +1,105 @@
+---
+- name: Ensure vnet is specified
+  fail:
+    msg: 'Azure virtual network must be specified as azure_virtual_network when creating/updating network interface'
+  when: azure_virtual_network is undefined
+
+- name: Ensure subnet is specified
+  fail:
+    msg: 'Azure subnet must be specified as azure_subnet when creating/updating network interface'
+  when: azure_subnet is undefined
+
+- name: Check Resource Group Exists
+  azure_rm_resourcegroup_info:
+    name: "{{ azure_resource_group }}"
+  register: result
+
+- name: Resource Group Does Not Exist -> Create Resource Group
+  include_role:
+    name: resource_group
+  when: result.resourcegroups | length == 0
+
+- name: Check Networking Stack Exists
+  azure_rm_virtualnetwork_info:
+    resource_group: "{{ azure_resource_group }}"
+    name: "{{ azure_virtual_network }}"
+  register: virtual_network_result
+
+- name: Networking Stack Does Not Exist -> Create Networking Stack
+  include_role:
+    name: networking_stack
+  when: virtual_network_result.virtualnetworks | length == 0
+
+# Assert specified security group exists
+- block:
+  - name: Assert security group exists if specified by user
+    azure_rm_securitygroup_info:
+      resource_group: "{{ azure_resource_group }}"
+      name: "{{ azure_security_group_name }}"
+    register: sg_info
+
+  - name: Create security group
+    include_role:
+      name: security_group
+    when: sg_info.securitygroups | length == 0
+  when: azure_security_group_name is defined
+
+# Assert NIC is created and attached to lb specified if specified
+- name: Create/update network interface and attach to load balancer
+  block:
+    - name: Get load balancer info
+      azure_rm_loadbalancer_info:
+        name: "{{ azure_lb_name }}"
+        resource_group: "{{ azure_resource_group }}"
+      register: lb_info
+
+    - block:
+        - name: Create load balancer
+          include_role:
+            name: cloud.azure_roles.load_balancer
+
+        - name: Get load balancer info
+          azure_rm_loadbalancer_info:
+            name: "{{ azure_lb_name }}"
+            resource_group: "{{ azure_resource_group }}"
+          register: new_lb_info
+
+      when:
+        - lb_info.ansible_info.azure_loadbalancers | length == 0
+
+    - name: Get lb info
+      set_fact:
+        lb_info: "{{ new_lb_info }}"
+      when:
+        - new_lb_info.skipped is not defined
+
+    - name: Create a Network Interface and Attach to LB
+      azure_rm_networkinterface:
+        name: "{{ azure_network_interface_name }}"
+        resource_group: "{{ azure_resource_group }}"
+        virtual_network: "{{ azure_virtual_network }}"
+        subnet_name: "{{ azure_subnet }}"
+        security_group: "{{ azure_security_group_name | default(omit) }}"
+        ip_configurations:
+          - name: default
+            public_ip_address_name: "{{ azure_public_ip_name | default(omit) }}"
+            primary: True
+            load_balancer_backend_address_pools:
+              - "{{ lb_info.ansible_info.azure_loadbalancers[0].properties.backendAddressPools[0].id }}"
+  when:
+    - azure_lb_name is defined
+
+# Assert NIC is created and not attached to a lb
+- name: Create a Network Interface
+  azure_rm_networkinterface:
+    name: "{{ azure_network_interface_name }}"
+    resource_group: "{{ azure_resource_group }}"
+    virtual_network: "{{ azure_virtual_network }}"
+    subnet_name: "{{ azure_subnet }}"
+    security_group: "{{ azure_security_group_name | default(omit) }}"
+    ip_configurations:
+      - name: default
+        public_ip_address_name: "{{ azure_public_ip_name | default(omit) }}"
+        primary: True
+  when:
+    - azure_lb_name is undefined
