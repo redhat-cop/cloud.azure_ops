@@ -1,0 +1,28 @@
+---
+- name: Check operation validation
+  fail:
+    msg: "Please provide operation as 'create' or 'delete'"
+  when: operation not in ['create', 'delete']
+
+- name: Ensure resource group is defined
+  fail:
+    msg: "Azure resource group must be defined as azure_resource_group"
+  when: azure_resource_group is not defined
+
+- name: Ensure load balancer name is defined
+  fail:
+    msg: "Azure load balancer name must be defined as azure_lb_name"
+  when: azure_lb_name is not defined
+
+- name: Get load balancer info
+  azure_rm_loadbalancer_info:
+    resource_group: '{{ azure_resource_group }}'
+    name: '{{ azure_lb_name }}'
+  register: lb_info
+
+- name: Get resource group info
+  azure_rm_resourcegroup_info:
+    name: "{{ azure_resource_group }}"
+  register: rg_info
+
+- include_tasks: "{{ operation }}.yml"
