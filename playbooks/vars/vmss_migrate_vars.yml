@@ -2,16 +2,17 @@
 azure_vm_name: "webapp-vm-"
 azure_vm_user: "ansible"
 azure_vm_user_password: "4fB5In3ueO7,"
-azure_vm_image:
-  offer: RHEL
-  publisher: RedHat
-  sku: '7-LVM'
-  version: latest
-azure_vm_size: "Standard_A2"
-azure_number_vm: 3
+
+# Source
+source_resource_group: src_rg
+source_region: eastus
+
+# Destination
+destination_resource_group: dst_rg
+destination_region: canadacentral
 
 # PostgreSQL Server variables
-azure_postgresql_name: "{{ azure_resource_group | replace('_', '-') }}-dbserver"
+azure_postgresql_name: "{{ source_resource_group | replace('_', '-') }}-dbserver"
 azure_postgresql_admin_username: "ansible"
 azure_postgresql_admin_password: "4fB5In3ueO7,"
 azure_postgresql_database_instances:
