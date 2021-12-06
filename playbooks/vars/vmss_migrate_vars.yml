@@ -10,6 +10,15 @@ azure_vm_image:
 azure_vm_size: "Standard_A2"
 azure_number_vm: 3
 
+# Source
+azure_resource_group: source_rg
+source_resource_group: "{{ azure_resource_group }}"
+source_region: eastus
+
+# Destination
+destination_resource_group: dest_rg
+destination_region: canadacentral
+
 # PostgreSQL Server variables
 azure_postgresql_name: "{{ azure_resource_group | replace('_', '-') }}-dbserver"
 azure_postgresql_admin_username: "ansible"

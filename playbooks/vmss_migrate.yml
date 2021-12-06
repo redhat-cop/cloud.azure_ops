@@ -1,0 +1,145 @@
+- name: Migrate a web app application from one region to another region
+  hosts: localhost
+  gather_facts: no
+
+  collections:
+  - cloud.azure_roles
+  - azure.azcollection
+
+  vars_files:
+  - vars/vmss_migrate_vars.yml
+
+  tasks:
+  - fail:
+      msg: "Azure Resource group must be defined as azure_resource_group"
+    when: azure_resource_group is not defined
+
+  - set_fact:
+      src_rg: "{{ azure_resource_group }}"
+
+  - name: Gather information about Source VM Scale Set
+    azure_rm_virtualmachinescaleset_info:
+      resource_group: "{{ src_rg }}"
+      name: "{{ azure_vm_name }}ss"
+    register: src_vm_info
+
+  - name: Create application infrastructure
+    import_role:
+      name: scale_virtual_machine
+    vars:
+      azure_resource_group: "{{ destination_resource_group }}"
+      azure_region: "{{ destination_region }}"
+      azure_load_balancer:
+        domain_name: "webapp1"
+        name: "{{ src_rg }}-lb"
+        public_ip_name: "{{ src_rg }}-lb-public-ip"
+        backend_address_pool: "{{ src_rg }}-vm-pool"
+
+- name: Deploy resource from Bastion Host
+  hosts: bastion
+  gather_facts: no
+
+  vars:
+    ansible_venv_path: "~/venv"
+    application_data: "/tmp/controller"
+    application_image: "controller-image"
+    application_container: "controller-container"
+    application_config: "/tmp/controller/config.txt"
+
+  vars_files:
+  - vars/vmss_migrate_vars.yml
+  
+  tasks:
+  - set_fact:
+      src_rg: "akasurde_test_arm_vscode"
+
+  - name: Update ssh_config
+    lineinfile:
+      path: "/etc/ssh/sshd_config"
+      regex: "{{ item.regex }}"
+      line: "{{ item.line }}"
+    loop:
+      - regex: "^(# *)?ClientAliveInterval"
+        line: "ClientAliveInterval  1200"
+      - regex: "^(# *)?ClientAliveCountMax"
+        line: "ClientAliveCountMax 3"
+    become: true
+
+  - name: Ensure python3 is installed
+    yum:
+      name:
+        - python3
+        - python-virtualenv
+        - sshpass
+        - git
+      state: present
+    become: true
+
+  - name: Create virtualenv
+    shell: "virtualenv --python python3 {{ ansible_venv_path }}"
+
+  - name: Upgrade pip
+    shell: "{{ ansible_venv_path }}/bin/pip install --upgrade pip"
+
+  - name: Install Ansible into virtualenv
+    shell: '{{ ansible_venv_path }}/bin/pip install "ansible==2.10.*"'
+
+  - name: Create application directories
+    file:
+      path: "{{ item }}"
+      state: directory
+    with_items:
+      - "{{ ansible_venv_path }}/playbook"
+      - "{{ ansible_venv_path }}/playbook/tasks"
+
+  - name: Create inventory file
+    template:
+      src: workers.j2
+      dest: "{{ ansible_venv_path }}/playbook/inventory.yaml"
+
+  - name: Create vars file
+    template:
+      src: application-data.j2
+      dest: "{{ ansible_venv_path }}/playbook/vars.yaml"
+    vars:
+      azure_postgresql_name: "{{ src_rg | replace('_', '-') }}-dbserver"
+
+  - name: Copy playbook file
+    copy:
+      src: deploy-app.yml
+      dest: "{{ ansible_venv_path }}/playbook/play.yaml"
+
+  - name: Git clone ensure-docker role
+    git:
+      repo: "https://opendev.org/zuul/zuul-jobs.git"
+      dest: "{{ ansible_venv_path }}/playbook/zuul-jobs"
+
+  - name: Deploy application
+    shell: "source {{ ansible_venv_path }}/bin/activate; ansible-playbook play.yaml -i inventory.yaml -e '@vars.yaml' -v -f {{ playbook_number_forks }}"
+    environment:
+      ANSIBLE_ROLES_PATH: "{{ ansible_venv_path }}/playbook/zuul-jobs/roles"
+    args:
+      chdir: "{{ ansible_venv_path }}/playbook"
+
+- hosts: localhost
+  gather_facts: no
+
+  collections:
+  - cloud.azure_roles
+  - azure.azcollection
+
+  vars_files:
+  - vars/vmss_migrate_vars.yml
+
+  tasks:
+  - debug:
+      msg: "Web application accessible at http://{{ load_balancer_public_ip }}:5000"
+    when: load_balancer_public_ip is defined
+
+  - name: Clean up source application infrastructure
+    import_role:
+      name: scale_virtual_machine
+    vars:
+      azure_resource_group: "{{ source_resource_group }}"
+      azure_region: "{{ source_region }}"
+      operation: delete
