@@ -12,8 +12,8 @@ azure_postgresql_database_instances:
 
 # Application variables
 azure_app_image: "quay.io/jtorcass/pywebapp"
-azure_app_container_name: '{{ azure_resource_group }}-container'
-azure_app_mem: '1'
+azure_app_container_name: "{{ azure_resource_group }}-container"
+azure_app_mem: 1
 azure_app_ports:
   - 5000
 azure_app_env_vars:
