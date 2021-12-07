@@ -1,4 +1,4 @@
-- name: Deploy existing python app to an aks cluster on azure
+- name: Deploy existing python app to container instance on azure
   hosts: localhost
   gather_facts: no
 
@@ -20,25 +20,10 @@
       msg: 'Azure PostgreSQL server name must be defined as azure_postgresql_name'
     when: azure_postgresql_name is not defined
 
-  - name: Ensure pgsql admin username is defined
-    fail:
-      msg: 'Azure PostgreSQL admin username must be defined as azure_postgresql_admin_username'
-    when: azure_postgresql_admin_username is not defined
-
-  - name: Ensure pgsql admin password is defined
-    fail:
-      msg: 'Azure PostgreSQL admin password must be defined as azure_postgresql_admin_password'
-    when: azure_postgresql_admin_password is not defined
-
-  - name: Ensure source repo is defined
-    fail:
-      msg: 'Application source repository must be defined as azure_app_src_repo'
-    when: azure_app_src_repo is not defined
-
   - name: Ensure application image name is defined
     fail:
-      msg: 'Application image must be defined as azure_app_image_name'
-    when: azure_app_image_name is not defined
+      msg: 'Application image must be defined as azure_app_image'
+    when: azure_app_image is not defined
 
   - name: Get pgsql info
     azure_rm_postgresqlserver_info:
@@ -51,35 +36,6 @@
       msg: 'No PostgreSQL instance found in resource group'
     when: psql_info.servers | length == 0
 
-  - name: Create an azure container registry
-    azure_rm_containerregistry:
-      name: '{{ azure_container_registry }}'
-      resource_group: '{{ azure_resource_group }}'
-      admin_user_enabled: yes
-    register: cr
-
-  - name: Git clone application
-    git:
-      repo: "{{ azure_app_src_repo }}"
-      dest: "/tmp/webapp_src"
-
-  - name: Podman login to Azure container registry
-    containers.podman.podman_login:
-      registry: "{{ azure_container_registry }}.azurecr.io"
-      username: "{{ azure_container_registry }}"
-      password: "{{ cr.credentials.password }}"
-
-  - name: Podman build and push image to Azure container registry
-    containers.podman.podman_image:
-      path: "/tmp/webapp_src"
-      name: "{{ azure_container_registry }}.azurecr.io/{{ azure_app_image_name }}:latest"
-      push: yes
-
-  - name: Remove cloned repo
-    file:
-      path: "/tmp/webapp_src"
-      state: absent
-
   - name: Create containerized application
     azure_rm_containerinstance:
       resource_group: '{{ azure_resource_group }}'
@@ -87,23 +43,12 @@
       force_update: yes
       os_type: linux
       ip_address: public
-      registry_login_server: "{{ azure_container_registry }}.azurecr.io"
-      registry_username: "{{ azure_container_registry }}"
-      registry_password: "{{ cr.credentials.password }}"
       containers:
-        - name: '{{ azure_resource_group }}-container'
-          image: '{{ azure_container_registry }}.azurecr.io/{{ azure_app_image_name }}:latest'
-          memory: 1
-          volume_mounts:
-            - name: src
-              mount_path: "/mnt/src"
-          ports:
-            - 5000
+        - name: "{{ azure_app_container_name }}"
+          image: "{{ azure_app_image }}"
+          memory: "{{ azure_app_mem }}"
+          ports: "{{ azure_app_ports }}"
           environment_variables: "{{ azure_app_env_vars }}"
-      volumes:
-        - name: src
-          git_repo:
-            repository: "{{ azure_app_src_repo }}"
     register: app
 
   - name: Print application ip
