@@ -1,0 +1,42 @@
+---
+- name: Use awx collection to create a project
+  hosts: localhost
+  gather_facts: no
+  collections:
+    - awx.awx
+  vars_files:
+    - vars/main.yml
+  tasks:
+  - name: Create a workflow job template with schema in template
+    awx.awx.workflow_job_template:
+      name: example-workflow
+      controller_host: "{{ controller_host }}"
+      controller_username: "{{ controller_username }}"
+      controller_password: "{{ controller_password }}"
+      inventory: Demo Inventory
+      extra_vars: {'foo': 'bar', 'another-foo': {'barz': 'bar2'}}
+      schema:
+        - identifier: node101
+          unified_job_template:
+            name: webapp_vms
+            inventory:
+              organization:
+                name: Default
+            organization:
+              name: Default
+            type: job_template
+          related:
+            success_nodes: []
+            failure_nodes:
+              - identifier: node201
+            always_nodes: []
+            credentials: []
+        - identifier: node201
+          unified_job_template:
+            name: webapp_container
+            inventory:
+              organization:
+                name: Default
+            organization:
+              name: Default
+            type: job_template

@@ -1,0 +1,18 @@
+project_name: webapp_demo_project
+credential_name: "{{ project_name }}_{{ credential_type }}"
+job_name: webapp_demo
+playbook_file: 'playbooks/containerized-webapp.yml'
+ssh_key_file: '/tmp/id_rsa'
+scm_url: git@github.com:ansible-collections/cloud.azure_roles.git
+scm_branch: demo_webapp
+inventory: 'Demo Inventory'
+azure_resource_group: "jt-rg"
+
+### Fill these out
+controller_host: 123.456.78.9
+controller_username: 'admin'
+controller_password: "********"
+azure_cred:
+  subscription: subscription-id
+  username: user@ansibleworks.onmicrosoft.com
+  password: "********"

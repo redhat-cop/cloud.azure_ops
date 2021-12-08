@@ -1,0 +1,25 @@
+---
+- name: Use awx collection to create a project
+  hosts: localhost
+  gather_facts: no
+  collections:
+    - awx.awx
+  vars_files:
+    - vars/main.yml
+  tasks:
+    - name: Create job template
+      awx.awx.job_template:
+        name: "{{ job_name }}"
+        state: present
+        controller_host: "{{ controller_host }}"
+        controller_username: "{{ controller_username }}"
+        controller_password: "{{ controller_password }}"
+        job_type: run
+        project: "{{ project_name }}"
+        playbook: "{{ playbook_file }}"
+        organization: '{{ controller_org | default("Default") }}'
+        credentials:
+          - "{{ project_name }}_ms_arm"
+        extra_vars:
+          azure_resource_group: "{{ azure_resource_group }}"
+        inventory: "{{ inventory }}"
