@@ -1,6 +1,6 @@
 ---
 # Azure resource group
-azure_resource_group: 'webapp-jt'
+azure_resource_group: 'jt-rg'
 
 # PostgreSQL Server variables
 azure_postgresql_name: "{{ azure_resource_group }}-dbserver"

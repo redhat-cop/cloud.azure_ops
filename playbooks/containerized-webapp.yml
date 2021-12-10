@@ -50,6 +50,92 @@
           environment_variables: "{{ azure_app_env_vars }}"
     register: app
 
-  - name: Print application ip
-    debug:
-      msg: "Web application accessible at  http://{{ app.ip_address }}:5000"
+  ### Tear down old infra
+  - name: Get vm ss info
+    azure_rm_virtualmachinescaleset_info:
+      resource_group: "{{ azure_resource_group }}"
+    register: vmss_info
+
+  - name: Delete Virtual Machine Scale Set
+    azure_rm_virtualmachinescaleset:
+      resource_group: "{{ azure_resource_group }}"
+      name: "{{ vmss_info.vmss[0].name }}"
+      state: absent
+    when:
+      - vmss_info.vmss[0].name is defined
+
+  - name: Get load balancer info
+    azure_rm_loadbalancer_info:
+      resource_group: "{{ azure_resource_group }}"
+    register: lb_info
+
+  - name: Remove load balancer
+    include_role:
+      name: cloud.azure_roles.load_balancer
+    vars:
+      operation: 'delete'
+      azure_lb_name: "{{ lb_info.ansible_info.azure_loadbalancers[0].name }}"
+    when:
+      - lb_info.ansible_info.azure_loadbalancers[0].name is defined
+
+  - name: Get lb ip
+    azure_rm_resource_info:
+      url: "{{ lb_info.ansible_info.azure_loadbalancers[0].properties.frontendIPConfigurations[0].properties.publicIPAddress.id }}"
+    register: lb_pip_info
+    when:
+      - lb_info.ansible_info.azure_loadbalancers[0].properties.frontendIPConfigurations[0].properties.publicIPAddress.id is defined
+
+  - name: Remove load balancer's public ip
+    azure_rm_publicipaddress:
+      resource_group: "{{ azure_resource_group }}"
+      name: "{{ lb_pip_info.response[0].name }}"
+      state: absent
+    when:
+      - lb_pip_info.response[0].name is defined
+
+  - name: Get bastion vm info
+    azure_rm_virtualmachine_info:
+      resource_group: "{{ azure_resource_group }}"
+    register: vm_info
+
+  - name: Delete Virtual Machine
+    include_role:
+      name: cloud.azure_roles.virtual_machine
+    vars:
+      operation: 'delete'
+      azure_vm_name: "{{ vm_info.vms[0].name }}"
+    when:
+      - vm_info.vms[0].name is defined
+
+  - name: Get network security group info
+    azure_rm_securitygroup_info:
+      resource_group: "{{ azure_resource_group }}"
+    register: sg_info
+
+  - name: Delete security group
+    include_role:
+      name: cloud.azure_roles.security_group
+    vars:
+      state: 'absent'
+      azure_security_group: "{{ sg_info.securitygroups[0].name }}"
+    when:
+      - sg_info.securitygroups[0].name is defined
+
+  - name: Get vnet info
+    azure_rm_virtualnetwork_info:
+      resource_group: "{{ azure_resource_group }}"
+    register: vnet_info
+
+  - name: Delete networking stack
+    include_role:
+      name: cloud.azure_roles.networking_stack
+    vars:
+      delete_option: "{{ item }}"
+      operation: 'delete'
+      azure_virtual_network: "{{ vnet_info.virtualnetworks[0].name }}"
+      azure_subnet: "{{ vnet_info.virtualnetworks[0].subnets[0].name }}"
+    with_items:
+      - subnet
+      - virtual_network
+    when:
+      - vnet_info.virtualnetworks[0].subnets[0].name is defined
