@@ -2,3 +2,4 @@
 # defaults file for security_group
 state: 'present'
 azure_security_group_rules: []
+azure_security_group_rules_to_remove: []
