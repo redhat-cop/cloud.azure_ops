@@ -10,30 +10,62 @@
   - vars/vmss_migrate_vars.yml
 
   tasks:
-  - fail:
-      msg: "Azure Resource group must be defined as azure_resource_group"
-    when: azure_resource_group is not defined
+  - name: Pre-flight check
+    fail:
+      msg: "Source Azure Resource group must be defined as source_resource_group"
+    when: source_resource_group is not defined
 
-  - set_fact:
-      src_rg: "{{ azure_resource_group }}"
+  - name: Pre-flight check
+    fail:
+      msg: "Destination Azure Resource group must be defined as destination_resource_group"
+    when: destination_resource_group is not defined
+
+  - name: Pre-flight check
+    fail:
+      msg: "Source and Destination Azure resource group can not be same"
+    when: source_resource_group == destination_resource_group
 
   - name: Gather information about Source VM Scale Set
     azure_rm_virtualmachinescaleset_info:
-      resource_group: "{{ src_rg }}"
+      resource_group: "{{ source_resource_group }}"
       name: "{{ azure_vm_name }}ss"
     register: src_vm_info
 
+  - name: Pre-flight check
+    fail:
+      msg: "Couldn't find web app resources in source_resource_group"
+    when: src_vm_info.vmss | length == 0
+
   - name: Create application infrastructure
-    import_role:
-      name: scale_virtual_machine
-    vars:
-      azure_resource_group: "{{ destination_resource_group }}"
-      azure_region: "{{ destination_region }}"
-      azure_load_balancer:
-        domain_name: "webapp1"
-        name: "{{ src_rg }}-lb"
-        public_ip_name: "{{ src_rg }}-lb-public-ip"
-        backend_address_pool: "{{ src_rg }}-vm-pool"
+    block:
+      - name: Create application infrastructure
+        import_role:
+          name: scale_virtual_machine
+        vars:
+          azure_resource_group: "{{ destination_resource_group }}"
+          azure_region: "{{ destination_region }}"
+          azure_number_vm: "{{ src_vm_info.vmss.0.sku.capacity }}"
+          azure_vm_image: "{{ src_vm_info.vmss.0.properties.virtualMachineProfile.storageProfile.imageReference }}"
+          azure_vm_size: "{{ src_vm_info.vmss.0.sku.name }}"
+          azure_load_balancer:
+            domain_name: "{{ destination_resource_group  | replace('_', '-')  }}-{{ destination_region  | replace('_', '-')  }}-webapp1"
+            name: "{{ source_resource_group }}-lb"
+            public_ip_name: "{{ source_resource_group }}-lb-public-ipp"
+            backend_address_pool: "{{ source_resource_group }}-vm-pool"
+          operation: create
+    rescue:
+      - debug:
+          msg: "Failed to migrate, cleaning up destination resource group"
+
+      - name: Delete application infrastructure
+        import_role:
+          name: scale_virtual_machine
+        vars:
+          azure_resource_group: "{{ destination_resource_group }}"
+          operation: delete
+
+      - fail:
+          msg: "Failed to migrate"
 
 - name: Deploy resource from Bastion Host
   hosts: bastion
@@ -48,11 +80,8 @@
 
   vars_files:
   - vars/vmss_migrate_vars.yml
-  
-  tasks:
-  - set_fact:
-      src_rg: "akasurde_test_arm_vscode"
 
+  tasks:
   - name: Update ssh_config
     lineinfile:
       path: "/etc/ssh/sshd_config"
@@ -102,7 +131,7 @@
       src: application-data.j2
       dest: "{{ ansible_venv_path }}/playbook/vars.yaml"
     vars:
-      azure_postgresql_name: "{{ src_rg | replace('_', '-') }}-dbserver"
+      azure_postgresql_name: "{{ source_resource_group | replace('_', '-') }}-dbserver"
 
   - name: Copy playbook file
     copy:
@@ -132,14 +161,76 @@
   - vars/vmss_migrate_vars.yml
 
   tasks:
+  - block:
+      - name: Check that you can connect (GET) to a page and it returns a status 200
+        uri:
+          url: "http://{{ load_balancer_public_ip }}:5000"
+        when: load_balancer_public_ip is defined
+    rescue:
+      - debug:
+          msg: "Failed to reach the given URL at http://{{ load_balancer_public_ip }}:5000, cleaning up destination resource group"
+
+      - name: Delete application infrastructure
+        import_role:
+          name: scale_virtual_machine
+        vars:
+          azure_resource_group: "{{ destination_resource_group }}"
+          operation: delete
+
+      - fail:
+          msg: "Failed to reach the given URL at http://{{ load_balancer_public_ip }}:5000"
+
   - debug:
       msg: "Web application accessible at http://{{ load_balancer_public_ip }}:5000"
     when: load_balancer_public_ip is defined
 
-  - name: Clean up source application infrastructure
-    import_role:
-      name: scale_virtual_machine
-    vars:
-      azure_resource_group: "{{ source_resource_group }}"
-      azure_region: "{{ source_region }}"
-      operation: delete
+  - set_fact:
+      azure_virtual_network: "{{ source_resource_group }}-vnet"
+      azure_subnet: "{{ source_resource_group }}-subnet"
+      azure_security_group: "{{ source_resource_group }}-nsg"
+      azure_load_balancer:
+        name: "{{ source_resource_group }}-lb"
+        public_ip_name: "{{ source_resource_group }}-lb-public-ip"
+
+  - name: Remove Bastion host
+    azure_rm_virtualmachine:
+      resource_group: "{{ source_resource_group }}"
+      name: "{{ azure_vm_name }}bastion"
+      state: absent
+
+  - name: Remove Virtual machine scale set
+    azure_rm_virtualmachinescaleset:
+      resource_group: "{{ source_resource_group }}"
+      name: "{{ azure_vm_name }}ss"
+      state: absent
+
+  - name: Delete virtual network
+    azure_rm_virtualnetwork:
+      resource_group: "{{ source_resource_group }}"
+      name: "{{ azure_virtual_network }}"
+      state: absent
+
+  - name: Delete subnet
+    azure_rm_subnet:
+      resource_group: "{{ source_resource_group }}"
+      virtual_network: "{{ azure_virtual_network }}"
+      name: "{{ azure_subnet }}"
+      state: absent
+
+  - name: Delete load balancer
+    azure_rm_loadbalancer:
+      resource_group: "{{ source_resource_group }}"
+      name: "{{ azure_load_balancer.name }}"
+      state: absent
+
+  - name: Delete a public IP address
+    azure_rm_publicipaddress:
+      resource_group: "{{ source_resource_group }}"
+      name: "{{ azure_load_balancer.public_ip_name }}"
+      state: absent
+
+  - name: Delete networking security group
+    azure_rm_securitygroup:
+      resource_group: "{{ source_resource_group }}"
+      name: "{{ azure_security_group }}"
+      state: absent
