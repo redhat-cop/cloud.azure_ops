@@ -50,7 +50,20 @@
           environment_variables: "{{ azure_app_env_vars }}"
     register: app
 
-  ### Tear down old infra
+  - name: Wait for app
+    wait_for:
+      timeout: 600
+      host: "{{ app.ip_address }}"
+      port: "{{ azure_app_ports[0] }}"
+
+  - name: Ensure app is available
+    uri:
+      url: 'http://{{ app.ip_address }}:{{ azure_app_ports[0] }}'
+
+  - debug:
+      msg: "Web application accessible at http://{{ app.ip_address }}:{{ azure_app_ports[0] }}"
+
+  # Tear down old infra
   - name: Get vm ss info
     azure_rm_virtualmachinescaleset_info:
       resource_group: "{{ azure_resource_group }}"
