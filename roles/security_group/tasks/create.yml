@@ -1,9 +1,4 @@
 ---
-- name: Check Region Setting
-  fail:
-    msg: "Azure Region must be defined as azure_region"
-  when: azure_region is not defined
-
 - name: Create Resource Group
   azure_rm_resourcegroup:
     name: "{{ azure_resource_group }}"
