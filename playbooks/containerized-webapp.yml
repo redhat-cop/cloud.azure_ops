@@ -52,16 +52,12 @@
 
   - name: Wait for app
     wait_for:
-      timeout: 600
       host: "{{ app.ip_address }}"
       port: "{{ azure_app_ports[0] }}"
 
   - name: Ensure app is available
     uri:
       url: 'http://{{ app.ip_address }}:{{ azure_app_ports[0] }}'
-
-  - debug:
-      msg: "Web application accessible at http://{{ app.ip_address }}:{{ azure_app_ports[0] }}"
 
   # Tear down old infra
   - name: Get vm ss info
@@ -152,3 +148,7 @@
       - virtual_network
     when:
       - vnet_info.virtualnetworks[0].subnets[0].name is defined
+
+  - name: Display public url
+    debug:
+      msg: "Web application accessible at http://{{ app.ip_address }}:{{ azure_app_ports[0] }}"
