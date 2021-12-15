@@ -229,7 +229,7 @@
           include_role:
             name: security_group
           vars:
-            state: "absent"
+            operation: "delete"
 
         - name: Get security group info
           azure_rm_securitygroup_info:
@@ -246,7 +246,7 @@
           include_role:
             name: security_group
           vars:
-            state: "absent"
+            operation: "delete"
 
         - name: Get security group info
           azure_rm_securitygroup_info:

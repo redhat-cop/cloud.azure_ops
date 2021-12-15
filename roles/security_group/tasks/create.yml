@@ -40,7 +40,10 @@
 
     - name: Append rule to new sg object
       set_fact:
-        new_sg_rules: "{{ new_sg_rules + [{ 'name': rule.name, 'protocol': rule.properties.protocol, 'access': rule.properties.access, 'destination_address_prefix': rule.properties.destinationAddressPrefix, 'destination_port_range': rule.properties.destinationPortRanges,  'direction': rule.properties.direction, 'priority': rule.properties.priority, 'source_address_prefix': rule.properties.sourceAddressPrefix, 'source_port_range': rule.properties.sourcePortRange, }] }}"
+        new_sg_rules: "{{ new_sg_rules + [{ 'name': rule.name, 'protocol': rule.properties.protocol, 'access': rule.properties.access,
+                        'destination_address_prefix': rule.properties.destinationAddressPrefix, 'destination_port_range': rule.properties.destinationPortRanges,
+                        'direction': rule.properties.direction, 'priority': rule.properties.priority, 'source_address_prefix': rule.properties.sourceAddressPrefix,
+                        'source_port_range': rule.properties.sourcePortRange, }] }}"
       with_items: "{{ old_sg_rules }}"
       loop_control:
         loop_var: rule
@@ -53,6 +56,5 @@
         purge_rules: yes
         rules: "{{ new_sg_rules }}"
         tags: "{{ azure_tags | default(omit) }}"
-
   when:
     - azure_security_group_rules_to_remove | length > 0

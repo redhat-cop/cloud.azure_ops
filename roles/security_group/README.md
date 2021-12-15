@@ -11,7 +11,7 @@ Requirements
 Role Variables
 --------------
 
-* **state** (required) - Assert the state of the security group. Set to present to create or update a security group. Set to absent to remove a security group.
+* **operation** (required) - Set to 'create' to create or update a security group. Set to 'delete' to remove a security group.
 * **azure_resource_group** (required) - Resource group to create or delete.
 * **azure_security_group** (required) - Name of security group.
 * **azure_security_group_purge_rules** - (boolean) If set to 'yes', removes any existing rules not matching the default rules. Useful for deleting rules.
@@ -41,7 +41,7 @@ Example Playbook
     - hosts: localhost
       roles:
         - role: cloud.azure_roles.security_group
-          state: "present"
+          operation: "create"
           azure_region: "eastus"
           azure_resource_group: "testing-resource-group"
           azure_security_group: "testing-security-group"
