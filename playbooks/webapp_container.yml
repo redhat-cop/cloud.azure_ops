@@ -125,7 +125,7 @@
     include_role:
       name: cloud.azure_roles.security_group
     vars:
-      state: 'absent'
+      operation: 'delete'
       azure_security_group: "{{ sg_info.securitygroups[0].name }}"
     when:
       - sg_info.securitygroups[0].name is defined
