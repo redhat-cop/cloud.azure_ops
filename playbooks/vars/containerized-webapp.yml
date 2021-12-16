@@ -6,7 +6,7 @@ migrate_app: no
 azure_region: eastus
 
 # PostgreSQL Server variables
-azure_postgresql_name: "{{ azure_resource_group }}-dbserver"
+azure_postgresql_name: "{{ azure_resource_group | regex_replace('[^a-zA-Z0-9]','-') }}-dbserver"
 azure_postgresql_admin_username: "ansible"
 azure_postgresql_admin_password: "4fB5In3ueO7,"
 azure_postgresql_database_instances:
