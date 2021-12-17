@@ -1,8 +1,8 @@
 ---
-- name: Check state validation
+- name: Check operation validation
   fail:
-    msg: "Please provide state as 'present' or 'absent'"
-  when: state not in ['present', 'absent']
+    msg: "Please provide operation as 'create' or 'delete'"
+  when: operation not in ['create', 'delete']
 
 - name: Check resource group name
   fail:
@@ -19,8 +19,4 @@
     name: "{{ azure_resource_group }}"
   register: rg_info
 
-- include_tasks: create.yml
-  when: state == 'present'
-
-- include_tasks: delete.yml
-  when: state == 'absent'
+- include_tasks: "{{ operation }}.yml"

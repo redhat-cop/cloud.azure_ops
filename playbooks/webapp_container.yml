@@ -6,7 +6,7 @@
   - azure.azcollection
 
   vars_files:
-  - vars/containerized-webapp.yml
+  - vars/webapp_container_vars.yml
 
   tasks:
   - name: Ensure resource group is defined
@@ -132,7 +132,7 @@
         include_role:
           name: cloud.azure_roles.security_group
         vars:
-          state: 'absent'
+          operation: 'delete'
           azure_security_group: "{{ sg_info.securitygroups[0].name }}"
         when:
           - sg_info.securitygroups[0].name is defined
