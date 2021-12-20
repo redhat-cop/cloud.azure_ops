@@ -1,4 +1,10 @@
 ---
+# Flag for migrating from VM / creating from scratch
+migrate_app: no
+
+# Region (required when creating)
+azure_region: eastus
+
 # PostgreSQL Server variables
 azure_postgresql_name: "{{ azure_resource_group | regex_replace('[^a-zA-Z0-9]','-') }}-dbserver"
 azure_postgresql_admin_username: "ansible"
