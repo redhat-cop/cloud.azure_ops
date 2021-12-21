@@ -1,7 +1,7 @@
 security_group
 ==============
 
-A role to manage an Azure Security Group. User can create or delete a security group.
+A role to manage an Azure Security Group. User can create or delete a security group, as well as add/remove rules from a security group.
 
 Requirements
 ------------
@@ -11,7 +11,7 @@ Requirements
 Role Variables
 --------------
 
-* **state** (required) - Assert the state of the security group. Set to present to create or update a security group. Set to absent to remove a security group.
+* **operation** (required) - Set to 'create' to create or update a security group. Set to 'delete' to remove a security group.
 * **azure_resource_group** (required) - Resource group to create or delete.
 * **azure_security_group** (required) - Name of security group.
 * **azure_security_group_purge_rules** - (boolean) If set to 'yes', removes any existing rules not matching the default rules. Useful for deleting rules.
@@ -28,6 +28,7 @@ Role Variables
   - **source_address_prefix** - The CIDR or source IP range. Asterisk `*` can also be used to match all source IPs. Default tags such as VirtualNetwork, AzureLoadBalancer and Internet can also be used. If this is an ingress rule, specifies where network traffic originates from. Accepts string a list of strings. Asterisk `*` and default tags can only be specified as a single string, not as a list of strings.
   - **source_port_range** - Port or range of ports from which traffic originates. Can be a string or list of strings. Default is `*`.
 * **azure_tags** - Dictionary of string:string pairs to assign as metadata to the object.
+* **azure_security_group_rules_to_remove**: List of strings representing the names of security group rules to be removed from the security group.
 
 Dependencies
 ------------
@@ -40,10 +41,10 @@ Example Playbook
     - hosts: localhost
       roles:
         - role: cloud.azure_roles.security_group
-          state: "present"
+          operation: "create"
           azure_region: "eastus"
           azure_resource_group: "testing-resource-group"
-          azure_security_group: "testing-security-group" 
+          azure_security_group: "testing-security-group"
           azure_security_group_rules:
             - name: 'allow_ssh'
               protocol: Tcp
@@ -62,8 +63,8 @@ Example Playbook
               direction: Inbound
           azure_tags:
             tag0: "tag0"
-            tag1: "tag1"    
-           
+            tag1: "tag1"
+
 
 License
 -------

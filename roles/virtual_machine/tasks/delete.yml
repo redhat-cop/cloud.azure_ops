@@ -1,0 +1,17 @@
+---
+- name: Check Resource Group Exists
+  azure_rm_resourcegroup_info:
+    name: "{{ azure_resource_group }}"
+  register: result
+
+- name: Fail when resource group doesn't exist
+  fail:
+    msg: 'Resource group {{ azure_resource_group }} does not exist.'
+  when: result.resourcegroups | length == 0
+
+- name: Delete Virtual Machine and specified associated resources
+  azure_rm_virtualmachine:
+    resource_group: "{{ azure_resource_group }}"
+    name: "{{ azure_vm_name }}"
+    remove_on_absent: "{{ remove_on_absent | default(omit) }}"
+    state: absent

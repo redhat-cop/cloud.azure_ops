@@ -1,0 +1,3 @@
+---
+# defaults file for network_interface
+operation: 'create'

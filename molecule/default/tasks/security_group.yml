@@ -56,8 +56,10 @@
             that:
               - rg.resourcegroups | length == 1
 
-        - name: Specify vars
-          set_fact:
+        - name: Update security group with rules
+          include_role:
+            name: security_group
+          vars:
             azure_security_group_rules:
               - name: 'allow_ssh'
                 protocol: Tcp
@@ -74,10 +76,6 @@
                 access: Allow
                 priority: 101
                 direction: Inbound
-
-        - name: Update security group with rules
-          include_role:
-            name: security_group
 
         - name: Get security group info
           azure_rm_securitygroup_info:
@@ -173,22 +171,12 @@
             port: 22
             timeout: 5
 
-        - name: Delete rule that allows ssh
-          set_fact:
-            azure_security_group_rules:
-              - name: 'allow_web_traffic'
-                protocol: Tcp
-                destination_port_range:
-                  - 80
-                  - 443
-                access: Allow
-                priority: 101
-                direction: Inbound
-            azure_security_group_purge_rules: yes
-
-        - name: Update security group
+        - name: Remove ssh rule
           include_role:
             name: security_group
+          vars:
+            azure_security_group_rules_to_remove:
+              - 'allow_ssh'
 
         - name: Get security group info
           azure_rm_securitygroup_info:
@@ -196,11 +184,29 @@
             name: "{{ azure_security_group }}"
           register: sg_rules
 
-        - name: Assert rule was deleted
+        - name: Assert rule was removed
           assert:
             that:
               - sg_rules.securitygroups[0].properties.securityRules | length == 1
               - sg_rules.securitygroups[0].properties.securityRules[0].name == 'allow_web_traffic'
+
+        - name: Remove last remaining rule
+          include_role:
+            name: security_group
+          vars:
+            azure_security_group_rules_to_remove:
+              - 'allow_web_traffic'
+
+        - name: Get security group info
+          azure_rm_securitygroup_info:
+            resource_group: "{{ azure_resource_group }}"
+            name: "{{ azure_security_group }}"
+          register: sg_rules
+
+        - name: Assert no user specified rules remain
+          assert:
+            that:
+              - sg_rules.securitygroups[0].properties.securityRules | length == 0
 
     - name: Test deletion of security group
       block:
@@ -223,7 +229,7 @@
           include_role:
             name: security_group
           vars:
-            state: "absent"
+            operation: "delete"
 
         - name: Get security group info
           azure_rm_securitygroup_info:
@@ -240,7 +246,7 @@
           include_role:
             name: security_group
           vars:
-            state: "absent"
+            operation: "delete"
 
         - name: Get security group info
           azure_rm_securitygroup_info:

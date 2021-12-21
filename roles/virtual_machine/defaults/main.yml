@@ -1,0 +1,5 @@
+---
+# defaults file for virtual_machine
+operation: 'create'
+remove_on_absent: 'all'
+azure_tags: {}
