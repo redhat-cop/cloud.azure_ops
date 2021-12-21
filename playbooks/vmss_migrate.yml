@@ -180,10 +180,6 @@
       - fail:
           msg: "Failed to reach the given URL at http://{{ load_balancer_public_ip }}:5000"
 
-  - debug:
-      msg: "Web application accessible at http://{{ load_balancer_public_ip }}:5000"
-    when: load_balancer_public_ip is defined
-
   - set_fact:
       azure_virtual_network: "{{ source_resource_group }}-vnet"
       azure_subnet: "{{ source_resource_group }}-subnet"
@@ -234,3 +230,6 @@
       resource_group: "{{ source_resource_group }}"
       name: "{{ azure_security_group }}"
       state: absent
+
+  - debug:
+      msg: "Web application accessible at http://{{ load_balancer_public_ip }}:5000"
