@@ -49,7 +49,7 @@
   block:
     - name: Get load balancer info
       azure_rm_loadbalancer_info:
-        name: "{{ azure_lb_name }}"
+        name: "{{ azure_load_balancer.name }}"
         resource_group: "{{ azure_resource_group }}"
       register: lb_info
 
@@ -60,7 +60,7 @@
 
         - name: Get load balancer info
           azure_rm_loadbalancer_info:
-            name: "{{ azure_lb_name }}"
+            name: "{{ azure_load_balancer.name }}"
             resource_group: "{{ azure_resource_group }}"
           register: new_lb_info
 
@@ -87,7 +87,7 @@
             load_balancer_backend_address_pools:
               - "{{ lb_info.ansible_info.azure_loadbalancers[0].properties.backendAddressPools[0].id }}"
   when:
-    - azure_lb_name is defined
+    - azure_load_balancer.name is defined
 
 # Assert NIC is created and not attached to a lb
 - name: Create a Network Interface
@@ -102,4 +102,4 @@
         public_ip_address_name: "{{ azure_public_ip_name | default(omit) }}"
         primary: True
   when:
-    - azure_lb_name is undefined
+    - azure_load_balancer.name is undefined

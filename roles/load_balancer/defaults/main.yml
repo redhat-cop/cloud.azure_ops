@@ -1,2 +1,3 @@
 ---
 operation: create
+azure_load_balancer: {}
