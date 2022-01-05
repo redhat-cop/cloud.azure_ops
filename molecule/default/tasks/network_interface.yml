@@ -44,42 +44,39 @@
             resource_group: '{{ azure_resource_group }}'
           register: nics_info
 
-        - name: Assert that network interfaces were successfully created
+        - name: Assert that network interfaces were successfully created and not attached to lb
           assert:
             that:
               - "nics_info.networkinterfaces | length == {{ nic_instances | int }}"
-
-        - name: Assert that network interface is not attached to load balancer
-          assert:
-            that:
               - nics_info.networkinterfaces[0].ip_configurations[0].load_balancer_backend_address_pools is none
 
     - name: Test updating network interface w/ load balancer
       block:
-        - name: Update NICs
+        - name: Update NICs to include load balancer
           include_role:
             name: network_interface
           vars:
             operation: "create"
-            azure_lb_name: "{{ resource_group }}-lb"
+            azure_load_balancer:
+              name: "{{ azure_resource_group }}-lb"
             azure_network_interface_name: "{{ resource_group }}-nic{{ idx }}"
           loop: "{{ range(0, (nic_instances | int)) | list }}"
           loop_control:
             index_var: idx
 
-        - azure_rm_networkinterface_info:
+        - name: Get NICs info
+          azure_rm_networkinterface_info:
             resource_group: '{{ azure_resource_group }}'
           register: nics_info
 
-        - name: Assert that network interfaces still exist
+        - name: Assert that network interfaces still exist and are attached to lb
           assert:
             that:
               - "nics_info.networkinterfaces | length == {{ nic_instances | int }}"
-
-        - name: Assert that network interface is attached to load balancer
-          assert:
-            that:
-              - nics_info.networkinterfaces[0].ip_configurations[0].load_balancer_backend_address_pools is not none
+              - nics_info.networkinterfaces[idx].ip_configurations[0].load_balancer_backend_address_pools is not none
+          loop: "{{ range(0, (nic_instances | int)) | list }}"
+          loop_control:
+            index_var: idx
 
     - name: Test deletion of network interfaces
       block:
@@ -109,7 +106,8 @@
             name: network_interface
           vars:
             operation: "create"
-            azure_lb_name: "{{ resource_group }}-lb"
+            azure_load_balancer:
+              name: "{{ azure_resource_group }}-lb"
             azure_network_interface_name: "{{ resource_group }}-nic{{ idx }}"
           loop: "{{ range(0, (nic_instances | int)) | list }}"
           loop_control:

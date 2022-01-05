@@ -4,45 +4,23 @@
     name: resource_group
   when: rg_info.resourcegroups | length == 0
 
-- name: Create default public ip name
-  set_fact:
-    azure_lb_pip_name: "{{ azure_lb_name }}-ip"
-  when: azure_lb_pip_name is undefined
-
 - name: Ensure public ip exists
-  block:
-    - name: Get public ip info
-      azure_rm_publicipaddress_info:
-        resource_group: "{{ azure_resource_group }}"
-        name: "{{ azure_lb_pip_name }}"
-      register: lb_ip_info
-
-    - name: Create public ip
-      azure_rm_publicipaddress:
-        resource_group: "{{ azure_resource_group }}"
-        name: "{{ azure_lb_pip_name }}"
-      when: lb_ip_info.publicipaddresses | length == 0
+  azure_rm_publicipaddress:
+    resource_group: "{{ azure_resource_group }}"
+    name: "{{ azure_load_balancer.public_ip_name | default(azure_load_balancer.name + '-public-ip') }}"
+    domain_name: "{{ azure_load_balancer.domain_name | default(omit) }}"
+    sku: "{{ azure_load_balancer.sku | default(omit) }}"
+    allocation_method: "{{ (azure_load_balancer.sku is defined and azure_load_balancer.sku == 'Standard') | ternary('Static', omit) }}"
 
 - name: Create/Update load balancer
   azure_rm_loadbalancer:
     resource_group: "{{ azure_resource_group }}"
-    name: "{{ azure_lb_name }}"
-    frontend_ip_configurations:
-      - name: "{{ azure_lb_name }}-ipconf"
-        public_ip_address: "{{ azure_lb_pip_name }}"
-    backend_address_pools:
-      - name: "{{ azure_lb_name }}-backendpool"
-    probes: "{{ azure_lb_probes | default(omit) }}"
-    load_balancing_rules: "{{ azure_lb_rules | default(omit) }}"
-    sku: "{{ azure_lb_sku | default(omit) }}"
-    tags: "{{ azure_tags | default(omit) }}"
-
-- name: Attach NICs if input
-  include_role:
-    name: cloud.azure_roles.network_interface
-  with_items: "{{ azure_lb_network_interface_instances }}"
-  loop_control:
-    loop_var: azure_network_interface_name
-  when:
-    - azure_lb_network_interface_instances is defined
-    - azure_lb_network_interface_instances | length > 0
+    name: "{{ azure_load_balancer.name }}"
+    frontend_ip_configurations: "{{ azure_load_balancer.frontend_ip_configurations |
+                                    default([{ 'name': 'default',
+                                               'public_ip_address': azure_load_balancer.public_ip_name | default(azure_load_balancer.name + '-public-ip') }]) }}"
+    backend_address_pools: "{{ azure_load_balancer.backend_address_pools | default([{ 'name': 'default' }]) }}"
+    probes: "{{ azure_load_balancer.probes | default(omit) }}"
+    load_balancing_rules: "{{ azure_load_balancer.rules | default(omit) }}"
+    sku: "{{ azure_load_balancer.sku | default(omit) }}"
+    tags: "{{ azure_load_balancer.tags | default(omit) }}"

@@ -11,13 +11,13 @@
 
 - name: Ensure load balancer name is defined
   fail:
-    msg: "Azure load balancer name must be defined as azure_lb_name"
-  when: azure_lb_name is not defined
+    msg: "Azure load balancer name must be defined as azure_load_balancer.name"
+  when: azure_load_balancer.name is not defined
 
 - name: Get load balancer info
   azure_rm_loadbalancer_info:
     resource_group: '{{ azure_resource_group }}'
-    name: '{{ azure_lb_name }}'
+    name: '{{ azure_load_balancer.name }}'
   register: lb_info
 
 - name: Get resource group info
