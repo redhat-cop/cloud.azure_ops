@@ -47,6 +47,7 @@ Role Variables
 Limitations
 ------------
 
+- Every load balancer will be assigned a public ip - which will be deleted when the load balancer is deleted.
 - Only one backend pool is supported.
 - Cannot 'remove' any ip configurations, backend pools, probes, or rules from a load balancer. Instead, `tasks/create.yml` needs to be used to update the load balancer with the desired state.
 
