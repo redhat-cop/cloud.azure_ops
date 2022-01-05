@@ -1,11 +1,11 @@
 ---
-- name: define resource group name
+- name: Define resource group name
   set_fact:
     resource_group: "test-{{ lookup('password', '/dev/null chars=ascii_lowercase,digits length=6') }}"
     azure_tags:
       cloud.azure_roles: load_balancer
 
-- name: define load balancer variables
+- name: Define region
   set_fact:
     azure_resource_group: "{{ resource_group }}"
     azure_region: 'canadacentral'
@@ -21,7 +21,7 @@
         - debug:
             msg: "Failed when attempting to create a load balancer with no name. Continue..."
 
-    - name: Test valid creation of load balancer with no public ip specified
+    - name: Test creation of load balancer with all defaults
       block:
         - name: Create load balancer
           include_role:
@@ -46,12 +46,13 @@
             resource_group: '{{ azure_resource_group }}'
           register: lb_info
 
-        - name: Assert that load balancer was successfully created & a public IP was assigned
+        - name: Assert that load balancer was successfully created with defaults
           assert:
             that:
               - lb_info.ansible_info.azure_loadbalancers | length == 1
-              - lb_info.ansible_info.azure_loadbalancers[0].properties.frontendIPConfigurations[0].properties.publicIPAddress is not none
-              - lb_info.ansible_info.azure_loadbalancers[0].properties.backendAddressPools[0].name == '{{ azure_resource_group }}-lb-backend-pool'
+              - lb_info.ansible_info.azure_loadbalancers[0].properties.frontendIPConfigurations[0].name == 'default'
+              - lb_info.ansible_info.azure_loadbalancers[0].properties.frontendIPConfigurations[0].properties.publicIPAddress.id is search('{{ azure_resource_group }}-lb-public-ip')
+              - lb_info.ansible_info.azure_loadbalancers[0].properties.backendAddressPools[0].name == 'default'
 
         - name: Delete load balancer
           include_role:
@@ -79,27 +80,8 @@
             that:
               - lb_info.ansible_info.azure_loadbalancers | length == 0
 
-    - name: Test valid creation of load balancer with public ip specified
+    - name: Test creation of load balancer with custom public ip
       block:
-        - name: Create resource group
-          azure_rm_resourcegroup:
-            name: "{{ azure_resource_group }}"
-            location: "{{ azure_region }}"
-
-        - name: Create networking stack
-          azure_rm_virtualnetwork:
-            resource_group: "{{ azure_resource_group }}"
-            name: "{{ azure_resource_group }}-vnet-00"
-            address_prefixes_cidr:
-              - 10.16.0.0/16
-
-        - name: Create subnet
-          azure_rm_subnet:
-            resource_group: "{{ azure_resource_group }}"
-            name: "{{ azure_resource_group }}-subnet-00"
-            virtual_network: "{{ azure_resource_group }}-vnet-00"
-            address_prefix_cidr: 10.16.0.0/24
-
         - name: Create load balancer with public ip specified
           include_role:
             name: load_balancer
@@ -124,11 +106,13 @@
             resource_group: '{{ azure_resource_group }}'
           register: lb_info
 
-        - name: Assert that load balancer was successfully created & a public IP was assigned
+        - name: Assert that load balancer was successfully created with public IP input
           assert:
             that:
               - lb_info.ansible_info.azure_loadbalancers | length == 1
-              - "'testinput' in lb_info.ansible_info.azure_loadbalancers[0].properties.frontendIPConfigurations[0].properties.publicIPAddress.id"
+              - lb_info.ansible_info.azure_loadbalancers[0].properties.frontendIPConfigurations[0].properties.publicIPAddress.id is search('testinput')
+              - lb_info.ansible_info.azure_loadbalancers[0].properties.frontendIPConfigurations[0].name == 'default'
+              - lb_info.ansible_info.azure_loadbalancers[0].properties.backendAddressPools[0].name == 'default'
 
         - name: Delete load balancer
           include_role:
@@ -147,7 +131,7 @@
             that:
               - lb_info.ansible_info.azure_loadbalancers | length == 0
 
-    - name: Test valid creation of load balancer with domain name
+    - name: Test creation of load balancer with custom domain name
       block:
         - name: Create load balancer
           include_role:
@@ -183,6 +167,9 @@
             that:
               - lb_info.ansible_info.azure_loadbalancers | length == 1
               - pip.response[0].properties.dnsSettings.fqdn == '{{ azure_resource_group  | replace('_', '-')  }}-{{ azure_region  | replace('_', '-')  }}-lb.canadacentral.cloudapp.azure.com'
+              - lb_info.ansible_info.azure_loadbalancers[0].properties.frontendIPConfigurations[0].name == 'default'
+              - lb_info.ansible_info.azure_loadbalancers[0].properties.frontendIPConfigurations[0].properties.publicIPAddress.id is search('{{ azure_resource_group }}-lb-public-ip')
+              - lb_info.ansible_info.azure_loadbalancers[0].properties.backendAddressPools[0].name == 'default'
 
         - name: Delete load balancer
           include_role:
@@ -200,15 +187,69 @@
         - assert:
             that:
               - lb_info.ansible_info.azure_loadbalancers | length == 0
-    - name: Test valid creation of load balancer with backend address pool
+
+    - name: Test creation of load balancer with custom frontend ip conf
       block:
-        - name: Create load balancer with backend address pool
+        - name: Create load balancer with custom frontend ip conf
           include_role:
             name: load_balancer
           vars:
             operation: "create"
             azure_load_balancer:
-              backend_address_pool:
+              frontend_ip_configurations:
+                - name: "{{ azure_resource_group }}-frontend"
+                  public_ip_address: "{{ azure_resource_group }}-lb-public-ip"
+              name: "{{ azure_resource_group }}-lb"
+
+        - name: Get resource group info
+          azure_rm_resourcegroup_info:
+            name: '{{ azure_resource_group }}'
+          register: rg
+
+        - name: Assert that resource group was created
+          assert:
+            that:
+              - rg.resourcegroups | length == 1
+
+        - name: Get lb info
+          azure_rm_loadbalancer_info:
+            resource_group: '{{ azure_resource_group }}'
+          register: lb_info
+
+        - name: Assert that load balancer was successfully created with input frontend ip configurations
+          assert:
+            that:
+              - lb_info.ansible_info.azure_loadbalancers | length == 1
+              - lb_info.ansible_info.azure_loadbalancers[0].properties.backendAddressPools[0].name == 'default'
+              - lb_info.ansible_info.azure_loadbalancers[0].properties.frontendIPConfigurations[0].name == '{{ azure_resource_group }}-frontend'
+              - lb_info.ansible_info.azure_loadbalancers[0].properties.frontendIPConfigurations[0].properties.publicIPAddress.id is search('{{ azure_resource_group }}-lb-public-ip')
+
+        - name: Delete load balancer
+          include_role:
+            name: load_balancer
+          vars:
+            operation: 'delete'
+            azure_load_balancer:
+              name: "{{ azure_resource_group }}-lb"
+
+        - name: Assert that load balancer was deleted
+          azure_rm_loadbalancer_info:
+            resource_group: '{{ azure_resource_group }}'
+          register: lb_info
+
+        - assert:
+            that:
+              - lb_info.ansible_info.azure_loadbalancers | length == 0
+
+    - name: Test creation of load balancer with custom backend address pool
+      block:
+        - name: Create load balancer with backend address pool input
+          include_role:
+            name: load_balancer
+          vars:
+            operation: "create"
+            azure_load_balancer:
+              backend_address_pools:
                 - name: "{{ azure_resource_group }}-vm-pool"
               name: "{{ azure_resource_group }}-lb"
 
@@ -227,11 +268,13 @@
             resource_group: '{{ azure_resource_group }}'
           register: lb_info
 
-        - name: Assert that load balancer was successfully created & backend address pool was assigned
+        - name: Assert that load balancer was successfully created with input backend address pool
           assert:
             that:
               - lb_info.ansible_info.azure_loadbalancers | length == 1
               - lb_info.ansible_info.azure_loadbalancers[0].properties.backendAddressPools[0].name == '{{ azure_resource_group }}-vm-pool'
+              - lb_info.ansible_info.azure_loadbalancers[0].properties.frontendIPConfigurations[0].name == 'default'
+              - lb_info.ansible_info.azure_loadbalancers[0].properties.frontendIPConfigurations[0].properties.publicIPAddress.id is search('{{ azure_resource_group }}-lb-public-ip')
 
         - name: Delete load balancer
           include_role:
@@ -249,56 +292,6 @@
         - assert:
             that:
               - lb_info.ansible_info.azure_loadbalancers | length == 0
-
-    - name: Test adding NICs to load balancer
-      block:
-        - name: Set facts
-          set_fact:
-            azure_lb_network_interface_instances:
-              - "{{ resource_group }}-nic1"
-              - "{{ resource_group }}-nic2"
-              - "{{ resource_group }}-nic3"
-
-        - name: Add NICs to load balancer's backend pool
-          include_role:
-            name: load_balancer
-          vars:
-            operation: "create"
-            azure_load_balancer:
-              name: "{{ azure_resource_group }}-lb"
-            azure_virtual_network: "{{ resource_group }}-vnet-00"
-            azure_subnet: "{{ resource_group }}-subnet-00"
-            azure_vnet_address_prefixes_cidr:
-              - 10.16.0.0/16
-            azure_subnet_address_prefixes_cidr: 10.16.0.0/24
-
-        - name: Get lb info
-          azure_rm_loadbalancer_info:
-            resource_group: '{{ azure_resource_group }}'
-          register: lb_info
-
-        - name: Assert that nics were attached
-          assert:
-            that:
-              - lb_info.ansible_info.azure_loadbalancers | length == 1
-              - "{{ lb_info.ansible_info.azure_loadbalancers[0].properties.backendAddressPools[0].properties.backendIPConfigurations | length == ( azure_lb_network_interface_instances | length ) }}"
-
-        - name: Test deleting NIC when attached to LB
-          include_role:
-            name: network_interface
-          vars:
-            operation: 'delete'
-            azure_network_interface_name: "{{ resource_group }}-nic1"
-
-        - name: Assert that NIC was deleted
-          azure_rm_networkinterface_info:
-            resource_group: '{{ azure_resource_group }}'
-            name: "{{ resource_group }}-nic1"
-          register: nic_info
-
-        - assert:
-            that:
-              - nic_info.networkinterfaces | length == 0
 
   always:
     - name: Delete resource group
