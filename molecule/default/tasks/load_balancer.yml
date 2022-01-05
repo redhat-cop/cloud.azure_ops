@@ -53,6 +53,10 @@
               - lb_info.ansible_info.azure_loadbalancers[0].properties.frontendIPConfigurations[0].name == 'default'
               - lb_info.ansible_info.azure_loadbalancers[0].properties.frontendIPConfigurations[0].properties.publicIPAddress.id is search('{{ azure_resource_group }}-lb-public-ip')
               - lb_info.ansible_info.azure_loadbalancers[0].properties.backendAddressPools[0].name == 'default'
+              - lb_info.ansible_info.azure_loadbalancers[0].properties.loadBalancingRules | length == 0
+              - lb_info.ansible_info.azure_loadbalancers[0].properties.probes | length == 0
+              - lb_info.ansible_info.azure_loadbalancers[0].sku.name == 'Basic'
+              - lb_info.ansible_info.azure_loadbalancers[0].tags is undefined
 
         - name: Delete load balancer
           include_role:
@@ -275,6 +279,71 @@
               - lb_info.ansible_info.azure_loadbalancers[0].properties.backendAddressPools[0].name == '{{ azure_resource_group }}-vm-pool'
               - lb_info.ansible_info.azure_loadbalancers[0].properties.frontendIPConfigurations[0].name == 'default'
               - lb_info.ansible_info.azure_loadbalancers[0].properties.frontendIPConfigurations[0].properties.publicIPAddress.id is search('{{ azure_resource_group }}-lb-public-ip')
+
+        - name: Delete load balancer
+          include_role:
+            name: load_balancer
+          vars:
+            operation: 'delete'
+            azure_load_balancer:
+              name: "{{ azure_resource_group }}-lb"
+
+        - name: Assert that load balancer was deleted
+          azure_rm_loadbalancer_info:
+            resource_group: '{{ azure_resource_group }}'
+          register: lb_info
+
+        - assert:
+            that:
+              - lb_info.ansible_info.azure_loadbalancers | length == 0
+
+    - name: Test creation of load balancer with custom probes, rules, tags, and sku
+      block:
+        - name: Create load balancer with custom probes, rules, tags, and sku input
+          include_role:
+            name: load_balancer
+          vars:
+            operation: "create"
+            azure_load_balancer:
+              name: "{{ azure_resource_group }}-lb"
+              probes:
+                - name: lb-probe
+                  port: 5000
+              rules:
+                - name: lb-rule
+                  probe: lb-probe
+                  backend_address_pool: 'default'
+                  frontend_ip_configuration: 'default'
+                  frontend_port: 5000
+                  backend_port: 5000
+              sku: 'Standard'
+              tags:
+                tag0: 'test0'
+                tag1: 'test1'
+
+        - name: Get resource group info
+          azure_rm_resourcegroup_info:
+            name: '{{ azure_resource_group }}'
+          register: rg
+
+        - name: Assert that resource group was created
+          assert:
+            that:
+              - rg.resourcegroups | length == 1
+
+        - name: Get lb info
+          azure_rm_loadbalancer_info:
+            resource_group: '{{ azure_resource_group }}'
+          register: lb_info
+
+        - name: Assert that load balancer was successfully created with input custom probes, rules, tags, and sku
+          assert:
+            that:
+              - lb_info.ansible_info.azure_loadbalancers | length == 1
+              - lb_info.ansible_info.azure_loadbalancers[0].properties.loadBalancingRules | length > 0
+              - lb_info.ansible_info.azure_loadbalancers[0].properties.probes | length > 0
+              - lb_info.ansible_info.azure_loadbalancers[0].sku.name == 'Standard'
+              - lb_info.ansible_info.azure_loadbalancers[0].tags | length == 2
 
         - name: Delete load balancer
           include_role:
