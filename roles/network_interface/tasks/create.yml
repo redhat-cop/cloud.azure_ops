@@ -35,14 +35,14 @@
   - name: Assert security group exists if specified by user
     azure_rm_securitygroup_info:
       resource_group: "{{ azure_resource_group }}"
-      name: "{{ azure_security_group_name }}"
+      name: "{{ azure_security_group }}"
     register: sg_info
 
   - name: Create security group
     include_role:
       name: security_group
     when: sg_info.securitygroups | length == 0
-  when: azure_security_group_name is defined
+  when: azure_security_group is defined
 
 # Assert specified load balancer exists
 - name: Create/update network interface and attach to load balancer
@@ -66,9 +66,10 @@
     resource_group: "{{ azure_resource_group }}"
     virtual_network: "{{ azure_virtual_network }}"
     subnet_name: "{{ azure_subnet }}"
-    security_group: "{{ azure_security_group_name | default(omit) }}"
+    security_group: "{{ azure_security_group | default(omit) }}"
     ip_configurations:
       - name: default
         public_ip_address_name: "{{ azure_public_ip_name | default(omit) }}"
         primary: True
         load_balancer_backend_address_pools: "{{ lb_info.ansible_info.azure_loadbalancers[0].properties.backendAddressPools[0].id | default(omit) }}"
+    tags: "{{ azure_network_interface_tags | default(omit) }}"
