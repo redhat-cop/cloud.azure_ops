@@ -1,16 +1,6 @@
 ---
-- name: Check Resource Group Exists
-  azure_rm_resourcegroup_info:
-    name: "{{ azure_resource_group }}"
-  register: result
-
-- name: Resource Group Does Not Exist -> Exit
-  fail:
-    msg: 'Resource group {{ azure_resource_group }} does not exist.'
-  when: result.resourcegroups | length == 0
-
 - name: Delete a Network Interface
   azure_rm_networkinterface:
-    name: "{{ azure_network_interface_name }}"
+    name: "{{ azure_network_interface.name }}"
     resource_group: "{{ azure_resource_group }}"
     state: absent

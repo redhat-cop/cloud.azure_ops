@@ -1,9 +1,4 @@
 ---
-- name: Check name
-  fail:
-    msg: 'Azure network interface name must be specified as azure_network_interface_name'
-  when: azure_network_interface_name is undefined
-
 - name: Check operation validation
   fail:
     msg: "Please provide operation as 'create', 'delete', or 'attach'"
@@ -11,7 +6,22 @@
 
 - name: Ensure resource group is defined
   fail:
-    msg: "Azure Resource group name must be defined as azure_resource_group"
+    msg: "Azure resource group name must be defined as azure_resource_group"
   when: azure_resource_group is not defined
+
+- name: Ensure network interface name is defined
+  fail:
+    msg: "Missing parameter: key 'name' not found in azure_network_interface"
+  when: azure_network_interface.name is not defined
+
+- name: Get resource group info
+  azure_rm_resourcegroup_info:
+    name: "{{ azure_resource_group }}"
+  register: rg_info
+
+- name: Ensure resource group exists
+  fail:
+    msg: "Resource group '{{ azure_resource_group }}' does not exist"
+  when: rg_info.resourcegroups | length == 0
 
 - include_tasks: "{{ operation }}.yml"

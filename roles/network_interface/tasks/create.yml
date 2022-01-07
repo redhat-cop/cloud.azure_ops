@@ -1,74 +1,54 @@
 ---
 - name: Ensure vnet is specified
   fail:
-    msg: 'Azure virtual network must be specified as azure_virtual_network when creating/updating network interface'
-  when: azure_virtual_network is undefined
+    msg: "Missing parameter: key 'vnet_name' not found in azure_network_interface"
+  when: azure_network_interface.vnet_name is undefined
 
 - name: Ensure subnet is specified
   fail:
-    msg: 'Azure subnet must be specified as azure_subnet when creating/updating network interface'
-  when: azure_subnet is undefined
+    msg: "Missing parameter: key 'subnet_name' not found in azure_network_interface"
+  when: azure_network_interface.subnet_name is undefined
 
-- name: Check Resource Group Exists
-  azure_rm_resourcegroup_info:
-    name: "{{ azure_resource_group }}"
-  register: result
-
-- name: Resource Group Does Not Exist -> Create Resource Group
-  include_role:
-    name: resource_group
-  when: result.resourcegroups | length == 0
-
-- name: Check Networking Stack Exists
+- name: Get vnet info
   azure_rm_virtualnetwork_info:
     resource_group: "{{ azure_resource_group }}"
-    name: "{{ azure_virtual_network }}"
-  register: virtual_network_result
+    name: "{{ azure_network_interface.vnet_name }}"
+  register: vnet_info
 
-- name: Networking Stack Does Not Exist -> Create Networking Stack
-  include_role:
-    name: networking_stack
-  when: virtual_network_result.virtualnetworks | length == 0
+- name: Ensure vnet exists
+  fail:
+    msg: "Virtual network '{{ azure_network_interface.vnet_name }}' does not exist"
+  when: vnet_info.virtualnetworks | length == 0
 
-# Assert specified security group exists
-- block:
-  - name: Assert security group exists if specified by user
-    azure_rm_securitygroup_info:
-      resource_group: "{{ azure_resource_group }}"
-      name: "{{ azure_security_group_name }}"
-    register: sg_info
-
-  - name: Create security group
-    include_role:
-      name: security_group
-    when: sg_info.securitygroups | length == 0
-  when: azure_security_group_name is defined
-
-# Assert specified load balancer exists
-- name: Create/update network interface and attach to load balancer
+- name: Ensure subnet exists
   block:
-    - name: Create load balancer
-      include_role:
-        name: cloud.azure_roles.load_balancer
-
-    - name: Get load balancer info
-      azure_rm_loadbalancer_info:
-        name: "{{ azure_load_balancer.name }}"
+    - name: Get subnet info
+      azure_rm_subnet_info:
         resource_group: "{{ azure_resource_group }}"
-      register: lb_info
-  when:
-    - azure_load_balancer.name is defined
+        name: "{{ azure_network_interface.subnet_name }}"
+        virtual_network_name: "{{ azure_network_interface.vnet_name }}"
+      register: subnet_info
 
-# Assert NIC is created
-- name: Create a Network Interface
+    - name: Ensure subnet exists
+      fail:
+        msg: "Subnet '{{ azure_network_interface.subnet_name }}' does not exist"
+      when: subnet_info.subnets | length == 0
+
+  rescue:
+    - name: Throw better error message
+      fail:
+        msg: "Subnet '{{ azure_network_interface.subnet_name }}' does not exist"
+
+- name: Create/Update a Network Interface
   azure_rm_networkinterface:
-    name: "{{ azure_network_interface_name }}"
+    name: "{{ azure_network_interface.name }}"
     resource_group: "{{ azure_resource_group }}"
-    virtual_network: "{{ azure_virtual_network }}"
-    subnet_name: "{{ azure_subnet }}"
-    security_group: "{{ azure_security_group_name | default(omit) }}"
-    ip_configurations:
-      - name: default
-        public_ip_address_name: "{{ azure_public_ip_name | default(omit) }}"
-        primary: True
-        load_balancer_backend_address_pools: "{{ lb_info.ansible_info.azure_loadbalancers[0].properties.backendAddressPools[0].id | default(omit) }}"
+    virtual_network: "{{ azure_network_interface.vnet_name }}"
+    subnet_name: "{{ azure_network_interface.subnet_name }}"
+    security_group: "{{ azure_network_interface.security_group_name | default(omit) }}"
+    create_with_security_group: "{{ azure_network_interface.create_with_security_group | default(omit) }}"
+    os_type: "{{ azure_network_interface.os_type | default(omit) }}"
+    enable_accelerated_networking: "{{ azure_network_interface.enable_accelerated_networking | default(omit) }}"
+    ip_forwarding: "{{ azure_network_interface.ip_forwarding | default(omit) }}"
+    dns_servers: "{{ azure_network_interface.dns_servers | default(omit) }}"
+    ip_configurations: "{{ azure_network_interface.ip_configurations | default(omit) }}"

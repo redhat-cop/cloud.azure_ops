@@ -1,157 +1,312 @@
 ---
-- name: Define resource group name
-  set_fact:
-    resource_group: "test-{{ lookup('password', '/dev/null chars=ascii_lowercase,digits length=6') }}"
-    azure_tags:
-      cloud.azure_roles: network_interface
-
-- name: Define network interface variables
-  set_fact:
-    azure_resource_group: "{{ resource_group }}"
-    azure_region: 'canadacentral'
-    nic_instances: 2
-    azure_virtual_network: "{{ resource_group }}-vnet-00"
-    azure_subnet: "{{ resource_group }}-subnet-00"
-    azure_vnet_address_prefixes_cidr:
-      - 10.16.0.0/16
-    azure_subnet_address_prefixes_cidr: 10.16.0.0/24
-
 - name: Test network interface role
   block:
-    - name: Test valid creation of network interface w/ no load balancer
+    - name: Test invalid test case - no resource group
       block:
-        - name: Create NICs
+        - name: Attempt to create nic with no resource group - should fail
+          block:
+            - name: Call network_interface role with no resource group defined
+              include_role:
+                name: network_interface
+              vars:
+                operation: 'create'
+          rescue:
+            - name: Assert correct error message
+              fail:
+                msg: "Task failed with incorrect error message"
+              when: ansible_failed_result.msg is not match("Azure resource group name must be defined as azure_resource_group")
+
+    - name: Set facts
+      set_fact:
+        azure_resource_group: "test-{{ lookup('password', '/dev/null chars=ascii_lowercase,digits length=6') }}"
+        azure_region: canadacentral
+        azure_tags:
+          cloud.azure_roles: network_interface
+        nic_instances: 2
+
+    - name: Attempt to create nic with nonexistent resource group - should fail
+      block:
+        - name: Call network_interface role with nonexistent resource group
           include_role:
             name: network_interface
           vars:
             operation: "create"
-            azure_network_interface_name: "{{ resource_group }}-nic{{ idx }}"
-          loop: "{{ range(0, (nic_instances | int)) | list }}"
-          loop_control:
-            index_var: idx
+            azure_network_interface:
+              name: "{{ azure_resource_group }}-nic"
+      rescue:
+        - name: Assert correct error message
+          fail:
+            msg: "Task failed with incorrect error message"
+          when: ansible_failed_result.msg is not match("Resource group '{{ azure_resource_group }}' does not exist")
 
-        - name: Get resource group info
-          azure_rm_resourcegroup_info:
-            name: '{{ azure_resource_group }}'
-          register: rg
+        - name: Create resource group
+          azure_rm_resourcegroup:
+            name: "{{ azure_resource_group }}"
+            location: "{{ azure_region }}"
 
-        - name: Assert that resource group was created
-          assert:
-            that:
-              - rg.resourcegroups | length == 1
-
-        - azure_rm_networkinterface_info:
-            resource_group: '{{ azure_resource_group }}'
-          register: nics_info
-
-        - name: Assert that network interfaces were successfully created and not attached to lb
-          assert:
-            that:
-              - "nics_info.networkinterfaces | length == {{ nic_instances | int }}"
-              - nics_info.networkinterfaces[0].ip_configurations[0].load_balancer_backend_address_pools is none
-
-    - name: Test updating network interface w/ load balancer
+    - name: Attempt to create nic with no name - should fail
       block:
-        - name: Update NICs to include load balancer
+        - name: Call network_interface role with no name defined
+          include_role:
+            name: network_interface
+          vars:
+            operation: 'create'
+      rescue:
+        - name: Assert correct error message
+          fail:
+            msg: "Task failed with incorrect error message"
+          when: ansible_failed_result.msg is not match("Missing parameter:\ key 'name' not found in azure_network_interface")
+
+    - name: Attempt to create nic with no vnet name - should fail
+      block:
+        - name: Call network_interface role with no vnet name defined
+          include_role:
+            name: network_interface
+          vars:
+            operation: 'create'
+            azure_network_interface:
+              name: "{{ azure_resource_group }}-nic"
+      rescue:
+        - name: Assert correct error message
+          fail:
+            msg: "Task failed with incorrect error message"
+          when: ansible_failed_result.msg is not match("Missing parameter:\ key 'vnet_name' not found in azure_network_interface")
+
+    - name: Attempt to create nic with no subnet name - should fail
+      block:
+        - name: Call network_interface role with no subnet name defined
+          include_role:
+            name: network_interface
+          vars:
+            operation: 'create'
+            azure_network_interface:
+              name: "{{ azure_resource_group }}-nic"
+              vnet_name: "{{ azure_resource_group }}-vnet"
+      rescue:
+        - name: Assert correct error message
+          fail:
+            msg: "Task failed with incorrect error message"
+          when: ansible_failed_result.msg is not match("Missing parameter:\ key 'subnet_name' not found in azure_network_interface")
+
+    - name: Set networking facts
+      set_fact:
+        nic_name: "{{ azure_resource_group }}-nic"
+        vnet:
+          name: "{{ azure_resource_group }}-vnet"
+          address_prefixes_cidr:
+            - 10.16.0.0/16
+          resource_group: "{{ azure_resource_group }}"
+        subnet:
+          name: "{{ azure_resource_group }}-subnet"
+          address_prefix_cidr: 10.16.0.0/24
+          resource_group: "{{ azure_resource_group }}"
+          virtual_network_name: "{{ azure_resource_group }}-vnet"
+
+    - name: Attempt to create nic with nonexistent virtual network - should fail
+      block:
+        - name: Call network_interface role with nonexistent virtual network
           include_role:
             name: network_interface
           vars:
             operation: "create"
-            azure_load_balancer:
-              name: "{{ azure_resource_group }}-lb"
-            azure_network_interface_name: "{{ resource_group }}-nic{{ idx }}"
-          loop: "{{ range(0, (nic_instances | int)) | list }}"
-          loop_control:
-            index_var: idx
+            azure_network_interface:
+              name: "{{ nic_name }}"
+              vnet_name: "{{ vnet.name }}"
+              subnet_name: "{{ subnet.name }}"
+      rescue:
+        - name: Assert correct error message
+          fail:
+            msg: "Task failed with incorrect error message"
+          when: ansible_failed_result.msg is not match("Virtual network '{{ vnet.name }}' does not exist")
 
-        - name: Get NICs info
+        - name: Create vnet
+          azure_rm_virtualnetwork: "{{ vnet }}"
+
+    - name: Attempt to create nic with nonexistent subnet - should fail
+      block:
+        - name: Call network_interface role with nonexistent subnet
+          include_role:
+            name: network_interface
+          vars:
+            operation: "create"
+            azure_network_interface:
+              name: "{{ nic_name }}"
+              vnet_name: "{{ vnet.name }}"
+              subnet_name: "{{ subnet.name }}"
+      rescue:
+        - name: Assert correct error message
+          fail:
+            msg: "Task failed with incorrect error message"
+          when: ansible_failed_result.msg is not match("Subnet '{{ subnet.name }}' does not exist")
+
+        - name: Create subnet
+          azure_rm_subnet: "{{ subnet }}"
+
+    - name: Test valid creation of network interface
+      block:
+        - name: Create nic with default values
+          include_role:
+            name: network_interface
+          vars:
+            operation: "create"
+            azure_network_interface:
+              name: "{{ nic_name }}"
+              vnet_name: "{{ vnet.name }}"
+              subnet_name: "{{ subnet.name }}"
+
+        - name: Get nic info
           azure_rm_networkinterface_info:
             resource_group: '{{ azure_resource_group }}'
-          register: nics_info
+          register: nic_info
 
-        - name: Assert that network interfaces still exist and are attached to lb
+        - name: Assert that network interface was successfully created
           assert:
             that:
-              - "nics_info.networkinterfaces | length == {{ nic_instances | int }}"
-              - nics_info.networkinterfaces[idx].ip_configurations[0].load_balancer_backend_address_pools is not none
-          loop: "{{ range(0, (nic_instances | int)) | list }}"
-          loop_control:
-            index_var: idx
+              - nic_info.networkinterfaces | length == 1
 
-    - name: Test deletion of network interfaces
-      block:
-        - name: Delete NICs
-          include_role:
-            name: network_interface
-          vars:
-            operation: "delete"
-            azure_network_interface_name: "{{ resource_group }}-nic{{ idx }}"
-          loop: "{{ range(0, (nic_instances | int)) | list }}"
-          loop_control:
-            index_var: idx
+        - name: Create public ip
+          azure_rm_publicipaddress:
+            resource_group: "{{ azure_resource_group }}"
+            name: "{{ azure_resource_group }}-pip"
 
-        - azure_rm_networkinterface_info:
-            resource_group: '{{ azure_resource_group }}'
-          register: nics_info
-
-        - name: Assert that network interfaces were successfully deleted
-          assert:
-            that:
-              - nics_info.networkinterfaces | length == 0
-
-    - name: Test creating network interface w/ load balancer
-      block:
-        - name: Create NICs w/ load balancer
+        - name: Update nic with public ip
           include_role:
             name: network_interface
           vars:
             operation: "create"
-            azure_load_balancer:
-              name: "{{ azure_resource_group }}-lb"
-            azure_network_interface_name: "{{ resource_group }}-nic{{ idx }}"
-          loop: "{{ range(0, (nic_instances | int)) | list }}"
-          loop_control:
-            index_var: idx
+            azure_network_interface:
+              name: "{{ nic_name }}"
+              vnet_name: "{{ vnet.name }}"
+              subnet_name: "{{ subnet.name }}"
+              ip_configurations:
+                - name: ipconf1
+                  public_ip_address_name: "{{ azure_resource_group }}-pip"
+                  primary: True
 
-        - azure_rm_networkinterface_info:
+        - name: Get nic info
+          azure_rm_networkinterface_info:
             resource_group: '{{ azure_resource_group }}'
-          register: nics_info
+          register: nic_info
 
-        - name: Assert that network interfaces were created
+        - name: Assert that public ip is attached to nic
           assert:
             that:
-              - "nics_info.networkinterfaces | length == {{ nic_instances | int }}"
+              - nic_info.networkinterfaces | length == 1
+              - nic_info.networkinterfaces[0].ip_configurations[0].public_ip_address is search("{{ azure_resource_group }}-pip")
 
-        - name: Assert that network interface is attached to load balancer
-          assert:
-            that:
-              - nics_info.networkinterfaces[0].ip_configurations[0].load_balancer_backend_address_pools is not none
+        - name: Test security group parameters
+          block:
+            - name: Create security group for nic
+              azure_rm_securitygroup:
+                resource_group: "{{ azure_resource_group }}"
+                name: "{{ azure_resource_group }}-sg"
 
-    - name: Test updating network interface to remove load balancer
+            - name: Update nic with security group
+              include_role:
+                name: network_interface
+              vars:
+                operation: "create"
+                azure_network_interface:
+                  name: "{{ nic_name }}"
+                  vnet_name: "{{ vnet.name }}"
+                  subnet_name: "{{ subnet.name }}"
+                  ip_configurations:
+                    - name: ipconf1
+                      public_ip_address_name: "{{ azure_resource_group }}-pip"
+                      primary: True
+                  security_group_name: "{{ azure_resource_group }}-sg"
+
+            - name: Get nic info
+              azure_rm_networkinterface_info:
+                resource_group: '{{ azure_resource_group }}'
+              register: nic_info
+
+            - name: Assert that security group is attached to nic
+              assert:
+                that:
+                  - nic_info.networkinterfaces | length == 1
+                  - nic_info.networkinterfaces[0].security_group is search("{{ azure_resource_group }}-sg")
+
+            - name: Update nic with no default security group
+              include_role:
+                name: network_interface
+              vars:
+                operation: "create"
+                azure_network_interface:
+                  name: "{{ nic_name }}"
+                  vnet_name: "{{ vnet.name }}"
+                  subnet_name: "{{ subnet.name }}"
+                  ip_configurations:
+                    - name: ipconf1
+                      public_ip_address_name: "{{ azure_resource_group }}-pip"
+                      primary: True
+                  create_with_security_group: no
+
+            - name: Get nic info
+              azure_rm_networkinterface_info:
+                resource_group: '{{ azure_resource_group }}'
+              register: nic_info
+
+            - name: Assert that security group is removed
+              assert:
+                that:
+                  - nic_info.networkinterfaces | length == 1
+                  - nic_info.networkinterfaces[0].security_group == None
+
+        - name: Test other nic parameters
+          block:
+            - name: Update nic with extra params
+              include_role:
+                name: network_interface
+              vars:
+                operation: "create"
+                azure_network_interface:
+                  name: "{{ nic_name }}"
+                  vnet_name: "{{ vnet.name }}"
+                  subnet_name: "{{ subnet.name }}"
+                  ip_configurations:
+                    - name: ipconf1
+                      public_ip_address_name: "{{ azure_resource_group }}-pip"
+                      primary: True
+                  security_group_name: "{{ azure_resource_group }}-sg"
+                  os_type: Windows
+                  enable_accelerated_networking: yes
+                  ip_forwarding: yes
+                  dns_servers:
+                    - 8.8.8.8
+
+            - name: Get nic info
+              azure_rm_networkinterface_info:
+                resource_group: '{{ azure_resource_group }}'
+              register: nic_info
+
+            - name: Assert that extra params were set properly
+              assert:
+                that:
+                  - nic_info.networkinterfaces | length == 1
+                  - nic_info.networkinterfaces[0].enable_accelerated_networking == true
+                  - nic_info.networkinterfaces[0].enable_ip_forwarding == true
+                  - nic_info.networkinterfaces[0].dns_servers[0] == '8.8.8.8'
+
+    - name: Test deletion of network interface
       block:
-        - name: Update NICs
+        - name: Delete network interface
           include_role:
             name: network_interface
           vars:
-            operation: "create"
-            azure_network_interface_name: "{{ resource_group }}-nic{{ idx }}"
-          loop: "{{ range(0, (nic_instances | int)) | list }}"
-          loop_control:
-            index_var: idx
+            operation: 'delete'
+            azure_network_interface:
+              name: "{{ nic_name }}"
 
-        - azure_rm_networkinterface_info:
+        - name: Get nic info
+          azure_rm_networkinterface_info:
             resource_group: '{{ azure_resource_group }}'
-          register: nics_info
+          register: nic_info
 
-        - name: Assert that network interfaces still exist
+        - name: Assert that network interface was deleted
           assert:
             that:
-              - "nics_info.networkinterfaces | length == {{ nic_instances | int }}"
-
-        - name: Assert that network interface is not attached to load balancer
-          assert:
-            that:
-              - nics_info.networkinterfaces[0].ip_configurations[0].load_balancer_backend_address_pools is none
+              - nic_info.networkinterfaces | length == 0
 
   always:
     - name: Delete resource group
