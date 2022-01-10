@@ -22,7 +22,6 @@
         azure_region: canadacentral
         azure_tags:
           cloud.azure_roles: network_interface
-        nic_instances: 2
 
     - name: Attempt to create nic with nonexistent resource group - should fail
       block:
