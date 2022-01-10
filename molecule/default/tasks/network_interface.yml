@@ -288,7 +288,7 @@
                   - nic_info.networkinterfaces[0].enable_ip_forwarding == true
                   - nic_info.networkinterfaces[0].dns_servers[0] == '8.8.8.8'
 
-    - name: Test deletion of network interface
+    - name: Test cleanup of network interface resources
       block:
         - name: Delete network interface
           include_role:
@@ -303,10 +303,66 @@
             resource_group: '{{ azure_resource_group }}'
           register: nic_info
 
-        - name: Assert that network interface was deleted
+        - name: Get sg info
+          azure_rm_securitygroup_info:
+            resource_group: '{{ azure_resource_group }}'
+          register: sg_info
+
+        - name: Assert that network interface was deleted and its default security group does not exist
           assert:
             that:
-              - nic_info.networkinterfaces | length == 0
+              - "{{ nic_name not in nic_info.networkinterfaces | map(attribute='name') }}"
+              - "{{ nic_name not in sg_info.securitygroups | map(attribute='name') }}"
+
+        - name: Create nic with default security group
+          include_role:
+            name: network_interface
+          vars:
+            operation: "create"
+            azure_network_interface:
+              name: "{{ nic_name }}"
+              vnet_name: "{{ vnet.name }}"
+              subnet_name: "{{ subnet.name }}"
+
+        - name: Get nic info
+          azure_rm_networkinterface_info:
+            resource_group: '{{ azure_resource_group }}'
+          register: nic_info
+
+        - name: Get sg info
+          azure_rm_securitygroup_info:
+            resource_group: '{{ azure_resource_group }}'
+          register: sg_info
+
+        - name: Assert that network interface was created with its default security group
+          assert:
+            that:
+              - "{{ nic_name in nic_info.networkinterfaces | map(attribute='name') }}"
+              - "{{ nic_name in sg_info.securitygroups | map(attribute='name') }}"
+
+        - name: Delete nic & its security group
+          include_role:
+            name: network_interface
+          vars:
+            operation: 'delete'
+            azure_network_interface:
+              name: "{{ nic_name }}"
+
+        - name: Get nic info
+          azure_rm_networkinterface_info:
+            resource_group: '{{ azure_resource_group }}'
+          register: nic_info
+
+        - name: Get sg info
+          azure_rm_securitygroup_info:
+            resource_group: '{{ azure_resource_group }}'
+          register: sg_info
+
+        - name: Assert that network interface and its security group were deleted
+          assert:
+            that:
+              - "{{ nic_name not in nic_info.networkinterfaces | map(attribute='name') }}"
+              - "{{ nic_name not in sg_info.securitygroups | map(attribute='name') }}"
 
   always:
     - name: Delete resource group
