@@ -6,16 +6,55 @@
   when:
     - rg_info.resourcegroups | length == 0
 
-- name: Create/Update Security Group
+- name: Create Security Group with Default Rules
   azure_rm_securitygroup:
     resource_group: "{{ azure_resource_group }}"
-    name: "{{ azure_security_group.name }}"
-    purge_rules: "{{ azure_security_group.purge_rules | default(omit) }}"
-    rules: "{{ azure_security_group.rules | default(omit) }}"
+    name: "{{ azure_security_group }}"
+    purge_rules: "{{ azure_security_group_purge_rules | default(omit) }}"
     tags: "{{ azure_tags | default(omit) }}"
+  when:
+    - azure_security_group_rules | length == 0
+
+- name: Create/Update Security Group with Specified Rules
+  azure_rm_securitygroup:
+    resource_group: "{{ azure_resource_group }}"
+    name: "{{ azure_security_group }}"
+    purge_rules: "{{ azure_security_group_purge_rules | default(omit) }}"
+    rules: "{{ azure_security_group_rules }}"
+    tags: "{{ azure_tags | default(omit) }}"
+  when:
+    - azure_security_group_rules | length > 0
 
 - name: Remove Rules from Security Group
-  include_tasks: remove_rules.yml
+  block:
+    - name: Get security group resource
+      azure_rm_securitygroup_info:
+        resource_group: "{{ azure_resource_group }}"
+        name: "{{ azure_security_group }}"
+      register: sg_info
+
+    - name: Init new sg vars
+      set_fact:
+        old_sg_rules: "{{ sg_info.securitygroups[0].properties.securityRules }}"
+        new_sg_rules: []
+
+    - name: Append rule to new sg object
+      set_fact:
+        new_sg_rules: "{{ new_sg_rules + [{ 'name': rule.name, 'protocol': rule.properties.protocol, 'access': rule.properties.access,
+                        'destination_address_prefix': rule.properties.destinationAddressPrefix, 'destination_port_range': rule.properties.destinationPortRanges,
+                        'direction': rule.properties.direction, 'priority': rule.properties.priority, 'source_address_prefix': rule.properties.sourceAddressPrefix,
+                        'source_port_range': rule.properties.sourcePortRange, }] }}"
+      with_items: "{{ old_sg_rules }}"
+      loop_control:
+        loop_var: rule
+      when: rule.name not in azure_security_group_rules_to_remove
+
+    - name: Update security group with specified rules removed
+      azure_rm_securitygroup:
+        resource_group: "{{ azure_resource_group }}"
+        name: "{{ azure_security_group }}"
+        purge_rules: yes
+        rules: "{{ new_sg_rules }}"
+        tags: "{{ azure_tags | default(omit) }}"
   when:
-    - azure_security_group.rules_to_remove is defined
-    - azure_security_group.rules_to_remove | length > 0
+    - azure_security_group_rules_to_remove | length > 0

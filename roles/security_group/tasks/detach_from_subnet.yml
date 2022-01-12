@@ -1,8 +1,12 @@
 ---
-- name: Extract subnet & vnet names from resource id
+- name: Extract subnet name from id
   set_fact:
     subnet_name: "{{ subnet_id['id'] | regex_search('[^/]+$') }}"
-    vnet_name: "{{ subnet_id['id'].split('/')[((subnet_id['id'].split('/') | length) - 3 | int)] }}"
+    vnet_name: "{{ subnet_id['id'].split('/') }}"
+
+- name: Extract vnet name from id
+  set_fact:
+    vnet_name: "{{ vnet_name[((vnet_name | length) - 3 | int)] }}"
 
 - name: Get subnet info
   azure_rm_subnet_info:
@@ -11,11 +15,22 @@
     virtual_network_name: "{{ vnet_name }}"
   register: subnet_result
 
+- set_fact:
+    subnet: {}
+    params_to_exclude:
+      - security_group
+      - id
+      - provisioning_state
+
 - name: Remove unsupported params from dictionary
   set_fact:
-    subnet: "{{ subnet | default({}) | combine( { item.key: item.value } ) }}"
+    subnet: "{{ subnet | combine( { item.key: item.value } ) }}"
   with_dict: "{{ subnet_result.subnets[0] }}"
-  when: item.key not in ['security_group', 'id', 'provisioning_state']
+  when: item.key not in params_to_exclude
+
+- name: Add empty security group to ensure its removed
+  set_fact:
+    subnet: "{{ subnet | combine( { 'security_group': '' } ) }}"
 
 - name: Update subnet to detach from security group
-  azure_rm_subnet: "{{ subnet | combine( { 'security_group': '' } ) }}"
+  azure_rm_subnet: "{{ subnet }}"
