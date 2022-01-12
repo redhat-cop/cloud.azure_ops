@@ -8,39 +8,25 @@
 - name: Get security group info
   azure_rm_securitygroup_info:
     resource_group: "{{ azure_resource_group }}"
-    name: "{{ azure_security_group }}"
+    name: "{{ azure_security_group.name }}"
   register: sg_info
 
-- name: Detach any NICs from security group
-  block:
-    - name: Set list of NICs to remove security group from
-      set_fact:
-        network_interface_ids: "{{ sg_info.securitygroups[0].properties.networkInterfaces }}"
-
-    - name: Detach security group from NICs
-      include_tasks: detach_from_nic.yml
-      with_items: "{{ network_interface_ids }}"
-      loop_control:
-        loop_var: nic_id
-
+- name: Detach any NICs from security group prior to deletion
+  include_tasks: detach_from_nic.yml
+  with_items: "{{ sg_info.securitygroups[0].properties.networkInterfaces }}"
+  loop_control:
+    loop_var: nic_id
   when: sg_info.securitygroups[0].properties.networkInterfaces is defined
 
-- name: Detach any subnets from security group
-  block:
-    - name: Set list of subnets to remove security group from
-      set_fact:
-        subnet_ids: "{{ sg_info.securitygroups[0].properties.subnets }}"
-
-    - name: Detach security group from subnets
-      include_tasks: detach_from_subnet.yml
-      with_items: "{{ subnet_ids }}"
-      loop_control:
-        loop_var: subnet_id
-
+- name: Detach any subnets from security group prior to deletion
+  include_tasks: detach_from_subnet.yml
+  with_items: "{{ sg_info.securitygroups[0].properties.subnets }}"
+  loop_control:
+    loop_var: subnet_id
   when: sg_info.securitygroups[0].properties.subnets is defined
 
 - name: Delete security group
   azure_rm_securitygroup:
     resource_group: "{{ azure_resource_group }}"
-    name: "{{ azure_security_group }}"
+    name: "{{ azure_security_group.name }}"
     state: absent
