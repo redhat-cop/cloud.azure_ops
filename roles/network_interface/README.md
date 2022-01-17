@@ -47,30 +47,30 @@ Dependencies
 Example Playbook
 ----------------
 
-- hosts: localhost
-  roles:
-    - name: Create a Network Interface with Default Security Group
-      role: cloud.azure_roles.network_interface
-      operation: 'create'
-      azure_resource_group: 'nic-example'
-      azure_network_interface:
-        name: 'nic'
-        vnet_name: 'vnet'
-        subnet_name: 'subnet'
-        ip_configurations:
-          - name: ipconf1
-            public_ip_address_name: 'pip'
-            primary: True
-        tags:
-          tag0: 'test0'
-          tag1: 'test1'
+    - hosts: localhost
+      roles:
+        - name: Create a Network Interface with Default Security Group
+          role: cloud.azure_roles.network_interface
+          operation: 'create'
+          azure_resource_group: 'nic-example'
+          azure_network_interface:
+            name: 'nic'
+            vnet_name: 'vnet'
+            subnet_name: 'subnet'
+            ip_configurations:
+              - name: ipconf1
+                public_ip_address_name: 'pip'
+                primary: True
+            tags:
+              tag0: 'test0'
+              tag1: 'test1'
 
-    - name: Cleanup Network Interface and Default Security Group
-      role: cloud.azure_roles.network_interface
-      operation: 'delete'
-      azure_resource_group: 'nic-example'
-      azure_network_interface:
-        name: 'nic'
+        - name: Cleanup Network Interface and Default Security Group
+          role: cloud.azure_roles.network_interface
+          operation: 'delete'
+          azure_resource_group: 'nic-example'
+          azure_network_interface:
+            name: 'nic'
 
 License
 -------
