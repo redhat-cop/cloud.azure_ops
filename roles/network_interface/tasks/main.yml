@@ -1,8 +1,8 @@
 ---
 - name: Check operation validation
   fail:
-    msg: "Please provide operation as 'create', 'delete', or 'attach'"
-  when: operation not in ['create', 'delete', 'attach']
+    msg: "Please provide operation as 'create' or 'delete'"
+  when: operation not in ['create', 'delete']
 
 - name: Ensure resource group is defined
   fail:

@@ -52,3 +52,4 @@
     ip_forwarding: "{{ azure_network_interface.ip_forwarding | default(omit) }}"
     dns_servers: "{{ azure_network_interface.dns_servers | default(omit) }}"
     ip_configurations: "{{ azure_network_interface.ip_configurations | default(omit) }}"
+    tags: "{{ azure_network_interface.tags | default(omit) }}"
