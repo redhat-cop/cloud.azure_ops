@@ -72,7 +72,7 @@
             that:
               - rg.resourcegroups | length == 1
 
-    - name: Test valid creation of security group w/ params
+    - name: Test valid creation of security group with params
       block:
         - name: Update security group with rules
           include_role:
