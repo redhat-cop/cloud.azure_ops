@@ -1,84 +1,238 @@
 ---
-- name: define resource group name
-  set_fact:
-    resource_group: "test-{{ lookup('password', '/dev/null chars=ascii_lowercase,digits length=8') }}"
-    azure_tags:
-      cloud.azure_roles: virtual_machine
-
-- name: define virtual machine variables
-  set_fact:
-    azure_resource_group: "{{ resource_group }}"
-    azure_region: 'canadacentral'
-    azure_vm_name: "{{ resource_group }}-vm-00"
-    azure_vm_size: 'Standard_DS1_v2'
-    azure_vm_os_type: 'Linux'
-    azure_vm_admin_username: 'azureuser'
-    azure_vm_admin_password: '4fB5In3ueO7,'
-    azure_availability_set_name: "{{ resource_group }}-as"
-    azure_vm_image:
-      offer: RHEL
-      publisher: RedHat
-      sku: "7-LVM"
-      version: latest
-
 - name: Test virtual machine role
   block:
-    - name: test invalid creation of virtual machine
-      ignore_errors: yes
+    - name: Test invalid test case - no resource group
       block:
-        - name: test if virtual machine was created with no vnet or nic (should fail)
+        - name: Attempt to create VM with no resource group - should fail
+          block:
+            - name: Call vm role
+              include_role:
+                name: virtual_machine
+              vars:
+                operation: 'create'
+          rescue:
+            - name: Assert correct error message
+              fail:
+                msg: "Task failed with incorrect error message"
+              when: ansible_failed_result.msg is not match("Azure resource group name must be defined as azure_resource_group")
+
+    - name: Set facts
+      set_fact:
+        azure_resource_group: "test-vm-{{ lookup('password', '/dev/null chars=ascii_lowercase,digits length=6') }}"
+        azure_region: canadacentral
+        azure_tags:
+          cloud.azure_roles: virtual_machine
+
+    - name: Attempt to delete VM with invalid delete option - should fail
+      block:
+        - name: Delete VM
           include_role:
             name: virtual_machine
           vars:
-            operation: "create"
+            operation: 'delete'
+            azure_vm:
+              name: "{{ azure_resource_group }}-vm"
+            remove_on_absent: 'invalid'
+      rescue:
+        - name: Assert correct error message
+          fail:
+            msg: "Task failed with incorrect error message"
+          when: ansible_failed_result.msg is not match("Invalid value for remove_on_absent. Valid values include 'all', 'all_autocreated', 'network_interfaces', 'virtual_storage', or 'public_ips'")
 
-        - azure_rm_virtualmachine_info:
-            resource_group: '{{ azure_resource_group }}'
-          register: vm_info
-
-        - name: assert that VM was not created
-          assert:
-            that:
-              - vm_info.vms | length == 0
-          ignore_errors: no
-
-        - name: get resource group info
-          azure_rm_resourcegroup_info:
-            name: '{{ azure_resource_group }}'
-          register: rg
-          ignore_errors: no
-
-        - name: assert that resource group was created
-          assert:
-            that:
-              - rg.resourcegroups | length == 1
-          ignore_errors: no
-
-    - name: Test valid creation of virtual machine with no nic
+    - name: Attempt to delete VM with invalid resource group - should fail
       block:
-        - name: Define virtual network variables
-          set_fact:
-            azure_virtual_network: "{{ resource_group }}-vnet-00"
-            azure_subnet: "{{ resource_group }}-subnet-00"
-            azure_vnet_address_prefixes_cidr:
-              - 10.16.0.0/16
-            azure_subnet_address_prefixes_cidr: 10.16.0.0/24
-
-        - name: Create virtual network
+        - name: Delete VM
           include_role:
-            name: networking_stack
+            name: virtual_machine
+          vars:
+            operation: 'delete'
+            azure_vm:
+              name: "{{ azure_resource_group }}-vm"
+      rescue:
+        - name: Assert correct error message
+          fail:
+            msg: "Task failed with incorrect error message"
+          when: ansible_failed_result.msg is not match("Resource group {{ azure_resource_group }} does not exist")
+
+    - name: Attempt to create VM with no name - should fail
+      block:
+        - name: Call vm role
+          include_role:
+            name: virtual_machine
           vars:
             operation: 'create'
+      rescue:
+        - name: Assert correct error message
+          fail:
+            msg: "Task failed with incorrect error message"
+          when: ansible_failed_result.msg is not match("Missing parameter:\ key 'name' not found in azure_vm")
 
-        - name: Create virtual machine
+    - name: Attempt to create VM with no admin username - should fail
+      block:
+        - name: Call vm role
           include_role:
             name: virtual_machine
           vars:
-            operation: "create"
+            operation: 'create'
+            azure_vm:
+              name: "{{ azure_resource_group }}-vm"
+      rescue:
+        - name: Assert correct error message
+          fail:
+            msg: "Task failed with incorrect error message"
+          when: ansible_failed_result.msg is not match("Missing parameter:\ key 'admin_username' not found in azure_vm")
+
+    - name: Attempt to create VM with no vm size - should fail
+      block:
+        - name: Call vm role
+          include_role:
+            name: virtual_machine
+          vars:
+            operation: 'create'
+            azure_vm:
+              name: "{{ azure_resource_group }}-vm"
+              admin_username: 'admin'
+      rescue:
+        - name: Assert correct error message
+          fail:
+            msg: "Task failed with incorrect error message"
+          when: ansible_failed_result.msg is not match("Missing parameter:\ key 'size' not found in azure_vm")
+
+    - name: Attempt to create VM with no vm image - should fail
+      block:
+        - name: Call vm role
+          include_role:
+            name: virtual_machine
+          vars:
+            operation: 'create'
+            azure_vm:
+              name: "{{ azure_resource_group }}-vm"
+              admin_username: 'admin'
+              size: 'Standard_DS1_v2'
+      rescue:
+        - name: Assert correct error message
+          fail:
+            msg: "Task failed with incorrect error message"
+          when: ansible_failed_result.msg is not match("Missing parameter:\ key 'image' not found in azure_vm")
+
+    - name: Attempt to create VM with no nic and no vnet - should fail
+      block:
+        - name: Call vm role
+          include_role:
+            name: virtual_machine
+          vars:
+            operation: 'create'
+            azure_vm:
+              name: "{{ azure_resource_group }}-vm"
+              admin_username: 'azureuser'
+              admin_password: '4fB5In3ueO7,'
+              image:
+                offer: RHEL
+                publisher: RedHat
+                sku: "7-LVM"
+                version: latest
+              size: 'Standard_DS1_v2'
+      rescue:
+        - name: Assert correct error message
+          fail:
+            msg: "Task failed with incorrect error message"
+          when: ansible_failed_result.msg is not match("When no network interfaces are specified, a virtual network must exist")
+
+        - name: Set facts
+          set_fact:
+            vm_name: "{{ azure_resource_group }}-vm"
+            as_name: "{{ azure_resource_group }}-as"
+            nic_name: "{{ azure_resource_group }}-nic"
+            vnet:
+              name: "{{ azure_resource_group }}-vnet"
+              address_prefixes_cidr:
+                - 10.16.0.0/16
+              resource_group: "{{ azure_resource_group }}"
+            subnet:
+              name: "{{ azure_resource_group }}-subnet"
+              address_prefix_cidr: 10.16.0.0/24
+              resource_group: "{{ azure_resource_group }}"
+              virtual_network_name: "{{ azure_resource_group }}-vnet"
+            vnet2:
+              name: "{{ azure_resource_group }}-vnet2"
+              address_prefixes_cidr:
+                - 10.16.0.0/16
+              resource_group: "{{ azure_resource_group }}"
+            subnet2:
+              name: "{{ azure_resource_group }}-subnet2"
+              address_prefix_cidr: 10.16.0.0/24
+              resource_group: "{{ azure_resource_group }}"
+              virtual_network_name: "{{ azure_resource_group }}-vnet2"
+
+        - name: Create virtual network
+          azure_rm_virtualnetwork: "{{ vnet }}"
+
+        - name: Create subnet
+          azure_rm_subnet: "{{ subnet }}"
+
+    - name: Test valid creation of virtual machine and availability set
+      block:
+        - name: Create virtual machine and availability set
+          include_role:
+            name: virtual_machine
+          vars:
+            operation: 'create'
+            azure_availability_set:
+              name: "{{ as_name }}"
+              platform_update_domain_count: 5
+              platform_fault_domain_count: 3
+              sku: 'Aligned'
+            azure_vm:
+              name: "{{ vm_name }}"
+              admin_username: 'azureuser'
+              admin_password: '4fB5In3ueO7,'
+              image:
+                offer: 'RHEL'
+                publisher: 'RedHat'
+                sku: '7-LVM'
+                version: 'latest'
+              size: 'Standard_DS1_v2'
+              availability_set: "{{ as_name }}"
+
+        - name: Get availability set info
+          azure_rm_availabilityset_info:
+            resource_group: "{{ azure_resource_group }}"
+            name: "{{ as_name }}"
+          register: as_info
+
+        - name: Assert that availability set was created with correct details and includes the VM
+          assert:
+            that:
+              - as_info.ansible_info.azure_availabilitysets | length == 1
+              - "{{ as_info.ansible_info.azure_availabilitysets[0].name == as_name }}"
+              - as_info.ansible_info.azure_availabilitysets[0].properties.platformFaultDomainCount == 3
+              - as_info.ansible_info.azure_availabilitysets[0].properties.platformUpdateDomainCount == 5
+              - as_info.ansible_info.azure_availabilitysets[0].properties.virtualMachines | length == 1
+              - as_info.ansible_info.azure_availabilitysets[0].properties.virtualMachines[0].id is search("{{ vm_name }}", ignorecase='yes')
+
+    - name: Test valid creation of virtual machine with defaults
+      block:
+        - name: Create virtual machine with defaults
+          include_role:
+            name: virtual_machine
+          vars:
+            operation: 'create'
+            azure_vm:
+              name: "{{ vm_name }}"
+              admin_username: 'azureuser'
+              admin_password: '4fB5In3ueO7,'
+              image:
+                offer: RHEL
+                publisher: RedHat
+                sku: "7-LVM"
+                version: latest
+              size: 'Standard_DS1_v2'
+              tags:
+                'tag0': 'val0'
 
         - name: Get resource group info
           azure_rm_resourcegroup_info:
-            name: '{{ azure_resource_group }}'
+            name: "{{ azure_resource_group }}"
           register: rg
 
         - name: Assert that resource group was created
@@ -86,33 +240,90 @@
             that:
               - rg.resourcegroups | length == 1
 
-        - name: Assert that VM was successfully created
+        - name: Get vm info
           azure_rm_virtualmachine_info:
-            resource_group: '{{ azure_resource_group }}'
+            resource_group: "{{ azure_resource_group }}"
+            name: "{{ vm_name }}"
           register: vm_info
 
-        - assert:
+        - name: Get nic info
+          azure_rm_networkinterface_info:
+            resource_group: "{{ azure_resource_group }}"
+            name: "{{ vm_name }}"
+          register: nic_info
+
+        - name: Assert that VM was successfully created with default public ip, nic, and security group
+          assert:
             that:
               - vm_info.vms | length == 1
+              - vm_name == vm_info.vms[0].network_interface_names[0]
+              - nic_info.networkinterfaces[0].security_group is search("{{ vm_name }}")
+              - nic_info.networkinterfaces[0].ip_configurations[0].load_balancer_backend_address_pools == None
 
-    - name: Test adding VM to inventory
+    - name: Test valid creation of virtual machine with default nic with lb
       block:
-        - name: Set group name
-          set_fact:
-            azure_vm_group: 'testgrp'
+        - name: Create load balancers public ip
+          azure_rm_publicipaddress:
+            resource_group: "{{ azure_resource_group }}"
+            name: "{{ azure_resource_group }}-lb-public-ip"
 
-        - assert:
-            that:
-              - 'azure_vm_group not in groups'
+        - name: Create load balancer
+          azure_rm_loadbalancer:
+            resource_group: "{{ azure_resource_group }}"
+            name: "{{ azure_resource_group }}-lb"
+            frontend_ip_configurations: "{{ azure_load_balancer.frontend_ip_configurations |
+                                    default([{ 'name': 'default',
+                                               'public_ip_address': azure_load_balancer.public_ip_name | default(azure_resource_group + '-lb-public-ip') }]) }}"
+            backend_address_pools: [{ 'name': 'default' }]
 
-        - name: Add VM to group '{{ azure_vm_group }}'
+        - name: Create virtual machine with default nic with lb
           include_role:
             name: virtual_machine
-            tasks_from: add_to_inventory
+          vars:
+            operation: 'create'
+            azure_vm:
+              name: "{{ vm_name }}"
+              admin_username: 'azureuser'
+              admin_password: '4fB5In3ueO7,'
+              image:
+                offer: RHEL
+                publisher: RedHat
+                sku: "7-LVM"
+                version: latest
+              size: 'Standard_DS1_v2'
+              load_balancer_backend_address_pools:
+                - name: 'default'
+                  load_balancer: "{{ azure_resource_group }}-lb"
 
-        - assert:
+        - name: Get resource group info
+          azure_rm_resourcegroup_info:
+            name: "{{ azure_resource_group }}"
+          register: rg
+
+        - name: Assert that resource group was created
+          assert:
             that:
-              - 'azure_vm_group in groups'
+              - rg.resourcegroups | length == 1
+
+        - name: Get vm info
+          azure_rm_virtualmachine_info:
+            resource_group: "{{ azure_resource_group }}"
+            name: "{{ vm_name }}"
+          register: vm_info
+
+        - name: Get nic info
+          azure_rm_networkinterface_info:
+            resource_group: "{{ azure_resource_group }}"
+            name: "{{ vm_name }}"
+          register: nic_info
+
+        - name: Assert that VM was successfully attached to load balancer
+          assert:
+            that:
+              - vm_info.vms | length == 1
+              - vm_name == vm_info.vms[0].network_interface_names[0]
+              - nic_info.networkinterfaces[0].security_group is search("{{ vm_name }}")
+              - nic_info.networkinterfaces[0].ip_configurations[0].load_balancer_backend_address_pools[0] is search("{{ azure_resource_group }}-lb")
 
     - name: Test modifying VMs state (power on/off, restart, etc)
       block:
@@ -121,6 +332,8 @@
             name: virtual_machine
           vars:
             operation: 'power_off'
+            azure_vm:
+              name: "{{ vm_name }}"
 
         - name: Assert that VM was successfully powered off
           azure_rm_virtualmachine_info:
@@ -136,6 +349,8 @@
             name: virtual_machine
           vars:
             operation: 'power_on'
+            azure_vm:
+              name: "{{ vm_name }}"
 
         - name: Assert that VM was successfully powered off
           azure_rm_virtualmachine_info:
@@ -151,6 +366,8 @@
             name: virtual_machine
           vars:
             operation: 'restart'
+            azure_vm:
+              name: "{{ vm_name }}"
 
         - name: Assert that VM was successfully restarted
           azure_rm_virtualmachine_info:
@@ -166,6 +383,8 @@
             name: virtual_machine
           vars:
             operation: 'deallocate'
+            azure_vm:
+              name: "{{ vm_name }}"
 
         - name: Assert that VM was successfully deallocated
           azure_rm_virtualmachine_info:
@@ -178,65 +397,105 @@
 
     - name: Test deleting VM
       block:
-        - name: Delete virtual machine
+        - name: Get VM info
+          azure_rm_virtualmachine_info:
+            resource_group: "{{ azure_resource_group }}"
+            name: "{{ vm_name }}"
+          register: vm_info
+
+        - name: Get default nic info
+          azure_rm_networkinterface_info:
+            resource_group: "{{ azure_resource_group }}"
+            name: "{{ vm_name }}"
+          register: nic_info
+
+        - name: Get default security group info
+          azure_rm_securitygroup_info:
+            resource_group: "{{ azure_resource_group }}"
+            name: "{{ vm_name }}"
+          register: sg_info
+
+        - name: Get default public ip info
+          azure_rm_publicipaddress_info:
+            resource_group: "{{ azure_resource_group }}"
+            name: "{{ vm_name }}"
+          register: pip_info
+
+        - name: Assert VM and all autocreated resources are present prior to deletion
+          assert:
+            that:
+              - vm_info.vms | length == 1
+              - nic_info.networkinterfaces | length == 1
+              - sg_info.securitygroups | length == 1
+              - "{{ vm_name in pip_info.publicipaddresses | map(attribute='name') }}"
+
+        - name: Delete virtual machine and all autocreated resources
           include_role:
             name: virtual_machine
           vars:
             operation: 'delete'
+            azure_vm:
+              name: "{{ azure_resource_group }}-vm"
+            remove_on_absent: 'all_autocreated'
 
-        - name: Assert resource group still exists
-          azure_rm_resourcegroup_info:
-            name: '{{ azure_resource_group }}'
-          register: rg
-
-        - assert:
-            that:
-              - rg.resourcegroups | length == 1
-
-        - name: Assert that VM was deleted
+        - name: Get VM info
           azure_rm_virtualmachine_info:
-            resource_group: '{{ azure_resource_group }}'
+            resource_group: "{{ azure_resource_group }}"
           register: vm_info
 
-        - assert:
-            that:
-              - vm_info.vms | length == 0
+        - name: Get default nic info
+          azure_rm_networkinterface_info:
+            resource_group: "{{ azure_resource_group }}"
+          register: nic_info
 
-        - name: Delete resource group
-          azure_rm_resourcegroup:
-            name: "{{ azure_resource_group }}"
-            state: absent
-            force_delete_nonempty: yes
-          ignore_errors: no
+        - name: Get default security group info
+          azure_rm_securitygroup_info:
+            resource_group: "{{ azure_resource_group }}"
+          register: sg_info
 
-        - name: Get resource group info
-          azure_rm_resourcegroup_info:
-            name: '{{ azure_resource_group }}'
-          register: resource
+        - name: Get default public ip info
+          azure_rm_publicipaddress_info:
+            resource_group: "{{ azure_resource_group }}"
+          register: pip_info
 
-        - name: Assert that resource group is deleted
+        - name: Assert VM and all autocreated resources were deleted
           assert:
             that:
-              - resource.resourcegroups | length == 0
+              - vm_info.vms | length == 0
+              - nic_info.networkinterfaces | length == 0
+              - sg_info.securitygroups | length == 0
+              - "{{ vm_name not in pip_info.publicipaddresses | map(attribute='name') }}"
 
-    - name: Test valid creation of virtual machine with nic
+    - name: Test valid creation of virtual machine with existing nic
       block:
-        - name: Create virtual machine
+        - name: Create network interface
+          azure_rm_networkinterface:
+            resource_group: "{{ azure_resource_group }}"
+            name: 'custom-nic'
+            virtual_network_name: "{{ vnet.name }}"
+            subnet_name: "{{ subnet.name }}"
+
+        - name: Create virtual machine with existing nic
           include_role:
             name: virtual_machine
           vars:
-            operation: "create"
-            azure_virtual_network: "{{ resource_group }}-vnet-00"
-            azure_subnet: "{{ resource_group }}-subnet-00"
-            azure_vnet_address_prefixes_cidr:
-              - 10.16.0.0/16
-            azure_subnet_address_prefixes_cidr: 10.16.0.0/24
-            azure_network_interface_name: "{{ resource_group }}-nic"
-            azure_public_ip_name: "{{ resource_group }}-pip"
+            operation: 'create'
+            azure_vm:
+              name: "{{ vm_name }}"
+              admin_username: 'azureuser'
+              admin_password: '4fB5In3ueO7,'
+              image:
+                offer: RHEL
+                publisher: RedHat
+                sku: "7-LVM"
+                version: latest
+              size: 'Standard_DS1_v2'
+              network_interfaces:
+                - 'custom-nic'
 
         - name: Get resource group info
           azure_rm_resourcegroup_info:
-            name: '{{ azure_resource_group }}'
+            name: "{{ azure_resource_group }}"
           register: rg
 
         - name: Assert that resource group was created
@@ -244,34 +503,61 @@
             that:
               - rg.resourcegroups | length == 1
 
-        - name: Assert that VM was successfully created
+        - name: Get vm info
           azure_rm_virtualmachine_info:
-            resource_group: '{{ azure_resource_group }}'
+            resource_group: "{{ azure_resource_group }}"
+            name: "{{ vm_name }}"
           register: vm_info
 
-        - assert:
+        - name: Get nic info
+          azure_rm_networkinterface_info:
+            resource_group: "{{ azure_resource_group }}"
+          register: nic_info
+
+        - name: Get sg info
+          azure_rm_securitygroup_info:
+            resource_group: "{{ azure_resource_group }}"
+          register: sg_info
+
+        - name: Assert that VM was successfully created with existing nic
+          assert:
+            that:
+              - vm_info.vms | length == 1
+              - "{{ 'custom-nic' in nic_info.networkinterfaces | map(attribute='name') }}"
+              - "{{ 'custom-nic' in vm_info.vms[0].network_interface_names }}"
+              - "{{ vm_name not in sg_info.securitygroups | map(attribute='name') }}"
+              - "{{ vm_name not in nic_info.networkinterfaces | map(attribute='name') }}"
+
+    - name: Test deleting VM
+      block:
+        - name: Get VM info
+          azure_rm_virtualmachine_info:
+            resource_group: "{{ azure_resource_group }}"
+            name: "{{ vm_name }}"
+          register: vm_info
+
+        - name: Assert VM is present prior to deletion
+          assert:
             that:
               - vm_info.vms | length == 1
 
-    - name: Test adding VM to inventory with NIC
-      block:
-        - name: Set group name
-          set_fact:
-            azure_vm_group: 'testgrp-2'
-
-        - assert:
-            that:
-              - 'azure_vm_group not in groups'
-
-        - name: Add VM to group '{{ azure_vm_group }}'
+        - name: Delete virtual machine with defaults
           include_role:
             name: virtual_machine
-            tasks_from: add_to_inventory
+          vars:
+            operation: 'delete'
+            azure_vm:
+              name: "{{ azure_resource_group }}-vm"
 
-        - assert:
+        - name: Get VM info
+          azure_rm_virtualmachine_info:
+            resource_group: "{{ azure_resource_group }}"
+          register: vm_info
+
+        - name: Assert VM was deleted
+          assert:
             that:
-              - 'azure_vm_group in groups'
-
+              - vm_info.vms | length == 0
 
   always:
     - name: Delete resource group
