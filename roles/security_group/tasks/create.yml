@@ -17,5 +17,4 @@
 - name: Remove Rules from Security Group
   include_tasks: remove_rules.yml
   when:
-    - azure_security_group.rules_to_remove is defined
-    - azure_security_group.rules_to_remove | length > 0
+    - azure_security_group.rules_to_remove | default([]) | length > 0

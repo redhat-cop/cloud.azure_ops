@@ -16,14 +16,18 @@
   with_items: "{{ sg_info.securitygroups[0].properties.networkInterfaces }}"
   loop_control:
     loop_var: nic_id
-  when: sg_info.securitygroups[0].properties.networkInterfaces is defined
+  when:
+    - sg_info.securitygroups | length > 0
+    - sg_info.securitygroups[0].properties.networkInterfaces is defined
 
 - name: Detach any subnets from security group prior to deletion
   include_tasks: detach_from_subnet.yml
   with_items: "{{ sg_info.securitygroups[0].properties.subnets }}"
   loop_control:
     loop_var: subnet_id
-  when: sg_info.securitygroups[0].properties.subnets is defined
+  when:
+    - sg_info.securitygroups | length > 0
+    - sg_info.securitygroups[0].properties.subnets is defined
 
 - name: Delete security group
   azure_rm_securitygroup:
