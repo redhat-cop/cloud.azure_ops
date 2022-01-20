@@ -17,10 +17,14 @@ Click on the name of a plugin or module to view that content's documentation:
 ### Roles
 Name | Description
 --- | ---
+[cloud.azure_roles.load_balancer](https://https://github.com/ansible-collections/cloud.azure_roles/blob/main/roles/load_balancer/README.md)|A role to manage Azure Load Balancer.
+[cloud.azure_roles.managed_postgresql](https://https://github.com/ansible-collections/cloud.azure_roles/blob/main/roles/managed_postgresql/README.md)|A role to manage Azure PostGreSQL Database.
+[cloud.azure_roles.network_interface](https://https://github.com/ansible-collections/cloud.azure_roles/blob/main/roles/network_interface/README.md)|A role to manage Azure Network Interface.
+[cloud.azure_roles.networking_stack](https://https://github.com/ansible-collections/cloud.azure_roles/blob/main/roles/networking_stack/README.md)|A role to manage Azure Networking Stack.
 [cloud.azure_roles.resource_group](https://https://github.com/ansible-collections/cloud.azure_roles/blob/main/roles/resource_group/README.md)|A role to manage Azure Resource Group.
-[cloud.azure_roles.networking_stack](https://https://github.com/ansible-collections/cloud.azure_roles/blob/main/roles/networking_stack/README.md)|A role to manage Azure Networking stack.
-[cloud.azure_roles.security_group](https://https://github.com/ansible-collections/cloud.azure_roles/blob/main/roles/security_group/README.md)|A role to manage Azure Security group.
-[cloud.azure_roles.managed_postgresql](https://https://github.com/ansible-collections/cloud.azure_roles/blob/main/roles/managed_postgresql/README.md)|A role to manage Azure PostGreSQL database.
+[cloud.azure_roles.security_group](https://https://github.com/ansible-collections/cloud.azure_roles/blob/main/roles/security_group/README.md)|A role to manage Azure Security Group.
+[cloud.azure_roles.virtual_machine](https://https://github.com/ansible-collections/cloud.azure_roles/blob/main/roles/virtual_machine/README.md)|A role to manage Azure Virtual Machine.
+
 
 ### Playbooks
 Name | Description
