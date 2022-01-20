@@ -1,5 +1,4 @@
 ---
 # defaults file for security_group
 operation: 'create'
-azure_security_group_rules: []
-azure_security_group_rules_to_remove: []
+azure_security_group: {}
