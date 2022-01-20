@@ -18,7 +18,7 @@
 
     - name: Set facts
       set_fact:
-        azure_resource_group: "test-vm-{{ lookup('password', '/dev/null chars=ascii_lowercase,digits length=6') }}"
+        resource_group: "test-vm-{{ lookup('password', '/dev/null chars=ascii_lowercase,digits length=6') }}"
         azure_region: canadacentral
         azure_tags:
           cloud.azure_roles: virtual_machine
@@ -30,8 +30,9 @@
             name: virtual_machine
           vars:
             operation: 'delete'
+            azure_resource_group: "{{ resource_group }}"
             azure_vm:
-              name: "{{ azure_resource_group }}-vm"
+              name: "{{ resource_group }}-vm"
             remove_on_absent: 'invalid'
       rescue:
         - name: Assert correct error message
@@ -46,13 +47,14 @@
             name: virtual_machine
           vars:
             operation: 'delete'
+            azure_resource_group: "{{ resource_group }}"
             azure_vm:
-              name: "{{ azure_resource_group }}-vm"
+              name: "{{ resource_group }}-vm"
       rescue:
         - name: Assert correct error message
           fail:
             msg: "Task failed with incorrect error message"
-          when: ansible_failed_result.msg is not match("Resource group {{ azure_resource_group }} does not exist")
+          when: ansible_failed_result.msg is not match("Resource group {{ resource_group }} does not exist")
 
     - name: Attempt to create VM with no name - should fail
       block:
@@ -61,6 +63,7 @@
             name: virtual_machine
           vars:
             operation: 'create'
+            azure_resource_group: "{{ resource_group }}"
       rescue:
         - name: Assert correct error message
           fail:
@@ -74,8 +77,9 @@
             name: virtual_machine
           vars:
             operation: 'create'
+            azure_resource_group: "{{ resource_group }}"
             azure_vm:
-              name: "{{ azure_resource_group }}-vm"
+              name: "{{ resource_group }}-vm"
       rescue:
         - name: Assert correct error message
           fail:
@@ -89,8 +93,9 @@
             name: virtual_machine
           vars:
             operation: 'create'
+            azure_resource_group: "{{ resource_group }}"
             azure_vm:
-              name: "{{ azure_resource_group }}-vm"
+              name: "{{ resource_group }}-vm"
               admin_username: 'admin'
       rescue:
         - name: Assert correct error message
@@ -105,8 +110,9 @@
             name: virtual_machine
           vars:
             operation: 'create'
+            azure_resource_group: "{{ resource_group }}"
             azure_vm:
-              name: "{{ azure_resource_group }}-vm"
+              name: "{{ resource_group }}-vm"
               admin_username: 'admin'
               size: 'Standard_DS1_v2'
       rescue:
@@ -122,8 +128,9 @@
             name: virtual_machine
           vars:
             operation: 'create'
+            azure_resource_group: "{{ resource_group }}"
             azure_vm:
-              name: "{{ azure_resource_group }}-vm"
+              name: "{{ resource_group }}-vm"
               admin_username: 'azureuser'
               admin_password: '4fB5In3ueO7,'
               image:
@@ -140,29 +147,29 @@
 
         - name: Set facts
           set_fact:
-            vm_name: "{{ azure_resource_group }}-vm"
-            as_name: "{{ azure_resource_group }}-as"
-            nic_name: "{{ azure_resource_group }}-nic"
+            vm_name: "{{ resource_group }}-vm"
+            as_name: "{{ resource_group }}-as"
+            nic_name: "{{ resource_group }}-nic"
             vnet:
-              name: "{{ azure_resource_group }}-vnet"
+              name: "{{ resource_group }}-vnet"
               address_prefixes_cidr:
                 - 10.16.0.0/16
-              resource_group: "{{ azure_resource_group }}"
+              resource_group: "{{ resource_group }}"
             subnet:
-              name: "{{ azure_resource_group }}-subnet"
+              name: "{{ resource_group }}-subnet"
               address_prefix_cidr: 10.16.0.0/24
-              resource_group: "{{ azure_resource_group }}"
-              virtual_network_name: "{{ azure_resource_group }}-vnet"
+              resource_group: "{{ resource_group }}"
+              virtual_network_name: "{{ resource_group }}-vnet"
             vnet2:
-              name: "{{ azure_resource_group }}-vnet2"
+              name: "{{ resource_group }}-vnet2"
               address_prefixes_cidr:
                 - 10.16.0.0/16
-              resource_group: "{{ azure_resource_group }}"
+              resource_group: "{{ resource_group }}"
             subnet2:
-              name: "{{ azure_resource_group }}-subnet2"
+              name: "{{ resource_group }}-subnet2"
               address_prefix_cidr: 10.16.0.0/24
-              resource_group: "{{ azure_resource_group }}"
-              virtual_network_name: "{{ azure_resource_group }}-vnet2"
+              resource_group: "{{ resource_group }}"
+              virtual_network_name: "{{ resource_group }}-vnet2"
 
         - name: Create virtual network
           azure_rm_virtualnetwork: "{{ vnet }}"
@@ -177,6 +184,7 @@
             name: virtual_machine
           vars:
             operation: 'create'
+            azure_resource_group: "{{ resource_group }}"
             azure_availability_set:
               name: "{{ as_name }}"
               platform_update_domain_count: 5
@@ -196,7 +204,7 @@
 
         - name: Get availability set info
           azure_rm_availabilityset_info:
-            resource_group: "{{ azure_resource_group }}"
+            resource_group: "{{ resource_group }}"
             name: "{{ as_name }}"
           register: as_info
 
@@ -217,6 +225,7 @@
             name: virtual_machine
           vars:
             operation: 'create'
+            azure_resource_group: "{{ resource_group }}"
             azure_vm:
               name: "{{ vm_name }}"
               admin_username: 'azureuser'
@@ -232,7 +241,7 @@
 
         - name: Get resource group info
           azure_rm_resourcegroup_info:
-            name: "{{ azure_resource_group }}"
+            name: "{{ resource_group }}"
           register: rg
 
         - name: Assert that resource group was created
@@ -242,13 +251,13 @@
 
         - name: Get vm info
           azure_rm_virtualmachine_info:
-            resource_group: "{{ azure_resource_group }}"
+            resource_group: "{{ resource_group }}"
             name: "{{ vm_name }}"
           register: vm_info
 
         - name: Get nic info
           azure_rm_networkinterface_info:
-            resource_group: "{{ azure_resource_group }}"
+            resource_group: "{{ resource_group }}"
             name: "{{ vm_name }}"
           register: nic_info
 
@@ -264,16 +273,16 @@
       block:
         - name: Create load balancers public ip
           azure_rm_publicipaddress:
-            resource_group: "{{ azure_resource_group }}"
-            name: "{{ azure_resource_group }}-lb-public-ip"
+            resource_group: "{{ resource_group }}"
+            name: "{{ resource_group }}-lb-public-ip"
 
         - name: Create load balancer
           azure_rm_loadbalancer:
-            resource_group: "{{ azure_resource_group }}"
-            name: "{{ azure_resource_group }}-lb"
+            resource_group: "{{ resource_group }}"
+            name: "{{ resource_group }}-lb"
             frontend_ip_configurations: "{{ azure_load_balancer.frontend_ip_configurations |
                                     default([{ 'name': 'default',
-                                               'public_ip_address': azure_load_balancer.public_ip_name | default(azure_resource_group + '-lb-public-ip') }]) }}"
+                                               'public_ip_address': azure_load_balancer.public_ip_name | default(resource_group + '-lb-public-ip') }]) }}"
             backend_address_pools: [{ 'name': 'default' }]
 
         - name: Create virtual machine with default nic with lb
@@ -281,6 +290,7 @@
             name: virtual_machine
           vars:
             operation: 'create'
+            azure_resource_group: "{{ resource_group }}"
             azure_vm:
               name: "{{ vm_name }}"
               admin_username: 'azureuser'
@@ -293,11 +303,11 @@
               size: 'Standard_DS1_v2'
               load_balancer_backend_address_pools:
                 - name: 'default'
-                  load_balancer: "{{ azure_resource_group }}-lb"
+                  load_balancer: "{{ resource_group }}-lb"
 
         - name: Get resource group info
           azure_rm_resourcegroup_info:
-            name: "{{ azure_resource_group }}"
+            name: "{{ resource_group }}"
           register: rg
 
         - name: Assert that resource group was created
@@ -307,13 +317,13 @@
 
         - name: Get vm info
           azure_rm_virtualmachine_info:
-            resource_group: "{{ azure_resource_group }}"
+            resource_group: "{{ resource_group }}"
             name: "{{ vm_name }}"
           register: vm_info
 
         - name: Get nic info
           azure_rm_networkinterface_info:
-            resource_group: "{{ azure_resource_group }}"
+            resource_group: "{{ resource_group }}"
             name: "{{ vm_name }}"
           register: nic_info
 
@@ -323,7 +333,7 @@
               - vm_info.vms | length == 1
               - vm_name == vm_info.vms[0].network_interface_names[0]
               - nic_info.networkinterfaces[0].security_group is search("{{ vm_name }}")
-              - nic_info.networkinterfaces[0].ip_configurations[0].load_balancer_backend_address_pools[0] is search("{{ azure_resource_group }}-lb")
+              - nic_info.networkinterfaces[0].ip_configurations[0].load_balancer_backend_address_pools[0] is search("{{ resource_group }}-lb")
 
     - name: Test modifying VMs state (power on/off, restart, etc)
       block:
@@ -332,12 +342,13 @@
             name: virtual_machine
           vars:
             operation: 'power_off'
+            azure_resource_group: "{{ resource_group }}"
             azure_vm:
               name: "{{ vm_name }}"
 
         - name: Assert that VM was successfully powered off
           azure_rm_virtualmachine_info:
-            resource_group: '{{ azure_resource_group }}'
+            resource_group: '{{ resource_group }}'
           register: vm_info
 
         - assert:
@@ -349,12 +360,13 @@
             name: virtual_machine
           vars:
             operation: 'power_on'
+            azure_resource_group: "{{ resource_group }}"
             azure_vm:
               name: "{{ vm_name }}"
 
         - name: Assert that VM was successfully powered off
           azure_rm_virtualmachine_info:
-            resource_group: '{{ azure_resource_group }}'
+            resource_group: '{{ resource_group }}'
           register: vm_info
 
         - assert:
@@ -366,12 +378,13 @@
             name: virtual_machine
           vars:
             operation: 'restart'
+            azure_resource_group: "{{ resource_group }}"
             azure_vm:
               name: "{{ vm_name }}"
 
         - name: Assert that VM was successfully restarted
           azure_rm_virtualmachine_info:
-            resource_group: '{{ azure_resource_group }}'
+            resource_group: '{{ resource_group }}'
           register: vm_info
 
         - assert:
@@ -383,12 +396,13 @@
             name: virtual_machine
           vars:
             operation: 'deallocate'
+            azure_resource_group: "{{ resource_group }}"
             azure_vm:
               name: "{{ vm_name }}"
 
         - name: Assert that VM was successfully deallocated
           azure_rm_virtualmachine_info:
-            resource_group: '{{ azure_resource_group }}'
+            resource_group: '{{ resource_group }}'
           register: vm_info
 
         - assert:
@@ -399,25 +413,25 @@
       block:
         - name: Get VM info
           azure_rm_virtualmachine_info:
-            resource_group: "{{ azure_resource_group }}"
+            resource_group: "{{ resource_group }}"
             name: "{{ vm_name }}"
           register: vm_info
 
         - name: Get default nic info
           azure_rm_networkinterface_info:
-            resource_group: "{{ azure_resource_group }}"
+            resource_group: "{{ resource_group }}"
             name: "{{ vm_name }}"
           register: nic_info
 
         - name: Get default security group info
           azure_rm_securitygroup_info:
-            resource_group: "{{ azure_resource_group }}"
+            resource_group: "{{ resource_group }}"
             name: "{{ vm_name }}"
           register: sg_info
 
         - name: Get default public ip info
           azure_rm_publicipaddress_info:
-            resource_group: "{{ azure_resource_group }}"
+            resource_group: "{{ resource_group }}"
             name: "{{ vm_name }}"
           register: pip_info
 
@@ -434,28 +448,29 @@
             name: virtual_machine
           vars:
             operation: 'delete'
+            azure_resource_group: "{{ resource_group }}"
             azure_vm:
-              name: "{{ azure_resource_group }}-vm"
+              name: "{{ resource_group }}-vm"
             remove_on_absent: 'all_autocreated'
 
         - name: Get VM info
           azure_rm_virtualmachine_info:
-            resource_group: "{{ azure_resource_group }}"
+            resource_group: "{{ resource_group }}"
           register: vm_info
 
         - name: Get default nic info
           azure_rm_networkinterface_info:
-            resource_group: "{{ azure_resource_group }}"
+            resource_group: "{{ resource_group }}"
           register: nic_info
 
         - name: Get default security group info
           azure_rm_securitygroup_info:
-            resource_group: "{{ azure_resource_group }}"
+            resource_group: "{{ resource_group }}"
           register: sg_info
 
         - name: Get default public ip info
           azure_rm_publicipaddress_info:
-            resource_group: "{{ azure_resource_group }}"
+            resource_group: "{{ resource_group }}"
           register: pip_info
 
         - name: Assert VM and all autocreated resources were deleted
@@ -470,7 +485,7 @@
       block:
         - name: Create network interface
           azure_rm_networkinterface:
-            resource_group: "{{ azure_resource_group }}"
+            resource_group: "{{ resource_group }}"
             name: 'custom-nic'
             virtual_network_name: "{{ vnet.name }}"
             subnet_name: "{{ subnet.name }}"
@@ -480,6 +495,7 @@
             name: virtual_machine
           vars:
             operation: 'create'
+            azure_resource_group: "{{ resource_group }}"
             azure_vm:
               name: "{{ vm_name }}"
               admin_username: 'azureuser'
@@ -495,7 +511,7 @@
 
         - name: Get resource group info
           azure_rm_resourcegroup_info:
-            name: "{{ azure_resource_group }}"
+            name: "{{ resource_group }}"
           register: rg
 
         - name: Assert that resource group was created
@@ -505,18 +521,18 @@
 
         - name: Get vm info
           azure_rm_virtualmachine_info:
-            resource_group: "{{ azure_resource_group }}"
+            resource_group: "{{ resource_group }}"
             name: "{{ vm_name }}"
           register: vm_info
 
         - name: Get nic info
           azure_rm_networkinterface_info:
-            resource_group: "{{ azure_resource_group }}"
+            resource_group: "{{ resource_group }}"
           register: nic_info
 
         - name: Get sg info
           azure_rm_securitygroup_info:
-            resource_group: "{{ azure_resource_group }}"
+            resource_group: "{{ resource_group }}"
           register: sg_info
 
         - name: Assert that VM was successfully created with existing nic
@@ -532,7 +548,7 @@
       block:
         - name: Get VM info
           azure_rm_virtualmachine_info:
-            resource_group: "{{ azure_resource_group }}"
+            resource_group: "{{ resource_group }}"
             name: "{{ vm_name }}"
           register: vm_info
 
@@ -546,12 +562,13 @@
             name: virtual_machine
           vars:
             operation: 'delete'
+            azure_resource_group: "{{ resource_group }}"
             azure_vm:
-              name: "{{ azure_resource_group }}-vm"
+              name: "{{ resource_group }}-vm"
 
         - name: Get VM info
           azure_rm_virtualmachine_info:
-            resource_group: "{{ azure_resource_group }}"
+            resource_group: "{{ resource_group }}"
           register: vm_info
 
         - name: Assert VM was deleted
@@ -562,7 +579,7 @@
   always:
     - name: Delete resource group
       azure_rm_resourcegroup:
-        name: "{{ azure_resource_group }}"
+        name: "{{ resource_group }}"
         state: absent
         force_delete_nonempty: yes
       ignore_errors: yes
