@@ -18,7 +18,7 @@
 
     - name: Set facts
       set_fact:
-        azure_resource_group: "test-{{ lookup('password', '/dev/null chars=ascii_lowercase,digits length=6') }}"
+        resource_group: "test_{{ lookup('password', '/dev/null chars=ascii_lowercase,digits length=6') }}"
         azure_region: canadacentral
         azure_tags:
           cloud.azure_roles: network_interface
@@ -30,17 +30,18 @@
             name: network_interface
           vars:
             operation: "create"
+            azure_resource_group: "{{ resource_group }}"
             azure_network_interface:
-              name: "{{ azure_resource_group }}-nic"
+              name: "{{ resource_group }}-nic"
       rescue:
         - name: Assert correct error message
           fail:
             msg: "Task failed with incorrect error message"
-          when: ansible_failed_result.msg is not match("Resource group '{{ azure_resource_group }}' does not exist")
+          when: ansible_failed_result.msg is not match("Resource group '{{ resource_group }}' does not exist")
 
         - name: Create resource group
           azure_rm_resourcegroup:
-            name: "{{ azure_resource_group }}"
+            name: "{{ resource_group }}"
             location: "{{ azure_region }}"
 
     - name: Attempt to create nic with no name - should fail
@@ -50,6 +51,7 @@
             name: network_interface
           vars:
             operation: 'create'
+            azure_resource_group: "{{ resource_group }}"
       rescue:
         - name: Assert correct error message
           fail:
@@ -63,8 +65,9 @@
             name: network_interface
           vars:
             operation: 'create'
+            azure_resource_group: "{{ resource_group }}"
             azure_network_interface:
-              name: "{{ azure_resource_group }}-nic"
+              name: "{{ resource_group }}-nic"
       rescue:
         - name: Assert correct error message
           fail:
@@ -78,9 +81,10 @@
             name: network_interface
           vars:
             operation: 'create'
+            azure_resource_group: "{{ resource_group }}"
             azure_network_interface:
-              name: "{{ azure_resource_group }}-nic"
-              vnet_name: "{{ azure_resource_group }}-vnet"
+              name: "{{ resource_group }}-nic"
+              vnet_name: "{{ resource_group }}-vnet"
       rescue:
         - name: Assert correct error message
           fail:
@@ -89,17 +93,17 @@
 
     - name: Set networking facts
       set_fact:
-        nic_name: "{{ azure_resource_group }}-nic"
+        nic_name: "{{ resource_group }}-nic"
         vnet:
-          name: "{{ azure_resource_group }}-vnet"
+          name: "{{ resource_group }}-vnet"
           address_prefixes_cidr:
             - 10.16.0.0/16
-          resource_group: "{{ azure_resource_group }}"
+          resource_group: "{{ resource_group }}"
         subnet:
-          name: "{{ azure_resource_group }}-subnet"
+          name: "{{ resource_group }}-subnet"
           address_prefix_cidr: 10.16.0.0/24
-          resource_group: "{{ azure_resource_group }}"
-          virtual_network_name: "{{ azure_resource_group }}-vnet"
+          resource_group: "{{ resource_group }}"
+          virtual_network_name: "{{ resource_group }}-vnet"
 
     - name: Attempt to create nic with nonexistent virtual network - should fail
       block:
@@ -108,6 +112,7 @@
             name: network_interface
           vars:
             operation: "create"
+            azure_resource_group: "{{ resource_group }}"
             azure_network_interface:
               name: "{{ nic_name }}"
               vnet_name: "{{ vnet.name }}"
@@ -128,6 +133,7 @@
             name: network_interface
           vars:
             operation: "create"
+            azure_resource_group: "{{ resource_group }}"
             azure_network_interface:
               name: "{{ nic_name }}"
               vnet_name: "{{ vnet.name }}"
@@ -148,6 +154,7 @@
             name: network_interface
           vars:
             operation: "create"
+            azure_resource_group: "{{ resource_group }}"
             azure_network_interface:
               name: "{{ nic_name }}"
               vnet_name: "{{ vnet.name }}"
@@ -155,7 +162,7 @@
 
         - name: Get nic info
           azure_rm_networkinterface_info:
-            resource_group: '{{ azure_resource_group }}'
+            resource_group: '{{ resource_group }}'
           register: nic_info
 
         - name: Assert that network interface was successfully created
@@ -165,85 +172,88 @@
 
         - name: Create public ip
           azure_rm_publicipaddress:
-            resource_group: "{{ azure_resource_group }}"
-            name: "{{ azure_resource_group }}-pip"
+            resource_group: "{{ resource_group }}"
+            name: "{{ resource_group }}-pip"
 
         - name: Update nic with public ip
           include_role:
             name: network_interface
           vars:
             operation: "create"
+            azure_resource_group: "{{ resource_group }}"
             azure_network_interface:
               name: "{{ nic_name }}"
               vnet_name: "{{ vnet.name }}"
               subnet_name: "{{ subnet.name }}"
               ip_configurations:
                 - name: ipconf1
-                  public_ip_address_name: "{{ azure_resource_group }}-pip"
+                  public_ip_address_name: "{{ resource_group }}-pip"
                   primary: True
 
         - name: Get nic info
           azure_rm_networkinterface_info:
-            resource_group: '{{ azure_resource_group }}'
+            resource_group: '{{ resource_group }}'
           register: nic_info
 
         - name: Assert that public ip is attached to nic
           assert:
             that:
               - nic_info.networkinterfaces | length == 1
-              - nic_info.networkinterfaces[0].ip_configurations[0].public_ip_address is search("{{ azure_resource_group }}-pip")
+              - nic_info.networkinterfaces[0].ip_configurations[0].public_ip_address is search("{{ resource_group }}-pip")
 
         - name: Test security group parameters
           block:
             - name: Create security group for nic
               azure_rm_securitygroup:
-                resource_group: "{{ azure_resource_group }}"
-                name: "{{ azure_resource_group }}-sg"
+                resource_group: "{{ resource_group }}"
+                name: "{{ resource_group }}-sg"
 
             - name: Update nic with security group
               include_role:
                 name: network_interface
               vars:
                 operation: "create"
+                azure_resource_group: "{{ resource_group }}"
                 azure_network_interface:
                   name: "{{ nic_name }}"
                   vnet_name: "{{ vnet.name }}"
                   subnet_name: "{{ subnet.name }}"
                   ip_configurations:
                     - name: ipconf1
-                      public_ip_address_name: "{{ azure_resource_group }}-pip"
+                      public_ip_address_name: "{{ resource_group }}-pip"
                       primary: True
-                  security_group_name: "{{ azure_resource_group }}-sg"
+                  security_group_name: "{{ resource_group }}-sg"
 
             - name: Get nic info
               azure_rm_networkinterface_info:
-                resource_group: '{{ azure_resource_group }}'
+                resource_group: '{{ resource_group }}'
               register: nic_info
 
             - name: Assert that security group is attached to nic
               assert:
                 that:
                   - nic_info.networkinterfaces | length == 1
-                  - nic_info.networkinterfaces[0].security_group is search("{{ azure_resource_group }}-sg")
+                  - nic_info.networkinterfaces[0].security_group is search("{{ resource_group }}-sg")
 
             - name: Update nic with no default security group
               include_role:
                 name: network_interface
               vars:
                 operation: "create"
+                azure_resource_group: "{{ resource_group }}"
                 azure_network_interface:
                   name: "{{ nic_name }}"
                   vnet_name: "{{ vnet.name }}"
                   subnet_name: "{{ subnet.name }}"
                   ip_configurations:
                     - name: ipconf1
-                      public_ip_address_name: "{{ azure_resource_group }}-pip"
+                      public_ip_address_name: "{{ resource_group }}-pip"
                       primary: True
                   create_with_security_group: no
 
             - name: Get nic info
               azure_rm_networkinterface_info:
-                resource_group: '{{ azure_resource_group }}'
+                resource_group: '{{ resource_group }}'
               register: nic_info
 
             - name: Assert that security group is removed
@@ -259,15 +269,16 @@
                 name: network_interface
               vars:
                 operation: "create"
+                azure_resource_group: "{{ resource_group }}"
                 azure_network_interface:
                   name: "{{ nic_name }}"
                   vnet_name: "{{ vnet.name }}"
                   subnet_name: "{{ subnet.name }}"
                   ip_configurations:
                     - name: ipconf1
-                      public_ip_address_name: "{{ azure_resource_group }}-pip"
+                      public_ip_address_name: "{{ resource_group }}-pip"
                       primary: True
-                  security_group_name: "{{ azure_resource_group }}-sg"
+                  security_group_name: "{{ resource_group }}-sg"
                   os_type: Windows
                   enable_accelerated_networking: yes
                   ip_forwarding: yes
@@ -276,7 +287,7 @@
 
             - name: Get nic info
               azure_rm_networkinterface_info:
-                resource_group: '{{ azure_resource_group }}'
+                resource_group: '{{ resource_group }}'
               register: nic_info
 
             - name: Assert that extra params were set properly
@@ -294,17 +305,18 @@
             name: network_interface
           vars:
             operation: 'delete'
+            azure_resource_group: "{{ resource_group }}"
             azure_network_interface:
               name: "{{ nic_name }}"
 
         - name: Get nic info
           azure_rm_networkinterface_info:
-            resource_group: '{{ azure_resource_group }}'
+            resource_group: '{{ resource_group }}'
           register: nic_info
 
         - name: Get sg info
           azure_rm_securitygroup_info:
-            resource_group: '{{ azure_resource_group }}'
+            resource_group: '{{ resource_group }}'
           register: sg_info
 
         - name: Assert that network interface was deleted and its default security group does not exist
@@ -318,6 +330,7 @@
             name: network_interface
           vars:
             operation: "create"
+            azure_resource_group: "{{ resource_group }}"
             azure_network_interface:
               name: "{{ nic_name }}"
               vnet_name: "{{ vnet.name }}"
@@ -325,12 +338,12 @@
 
         - name: Get nic info
           azure_rm_networkinterface_info:
-            resource_group: '{{ azure_resource_group }}'
+            resource_group: '{{ resource_group }}'
           register: nic_info
 
         - name: Get sg info
           azure_rm_securitygroup_info:
-            resource_group: '{{ azure_resource_group }}'
+            resource_group: '{{ resource_group }}'
           register: sg_info
 
         - name: Assert that network interface was created with its default security group
@@ -344,17 +357,18 @@
             name: network_interface
           vars:
             operation: 'delete'
+            azure_resource_group: "{{ resource_group }}"
             azure_network_interface:
               name: "{{ nic_name }}"
 
         - name: Get nic info
           azure_rm_networkinterface_info:
-            resource_group: '{{ azure_resource_group }}'
+            resource_group: '{{ resource_group }}'
           register: nic_info
 
         - name: Get sg info
           azure_rm_securitygroup_info:
-            resource_group: '{{ azure_resource_group }}'
+            resource_group: '{{ resource_group }}'
           register: sg_info
 
         - name: Assert that network interface and its security group were deleted
@@ -366,7 +380,7 @@
   always:
     - name: Delete resource group
       azure_rm_resourcegroup:
-        name: "{{ azure_resource_group }}"
+        name: "{{ resource_group }}"
         state: absent
         force_delete_nonempty: yes
       ignore_errors: yes

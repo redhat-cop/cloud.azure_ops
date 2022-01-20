@@ -17,7 +17,7 @@
 
     - name: Set facts
       set_fact:
-        azure_resource_group: "test-sg-{{ lookup('password', '/dev/null chars=ascii_lowercase,digits length=6') }}"
+        resource_group: "test-sg-{{ lookup('password', '/dev/null chars=ascii_lowercase,digits length=6') }}"
         azure_region: 'canadacentral'
         azure_tags:
           cloud.azure_roles: security_group
@@ -29,6 +29,8 @@
             name: security_group
           vars:
             operation: 'create'
+            azure_resource_group: "{{ resource_group }}"
+
       rescue:
         - name: Assert correct error message
           fail:
@@ -37,7 +39,7 @@
 
         - name: Set security group name
           set_fact:
-            sg_name: "{{ azure_resource_group }}-sg"
+            sg_name: "{{ resource_group }}-sg"
 
     - name: Test valid creation of security group
       block:
@@ -46,12 +48,13 @@
             name: security_group
           vars:
             operation: 'create'
+            azure_resource_group: "{{ resource_group }}"
             azure_security_group:
               name: "{{ sg_name }}"
 
         - name: Get sg info
           azure_rm_securitygroup_info:
-            resource_group: "{{ azure_resource_group }}"
+            resource_group: "{{ resource_group }}"
             name: "{{ sg_name }}"
           register: sg_info
 
@@ -64,7 +67,7 @@
 
         - name: Get resource group info
           azure_rm_resourcegroup_info:
-            name: '{{ azure_resource_group }}'
+            name: '{{ resource_group }}'
           register: rg
 
         - name: Assert that resource group was created
@@ -78,6 +81,7 @@
           include_role:
             name: security_group
           vars:
+            azure_resource_group: "{{ resource_group }}"
             azure_security_group:
               name: "{{ sg_name }}"
               rules:
@@ -106,7 +110,7 @@
 
         - name: Get security group info
           azure_rm_securitygroup_info:
-            resource_group: "{{ azure_resource_group }}"
+            resource_group: "{{ resource_group }}"
             name: "{{ sg_name }}"
           register: sg_info
 
@@ -120,32 +124,32 @@
 
         - name: Create VNet
           azure_rm_virtualnetwork:
-            resource_group: "{{ azure_resource_group }}"
-            name: "{{ azure_resource_group }}-vnet"
+            resource_group: "{{ resource_group }}"
+            name: "{{ resource_group }}-vnet"
             address_prefixes_cidr:
               - '10.16.0.0/16'
               - '172.100.0.0/16'
 
         - name: Create Subnet
           azure_rm_subnet:
-            resource_group: "{{ azure_resource_group }}"
-            name: "{{ azure_resource_group }}-subnet-00"
-            virtual_network_name: "{{ azure_resource_group }}-vnet"
+            resource_group: "{{ resource_group }}"
+            name: "{{ resource_group }}-subnet-00"
+            virtual_network_name: "{{ resource_group }}-vnet"
             address_prefix_cidr: '10.16.0.0/24'
             security_group: "{{ sg_name }}"
 
         - name: Create Second Subnet
           azure_rm_subnet:
-            resource_group: "{{ azure_resource_group }}"
-            name: "{{ azure_resource_group }}-subnet-01"
-            virtual_network_name: "{{ azure_resource_group }}-vnet"
+            resource_group: "{{ resource_group }}"
+            name: "{{ resource_group }}-subnet-01"
+            virtual_network_name: "{{ resource_group }}-vnet"
             address_prefix_cidr: '172.100.0.0/24'
             security_group: "{{ sg_name }}"
 
         - name: Create a public ip
           azure_rm_publicipaddress:
-            resource_group: "{{ azure_resource_group }}"
-            name: "{{ azure_resource_group }}-pip"
+            resource_group: "{{ resource_group }}"
+            name: "{{ resource_group }}-pip"
             sku: Standard
             allocation_method: Static
           register: ip
@@ -156,30 +160,30 @@
 
         - name: Create Network Interface with public ip
           azure_rm_networkinterface:
-            resource_group: "{{ azure_resource_group }}"
-            name: "{{ azure_resource_group }}-nic"
+            resource_group: "{{ resource_group }}"
+            name: "{{ resource_group }}-nic"
             security_group: "{{ sg_name }}"
             ip_configurations:
               - name: ipconf0
-                public_ip_address_name: "{{ azure_resource_group }}-pip"
-            virtual_network: "{{ azure_resource_group }}-vnet"
-            subnet_name: "{{ azure_resource_group }}-subnet-00"
+                public_ip_address_name: "{{ resource_group }}-pip"
+            virtual_network: "{{ resource_group }}-vnet"
+            subnet_name: "{{ resource_group }}-subnet-00"
 
         - name: Create Another Network Interface with no public ip
           azure_rm_networkinterface:
-            resource_group: "{{ azure_resource_group }}"
-            name: "{{ azure_resource_group }}-nic2"
+            resource_group: "{{ resource_group }}"
+            name: "{{ resource_group }}-nic2"
             security_group: "{{ sg_name }}"
             ip_configurations:
               - name: ipconf1
-            virtual_network: "{{ azure_resource_group }}-vnet"
-            subnet_name: "{{ azure_resource_group }}-subnet-00"
+            virtual_network: "{{ resource_group }}-vnet"
+            subnet_name: "{{ resource_group }}-subnet-00"
 
         - name: Create a VM
           azure_rm_virtualmachine:
-            resource_group: "{{ azure_resource_group }}"
-            name: "{{ azure_resource_group }}-vm"
-            network_interfaces: "{{ azure_resource_group }}-nic"
+            resource_group: "{{ resource_group }}"
+            name: "{{ resource_group }}-vm"
+            network_interfaces: "{{ resource_group }}-nic"
             admin_username: 'testuser'
             admin_password: '4fB5In3ueO7,'
             image:
@@ -191,8 +195,8 @@
 
         - name: Get public ip info
           azure_rm_networkinterface_info:
-            resource_group: "{{ azure_resource_group }}"
-            name: "{{ azure_resource_group }}-pip"
+            resource_group: "{{ resource_group }}"
+            name: "{{ resource_group }}-pip"
           register: pip_info
 
         - name: Test SSH access to VM
@@ -205,6 +209,7 @@
           include_role:
             name: security_group
           vars:
+            azure_resource_group: "{{ resource_group }}"
             azure_security_group:
               name: "{{ sg_name }}"
               rules_to_remove:
@@ -212,7 +217,7 @@
 
         - name: Get security group info
           azure_rm_securitygroup_info:
-            resource_group: "{{ azure_resource_group }}"
+            resource_group: "{{ resource_group }}"
             name: "{{ sg_name }}"
           register: sg_info
 
@@ -228,6 +233,7 @@
           include_role:
             name: security_group
           vars:
+            azure_resource_group: "{{ resource_group }}"
             azure_security_group:
               name: "{{ sg_name }}"
               rules_to_remove:
@@ -235,7 +241,7 @@
 
         - name: Get security group info
           azure_rm_securitygroup_info:
-            resource_group: "{{ azure_resource_group }}"
+            resource_group: "{{ resource_group }}"
             name: "{{ sg_name }}"
           register: sg_info
 
@@ -251,6 +257,7 @@
           include_role:
             name: security_group
           vars:
+            azure_resource_group: "{{ resource_group }}"
             azure_security_group:
               name: "{{ sg_name }}"
               rules_to_remove:
@@ -258,7 +265,7 @@
 
         - name: Get security group info
           azure_rm_securitygroup_info:
-            resource_group: "{{ azure_resource_group }}"
+            resource_group: "{{ resource_group }}"
             name: "{{ sg_name }}"
           register: sg_info
 
@@ -271,7 +278,7 @@
       block:
         - name: Get security group info
           azure_rm_securitygroup_info:
-            resource_group: "{{ azure_resource_group }}"
+            resource_group: "{{ resource_group }}"
             name: "{{ sg_name }}"
           register: sg_info
 
@@ -286,12 +293,13 @@
             name: security_group
           vars:
             operation: 'delete'
+            azure_resource_group: "{{ resource_group }}"
             azure_security_group:
               name: "{{ sg_name }}"
 
         - name: Get security group info
           azure_rm_securitygroup_info:
-            resource_group: "{{ azure_resource_group }}"
+            resource_group: "{{ resource_group }}"
             name: "{{ sg_name }}"
           register: sg_info
 
@@ -307,12 +315,13 @@
             name: security_group
           vars:
             operation: 'create'
+            azure_resource_group: "{{ resource_group }}"
             azure_security_group:
               name: "{{ sg_name }}"
 
         - name: Get sg info
           azure_rm_securitygroup_info:
-            resource_group: "{{ azure_resource_group }}"
+            resource_group: "{{ resource_group }}"
             name: "{{ sg_name }}"
           register: sg_info
 
@@ -326,12 +335,13 @@
             name: security_group
           vars:
             operation: 'delete'
+            azure_resource_group: "{{ resource_group }}"
             azure_security_group:
               name: "{{ sg_name }}"
 
         - name: Get security group info
           azure_rm_securitygroup_info:
-            resource_group: "{{ azure_resource_group }}"
+            resource_group: "{{ resource_group }}"
             name: "{{ sg_name }}"
           register: sg_info
 
@@ -343,7 +353,7 @@
   always:
     - name: Delete resource group and all its content
       azure_rm_resourcegroup:
-        name: "{{ azure_resource_group }}"
+        name: "{{ resource_group }}"
         state: absent
         force_delete_nonempty: yes
       ignore_errors: yes
