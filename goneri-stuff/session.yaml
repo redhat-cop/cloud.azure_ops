@@ -1,8 +1,0 @@
-azure:
-  clientId: be8e421b-c791-475d-9ec9-5a9a551a86e8
-  clientSecret: h7G9-n7H8-N3E0-h3P9
-  resourceGroupNames:
-  - ansible-core-ci-dev-2053cf07-7148-4ea2-95ad-afce19642994-1
-  - ansible-core-ci-dev-2053cf07-7148-4ea2-95ad-afce19642994-2
-  subscriptionId: 6d22db98-3e5f-4ab9-bdf9-2f911a2775f7
-  tenantId: 51cfe857-2f92-4581-b504-ee3eba3db075

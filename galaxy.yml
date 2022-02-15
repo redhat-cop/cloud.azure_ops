@@ -1,7 +1,7 @@
 ---
 namespace: cloud
 name: azure_roles
-version: 0.1.0
+version: 1.0.0
 authors:
   - Ansible (https://github.com/ansible)
 description: A collection of content (roles, playbooks, etc) for Ansible Automation Platform on Azure.
