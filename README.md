@@ -1,4 +1,4 @@
-# Kubernetes Collection for Ansible
+# Azure Roles Collection for Ansible Automation Platform
 
 This repository hosts the `cloud.azure_roles` Ansible Collection.
 
