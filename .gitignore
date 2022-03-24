@@ -383,6 +383,9 @@ $RECYCLE.BIN/
 # Windows shortcuts
 *.lnk
 
+# OSX
+.DS_Store
+
 # Antsibull-changelog
 changelogs/.plugin-cache.yaml
 
