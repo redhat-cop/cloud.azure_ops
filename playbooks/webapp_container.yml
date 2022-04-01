@@ -45,7 +45,7 @@
       resource_group: "{{ azure_resource_group }}"
       name: "{{ azure_resource_group }}-container-group"
       force_update: "{{ azure_app_force_update | default(omit) }}"
-      os_type: linux
+      os_type: "{{ azure_vm_os | default('Linux') }}"
       ip_address: public
       containers:
         - name: "{{ azure_app_container_name }}"
