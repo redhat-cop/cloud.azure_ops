@@ -1,5 +1,5 @@
 ---
 # defaults file for virtual_machine
-operation: 'create'
+operation: create
 azure_vm: {}
-remove_on_absent: 'all'
+remove_on_absent: all

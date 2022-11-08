@@ -1,0 +1,5 @@
+skip_list:
+  - meta-no-info  # meta/main.yml should contain relevant info.
+exclude_paths:
+  - ../molecule/webapp/converge.yml
+  - ../molecule/webapp/webapp.yml

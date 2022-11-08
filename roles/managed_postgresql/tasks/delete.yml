@@ -1,13 +1,13 @@
 ---
 - name: Check delete_option validation
-  fail:
-    msg: "Please provide delete_option as 'all' or 'server'"
+  ansible.builtin.fail:
+    msg: Please provide delete_option as 'all' or 'server'
   when:
     - delete_option is defined
     - delete_option not in ['all', 'server']
 
 - name: Delete PostgreSQL Server configuration settings
-  azure_rm_postgresqlconfiguration:
+  azure.azcollection.azure_rm_postgresqlconfiguration:
     resource_group: "{{ azure_resource_group }}"
     server_name: "{{ azure_postgresql_name }}"
     name: "{{ item.name }}"
@@ -18,7 +18,7 @@
     - delete_option is not defined
 
 - name: Delete PostgreSQL Server Firewall rules
-  azure_rm_postgresqlfirewallrule:
+  azure.azcollection.azure_rm_postgresqlfirewallrule:
     resource_group: "{{ azure_resource_group }}"
     server_name: "{{ azure_postgresql_name }}"
     name: "{{ item.name }}"
@@ -28,7 +28,7 @@
     - delete_option is not defined
 
 - name: Delete PostgreSQL Database instances
-  azure_rm_postgresqldatabase:
+  azure.azcollection.azure_rm_postgresqldatabase:
     resource_group: "{{ azure_resource_group }}"
     server_name: "{{ azure_postgresql_name }}"
     name: "{{ item.name }}"
@@ -39,7 +39,7 @@
     - delete_option is not defined
 
 - name: Delete PostgreSQL Server
-  azure_rm_postgresqlserver:
+  azure.azcollection.azure_rm_postgresqlserver:
     resource_group: "{{ azure_resource_group }}"
     name: "{{ azure_postgresql_name }}"
     state: absent
@@ -48,11 +48,11 @@
     - delete_option == 'server'
 
 - name: Delete Resource group
-  include_role:
+  ansible.builtin.include_role:
     name: cloud.azure_roles.resource_group
   vars:
-    azure_force_delete_nonempty: yes
-    azure_force_delete_locked: yes
+    azure_force_delete_nonempty: true
+    azure_force_delete_locked: true
   when:
     - delete_option is defined
     - delete_option == 'all'

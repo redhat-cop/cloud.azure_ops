@@ -1,7 +1,7 @@
 ---
-azure_vm_name: "webapp-vm-"
-azure_vm_user: "ansible"
-azure_vm_user_password: "4fB5In3ueO7,"
+azure_vm_name: webapp-vm-
+azure_vm_user: ansible
+azure_vm_user_password: 4fB5In3ueO7,
 
 # Source
 source_resource_group: src_rg
@@ -13,8 +13,8 @@ destination_region: canadacentral
 
 # PostgreSQL Server variables
 azure_postgresql_name: "{{ source_resource_group | replace('_', '-') }}-dbserver"
-azure_postgresql_admin_username: "ansible"
-azure_postgresql_admin_password: "4fB5In3ueO7,"
+azure_postgresql_admin_username: ansible
+azure_postgresql_admin_password: 4fB5In3ueO7,
 azure_postgresql_database_instances:
   - name: pyapp
     charset: UTF8
@@ -25,16 +25,16 @@ azure_postgresql_firewall_rules:
 
 # Application variables
 py_application:
-  env: "development"
-  admin_user: "admin"
-  admin_password: "admin"
-  docker_image: "pywebapp"
-  docker_dir: "/app/pyapp"
-  data_dir: "/tmp/myapp_data"
-  container_name: "myapp-container"
+  env: development
+  admin_user: admin
+  admin_password: admin
+  docker_image: pywebapp
+  docker_dir: /app/pyapp
+  data_dir: /tmp/myapp_data
+  container_name: myapp-container
 
 application_force_init: false
 
-application_src: "https://github.com/abikouo/webapp_pyflask_demo.git"
+application_src: https://github.com/abikouo/webapp_pyflask_demo.git
 
 playbook_number_forks: 15

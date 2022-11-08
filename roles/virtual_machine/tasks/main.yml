@@ -1,54 +1,55 @@
 ---
 - name: Check operation validation
-  fail:
-    msg: "Please provide operation as 'create', 'delete', 'power_on', 'power_off', 'deallocate', or 'restart'"
+  ansible.builtin.fail:
+    msg: Please provide operation as 'create', 'delete', 'power_on', 'power_off', 'deallocate', or 'restart'
   when: operation not in ['create', 'delete', 'power_on', 'power_off', 'deallocate', 'restart']
 
 - name: Ensure resource group is defined
-  fail:
-    msg: "Azure resource group name must be defined as azure_resource_group"
+  ansible.builtin.fail:
+    msg: Azure resource group name must be defined as azure_resource_group
   when: azure_resource_group is not defined
 
 - name: Ensure vm name is defined
-  fail:
+  ansible.builtin.fail:
     msg: "Missing parameter: key 'name' not found in azure_vm"
   when: azure_vm.name is not defined
 
 - name: Replace invalid chars in name
-  set_fact:
-    vm_name: "{{ azure_vm.name | regex_replace('[^a-zA-Z0-9]','-') }}"
+  ansible.builtin.set_fact:
+    vm_name: "{{ azure_vm.name | regex_replace('[^a-zA-Z0-9]', '-') }}"
 
 - name: Get resource group info
-  azure_rm_resourcegroup_info:
+  azure.azcollection.azure_rm_resourcegroup_info:
     name: "{{ azure_resource_group }}"
   register: rg_info
 
 - name: Power Off VM
-  azure_rm_virtualmachine:
+  azure.azcollection.azure_rm_virtualmachine:
     resource_group: "{{ azure_resource_group }}"
     name: "{{ vm_name }}"
-    started: no
+    started: false
   when: operation == 'power_off'
 
 - name: Deallocate VM
-  azure_rm_virtualmachine:
+  azure.azcollection.azure_rm_virtualmachine:
     resource_group: "{{ azure_resource_group }}"
     name: "{{ vm_name }}"
-    allocated: no
+    allocated: false
   when: operation == 'deallocate'
 
 - name: Power On VM
-  azure_rm_virtualmachine:
+  azure.azcollection.azure_rm_virtualmachine:
     resource_group: "{{ azure_resource_group }}"
     name: "{{ vm_name }}"
   when: operation == 'power_on'
 
 - name: Restart VM
-  azure_rm_virtualmachine:
+  azure.azcollection.azure_rm_virtualmachine:
     resource_group: "{{ azure_resource_group }}"
     name: "{{ vm_name }}"
-    restarted: yes
+    restarted: true
   when: operation == 'restart'
 
-- include_tasks: "{{ operation }}.yml"
+- name: Create or delete VM
+  ansible.builtin.include_tasks: "{{ operation }}.yml"
   when: operation in ['create', 'delete']

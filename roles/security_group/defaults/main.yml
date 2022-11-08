@@ -1,4 +1,4 @@
 ---
 # defaults file for security_group
-operation: 'create'
+operation: create
 azure_security_group: {}

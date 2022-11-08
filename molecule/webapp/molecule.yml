@@ -8,9 +8,9 @@ provisioner:
   log: true
   lint: {}
   env:
-    ANSIBLE_FORCE_COLOR: 'true'
+    ANSIBLE_FORCE_COLOR: "true"
   options:
-    vvv: True
+    vvv: true
 scenario:
   name: webapp
   test_sequence:

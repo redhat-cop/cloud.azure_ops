@@ -1,24 +1,23 @@
 ---
 - name: Remove lock on the resource group
+  when:
+    - azure_force_delete_locked is defined
+    - azure_force_delete_locked | bool
   block:
     - name: Get lock info for the resource group
-      azure_rm_lock_info:
+      azure.azcollection.azure_rm_lock_info:
         resource_group: "{{ azure_resource_group }}"
       register: result
 
     - name: Delete locks for the resource group
-      azure_rm_lock:
+      azure.azcollection.azure_rm_lock:
         state: absent
         name: "{{ item.name }}"
         resource_group: "{{ azure_resource_group }}"
       with_items: "{{ result.locks }}"
 
-  when:
-    - azure_force_delete_locked is defined
-    - azure_force_delete_locked | bool
-
 - name: Delete resource group
-  azure_rm_resourcegroup:
+  azure.azcollection.azure_rm_resourcegroup:
     name: "{{ azure_resource_group }}"
     state: absent
     force_delete_nonempty: "{{ azure_force_delete_nonempty | default(omit) }}"

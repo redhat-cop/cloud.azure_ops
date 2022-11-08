@@ -1,5 +1,6 @@
+---
 - name: Delete resource group
-  include_role:
+  ansible.builtin.include_role:
     name: resource_group
   vars:
-    azure_force_delete_nonempty: yes
+    azure_force_delete_nonempty: true

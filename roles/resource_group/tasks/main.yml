@@ -1,12 +1,13 @@
 ---
 - name: Check operation validation
-  fail:
-    msg: "Please provide operation as 'create' or 'delete'"
+  ansible.builtin.fail:
+    msg: Please provide operation as 'create' or 'delete'
   when: operation not in ['create', 'delete']
 
 - name: Check Resource group name
-  fail:
-    msg: "Azure Resource group name must be defined as azure_resource_group"
+  ansible.builtin.fail:
+    msg: Azure Resource group name must be defined as azure_resource_group
   when: azure_resource_group is not defined
 
-- include_tasks: "{{ operation }}.yml"
+- name: Create or delete resource group
+  ansible.builtin.include_tasks: "{{ operation }}.yml"

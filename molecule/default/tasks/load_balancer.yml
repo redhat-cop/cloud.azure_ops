@@ -1,53 +1,54 @@
 ---
 - name: Define resource group name
-  set_fact:
-    resource_group: "test-{{ lookup('password', '/dev/null chars=ascii_lowercase,digits length=6') }}"
+  ansible.builtin.set_fact:
+    resource_group: test-{{ lookup('password', '/dev/null chars=ascii_lowercase,digits length=6') }}
     azure_tags:
       cloud.azure_roles: load_balancer
 
 - name: Define region
-  set_fact:
-    azure_region: 'canadacentral'
+  ansible.builtin.set_fact:
+    azure_region: canadacentral
 
 - name: Test load balancer role
   block:
     - name: Test invalid creation of load balancer (no name)
       block:
         - name: Create load balancer
-          import_role:
+          ansible.builtin.import_role:
             name: load_balancer
       rescue:
-        - debug:
-            msg: "Failed when attempting to create a load balancer with no name. Continue..."
+        - name: Print error message
+          ansible.builtin.debug:
+            msg: Failed when attempting to create a load balancer with no name. Continue...
 
     - name: Test creation of load balancer with all defaults
       block:
         - name: Create load balancer
-          include_role:
+          ansible.builtin.include_role:
             name: load_balancer
           vars:
-            operation: "create"
+            operation: create
             azure_resource_group: "{{ resource_group }}"
             azure_load_balancer:
               name: "{{ resource_group }}-lb"
 
         - name: Get resource group info
-          azure_rm_resourcegroup_info:
-            name: '{{ resource_group }}'
+          azure.azcollection.azure_rm_resourcegroup_info:
+            name: "{{ resource_group }}"
           register: rg
 
         - name: Assert that resource group was created
-          assert:
+          ansible.builtin.assert:
             that:
               - rg.resourcegroups | length == 1
 
         - name: Get lb info
-          azure_rm_loadbalancer_info:
-            resource_group: '{{ resource_group }}'
+          azure.azcollection.azure_rm_loadbalancer_info:
+            resource_group: "{{ resource_group }}"
           register: lb_info
 
         - name: Assert that load balancer was successfully created with defaults
-          assert:
+          ansible.builtin.assert:
             that:
               - lb_info.ansible_info.azure_loadbalancers | length == 1
               - lb_info.ansible_info.azure_loadbalancers[0].properties.frontendIPConfigurations[0].name == 'default'
@@ -59,61 +60,63 @@
               - lb_info.ansible_info.azure_loadbalancers[0].tags is undefined
 
         - name: Delete load balancer
-          include_role:
+          ansible.builtin.include_role:
             name: load_balancer
           vars:
-            operation: 'delete'
+            operation: delete
             azure_resource_group: "{{ resource_group }}"
             azure_load_balancer:
               name: "{{ resource_group }}-lb"
 
-        - name: Assert resource group still exists
-          azure_rm_resourcegroup_info:
-            name: '{{ resource_group }}'
+        - name: Retrieve resource group
+          azure.azcollection.azure_rm_resourcegroup_info:
+            name: "{{ resource_group }}"
           register: rg
 
-        - assert:
+        - name: Assert that resource group still exists
+          ansible.builtin.assert:
             that:
               - rg.resourcegroups | length == 1
 
-        - name: Assert that load balancer was deleted
-          azure_rm_loadbalancer_info:
-            resource_group: '{{ resource_group }}'
+        - name: Retrieve load balancer
+          azure.azcollection.azure_rm_loadbalancer_info:
+            resource_group: "{{ resource_group }}"
           register: lb_info
 
-        - assert:
+        - name: Assert that load balancer was deleted
+          ansible.builtin.assert:
             that:
               - lb_info.ansible_info.azure_loadbalancers | length == 0
 
     - name: Test creation of load balancer with custom public ip
       block:
         - name: Create load balancer with public ip specified
-          include_role:
+          ansible.builtin.include_role:
             name: load_balancer
           vars:
-            operation: "create"
+            operation: create
             azure_resource_group: "{{ resource_group }}"
             azure_load_balancer:
               name: "{{ resource_group }}-lb"
-              public_ip_name: 'testinput'
+              public_ip_name: testinput
 
         - name: Get resource group info
-          azure_rm_resourcegroup_info:
-            name: '{{ resource_group }}'
+          azure.azcollection.azure_rm_resourcegroup_info:
+            name: "{{ resource_group }}"
           register: rg
 
         - name: Assert that resource group was created
-          assert:
+          ansible.builtin.assert:
             that:
               - rg.resourcegroups | length == 1
 
         - name: Get lb info
-          azure_rm_loadbalancer_info:
-            resource_group: '{{ resource_group }}'
+          azure.azcollection.azure_rm_loadbalancer_info:
+            resource_group: "{{ resource_group }}"
           register: lb_info
 
         - name: Assert that load balancer was successfully created with public IP input
-          assert:
+          ansible.builtin.assert:
             that:
               - lb_info.ansible_info.azure_loadbalancers | length == 1
               - lb_info.ansible_info.azure_loadbalancers[0].properties.frontendIPConfigurations[0].properties.publicIPAddress.id is search('testinput')
@@ -121,89 +124,91 @@
               - lb_info.ansible_info.azure_loadbalancers[0].properties.backendAddressPools[0].name == 'default'
 
         - name: Delete load balancer
-          include_role:
+          ansible.builtin.include_role:
             name: load_balancer
           vars:
-            operation: 'delete'
+            operation: delete
             azure_resource_group: "{{ resource_group }}"
             azure_load_balancer:
               name: "{{ resource_group }}-lb"
 
-        - name: Assert that load balancer was deleted
-          azure_rm_loadbalancer_info:
-            resource_group: '{{ resource_group }}'
+        - name: Retrieve load balancer
+          azure.azcollection.azure_rm_loadbalancer_info:
+            resource_group: "{{ resource_group }}"
           register: lb_info
 
-        - assert:
+        - name: Assert that load balancer was deleted
+          ansible.builtin.assert:
             that:
               - lb_info.ansible_info.azure_loadbalancers | length == 0
 
     - name: Test creation of load balancer with custom domain name
       block:
         - name: Create load balancer
-          include_role:
+          ansible.builtin.include_role:
             name: load_balancer
           vars:
-            operation: "create"
+            operation: create
             azure_resource_group: "{{ resource_group }}"
             azure_load_balancer:
-              domain_name: "{{ resource_group  | replace('_', '-')  }}-{{ azure_region  | replace('_', '-')  }}-lb"
+              domain_name: "{{ resource_group | replace('_', '-') }}-{{ azure_region | replace('_', '-') }}-lb"
               name: "{{ resource_group }}-lb"
 
         - name: Get resource group info
-          azure_rm_resourcegroup_info:
-            name: '{{ resource_group }}'
+          azure.azcollection.azure_rm_resourcegroup_info:
+            name: "{{ resource_group }}"
           register: rg
 
         - name: Assert that resource group was created
-          assert:
+          ansible.builtin.assert:
             that:
               - rg.resourcegroups | length == 1
 
         - name: Get lb info
-          azure_rm_loadbalancer_info:
-            resource_group: '{{ resource_group }}'
+          azure.azcollection.azure_rm_loadbalancer_info:
+            resource_group: "{{ resource_group }}"
           register: lb_info
 
         - name: Get lb's public ip info
-          azure_rm_resource_info:
+          azure.azcollection.azure_rm_resource_info:
             url: "{{ lb_info.ansible_info.azure_loadbalancers[0].properties.frontendIPConfigurations[0].properties.publicIPAddress.id }}"
           register: pip
 
         - name: Assert that load balancer was successfully created & domain name was assigned to public ip
-          assert:
+          ansible.builtin.assert:
             that:
               - lb_info.ansible_info.azure_loadbalancers | length == 1
-              - pip.response[0].properties.dnsSettings.fqdn == '{{ resource_group  | replace('_', '-')  }}-{{ azure_region  | replace('_', '-')  }}-lb.canadacentral.cloudapp.azure.com'
+              - pip.response[0].properties.dnsSettings.fqdn == '{{ resource_group | replace('_', '-') }}-{{ azure_region | replace('_', '-') }}-lb.canadacentral.cloudapp.azure.com'
               - lb_info.ansible_info.azure_loadbalancers[0].properties.frontendIPConfigurations[0].name == 'default'
               - lb_info.ansible_info.azure_loadbalancers[0].properties.frontendIPConfigurations[0].properties.publicIPAddress.id is search('{{ resource_group }}-lb-public-ip')
               - lb_info.ansible_info.azure_loadbalancers[0].properties.backendAddressPools[0].name == 'default'
 
         - name: Delete load balancer
-          include_role:
+          ansible.builtin.include_role:
             name: load_balancer
           vars:
-            operation: 'delete'
+            operation: delete
             azure_resource_group: "{{ resource_group }}"
             azure_load_balancer:
               name: "{{ resource_group }}-lb"
 
-        - name: Assert that load balancer was deleted
-          azure_rm_loadbalancer_info:
-            resource_group: '{{ resource_group }}'
+        - name: Retrieve load balancer
+          azure.azcollection.azure_rm_loadbalancer_info:
+            resource_group: "{{ resource_group }}"
           register: lb_info
 
-        - assert:
+        - name: Assert that load balancer was deleted
+          ansible.builtin.assert:
             that:
               - lb_info.ansible_info.azure_loadbalancers | length == 0
 
     - name: Test creation of load balancer with custom frontend ip conf
       block:
         - name: Create load balancer with custom frontend ip conf
-          include_role:
+          ansible.builtin.include_role:
             name: load_balancer
           vars:
-            operation: "create"
+            operation: create
             azure_resource_group: "{{ resource_group }}"
             azure_load_balancer:
               frontend_ip_configurations:
@@ -212,22 +217,22 @@
               name: "{{ resource_group }}-lb"
 
         - name: Get resource group info
-          azure_rm_resourcegroup_info:
-            name: '{{ resource_group }}'
+          azure.azcollection.azure_rm_resourcegroup_info:
+            name: "{{ resource_group }}"
           register: rg
 
         - name: Assert that resource group was created
-          assert:
+          ansible.builtin.assert:
             that:
               - rg.resourcegroups | length == 1
 
         - name: Get lb info
-          azure_rm_loadbalancer_info:
-            resource_group: '{{ resource_group }}'
+          azure.azcollection.azure_rm_loadbalancer_info:
+            resource_group: "{{ resource_group }}"
           register: lb_info
 
         - name: Assert that load balancer was successfully created with input frontend ip configurations
-          assert:
+          ansible.builtin.assert:
             that:
               - lb_info.ansible_info.azure_loadbalancers | length == 1
               - lb_info.ansible_info.azure_loadbalancers[0].properties.backendAddressPools[0].name == 'default'
@@ -235,30 +240,31 @@
               - lb_info.ansible_info.azure_loadbalancers[0].properties.frontendIPConfigurations[0].properties.publicIPAddress.id is search('{{ resource_group }}-lb-public-ip')
 
         - name: Delete load balancer
-          include_role:
+          ansible.builtin.include_role:
             name: load_balancer
           vars:
-            operation: 'delete'
+            operation: delete
             azure_resource_group: "{{ resource_group }}"
             azure_load_balancer:
               name: "{{ resource_group }}-lb"
 
-        - name: Assert that load balancer was deleted
-          azure_rm_loadbalancer_info:
-            resource_group: '{{ resource_group }}'
+        - name: Retrieve load balancer
+          azure.azcollection.azure_rm_loadbalancer_info:
+            resource_group: "{{ resource_group }}"
           register: lb_info
 
-        - assert:
+        - name: Assert that load balancer was deleted
+          ansible.builtin.assert:
             that:
               - lb_info.ansible_info.azure_loadbalancers | length == 0
 
     - name: Test creation of load balancer with custom backend address pool
       block:
         - name: Create load balancer with backend address pool input
-          include_role:
+          ansible.builtin.include_role:
             name: load_balancer
           vars:
-            operation: "create"
+            operation: create
             azure_resource_group: "{{ resource_group }}"
             azure_load_balancer:
               backend_address_pools:
@@ -266,22 +272,22 @@
               name: "{{ resource_group }}-lb"
 
         - name: Get resource group info
-          azure_rm_resourcegroup_info:
-            name: '{{ resource_group }}'
+          azure.azcollection.azure_rm_resourcegroup_info:
+            name: "{{ resource_group }}"
           register: rg
 
         - name: Assert that resource group was created
-          assert:
+          ansible.builtin.assert:
             that:
               - rg.resourcegroups | length == 1
 
         - name: Get lb info
-          azure_rm_loadbalancer_info:
-            resource_group: '{{ resource_group }}'
+          azure.azcollection.azure_rm_loadbalancer_info:
+            resource_group: "{{ resource_group }}"
           register: lb_info
 
         - name: Assert that load balancer was successfully created with input backend address pool
-          assert:
+          ansible.builtin.assert:
             that:
               - lb_info.ansible_info.azure_loadbalancers | length == 1
               - lb_info.ansible_info.azure_loadbalancers[0].properties.backendAddressPools[0].name == '{{ resource_group }}-vm-pool'
@@ -289,30 +295,31 @@
               - lb_info.ansible_info.azure_loadbalancers[0].properties.frontendIPConfigurations[0].properties.publicIPAddress.id is search('{{ resource_group }}-lb-public-ip')
 
         - name: Delete load balancer
-          include_role:
+          ansible.builtin.include_role:
             name: load_balancer
           vars:
-            operation: 'delete'
+            operation: delete
             azure_resource_group: "{{ resource_group }}"
             azure_load_balancer:
               name: "{{ resource_group }}-lb"
 
-        - name: Assert that load balancer was deleted
-          azure_rm_loadbalancer_info:
-            resource_group: '{{ resource_group }}'
+        - name: Retrieve load balancer
+          azure.azcollection.azure_rm_loadbalancer_info:
+            resource_group: "{{ resource_group }}"
           register: lb_info
 
-        - assert:
+        - name: Assert that load balancer was deleted
+          ansible.builtin.assert:
             that:
               - lb_info.ansible_info.azure_loadbalancers | length == 0
 
     - name: Test creation of load balancer with custom probes, rules, tags, and sku
       block:
         - name: Create load balancer with custom probes, rules, tags, and sku input
-          include_role:
+          ansible.builtin.include_role:
             name: load_balancer
           vars:
-            operation: "create"
+            operation: create
             azure_resource_group: "{{ resource_group }}"
             azure_load_balancer:
               name: "{{ resource_group }}-lb"
@@ -322,32 +329,32 @@
               rules:
                 - name: lb-rule
                   probe: lb-probe
-                  backend_address_pool: 'default'
-                  frontend_ip_configuration: 'default'
+                  backend_address_pool: default
+                  frontend_ip_configuration: default
                   frontend_port: 5000
                   backend_port: 5000
-              sku: 'Standard'
+              sku: Standard
               tags:
-                tag0: 'test0'
-                tag1: 'test1'
+                tag0: test0
+                tag1: test1
 
         - name: Get resource group info
-          azure_rm_resourcegroup_info:
-            name: '{{ resource_group }}'
+          azure.azcollection.azure_rm_resourcegroup_info:
+            name: "{{ resource_group }}"
           register: rg
 
         - name: Assert that resource group was created
-          assert:
+          ansible.builtin.assert:
             that:
               - rg.resourcegroups | length == 1
 
         - name: Get lb info
-          azure_rm_loadbalancer_info:
-            resource_group: '{{ resource_group }}'
+          azure.azcollection.azure_rm_loadbalancer_info:
+            resource_group: "{{ resource_group }}"
           register: lb_info
 
         - name: Assert that load balancer was successfully created with input custom probes, rules, tags, and sku
-          assert:
+          ansible.builtin.assert:
             that:
               - lb_info.ansible_info.azure_loadbalancers | length == 1
               - lb_info.ansible_info.azure_loadbalancers[0].properties.loadBalancingRules | length > 0
@@ -356,27 +363,28 @@
               - lb_info.ansible_info.azure_loadbalancers[0].tags | length == 2
 
         - name: Delete load balancer
-          include_role:
+          ansible.builtin.include_role:
             name: load_balancer
           vars:
-            operation: 'delete'
+            operation: delete
             azure_resource_group: "{{ resource_group }}"
             azure_load_balancer:
               name: "{{ resource_group }}-lb"
 
-        - name: Assert that load balancer was deleted
-          azure_rm_loadbalancer_info:
-            resource_group: '{{ resource_group }}'
+        - name: Retrieve load balancer
+          azure.azcollection.azure_rm_loadbalancer_info:
+            resource_group: "{{ resource_group }}"
           register: lb_info
 
-        - assert:
+        - name: Assert that load balancer was deleted
+          ansible.builtin.assert:
             that:
               - lb_info.ansible_info.azure_loadbalancers | length == 0
 
   always:
-    - name: Delete resource group
-      azure_rm_resourcegroup:
+    - name: Delete resource group # noqa ignore-errors
+      azure.azcollection.azure_rm_resourcegroup:
         name: "{{ resource_group }}"
         state: absent
-        force_delete_nonempty: yes
-      ignore_errors: yes
+        force_delete_nonempty: true
+      ignore_errors: true
