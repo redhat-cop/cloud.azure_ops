@@ -67,7 +67,7 @@
   register: load_balancer
 
 # Create Bastion Host
-- name: Creat a bastion host
+- name: Create a bastion host
   ansible.builtin.include_tasks: tasks/create_bastion.yml
 
 # Create VM Scale Set
