@@ -8,7 +8,7 @@
 - name: Init empty list of rules
   ansible.builtin.set_fact:
     new_sg_rules: []
-- name: Persist rules that will not be removed
+- name: Persist rules that will not be removed # noqa jinja[spacing] see: https://github.com/ansible/ansible-lint/issues/2684
   ansible.builtin.set_fact:
     new_sg_rules: "{{ new_sg_rules + [{ 'name': rule.name, 'protocol': rule.properties.protocol, 'access': rule.properties.access, 'destination_address_prefix': rule.properties.destinationAddressPrefix,\
       \ 'destination_port_range': rule.properties.destinationPortRanges, 'direction': rule.properties.direction, 'priority': rule.properties.priority, 'source_address_prefix':\
