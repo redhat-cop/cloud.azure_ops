@@ -1,4 +1,4 @@
-resource_group
+azure_resource_group
 ==============
 
 A role to manage Azure Resource Group. User can create or delete resource group.
@@ -30,7 +30,7 @@ Example Playbook
 
     - hosts: localhost
       roles:
-         - role: cloud.azure_roles.resource_group
+         - role: cloud.azure_roles.azure_resource_group
            operation: "create"
            azure_region: "eastus"
            azure_resource_group: "testing-resource-group"

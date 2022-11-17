@@ -1,4 +1,4 @@
-load_balancer
+azureconfig_load_balancer
 ==================
 
 A role to Create/Delete/Configure an Azure Load Balancer.
@@ -61,7 +61,7 @@ Example Playbook
 
     - hosts: localhost
       roles:
-        - role: cloud.azure_roles.load_balancer
+        - role: cloud.azure_roles.azureconfig_load_balancer
           operation: "create"
           azure_region: "canadacentral"
           azure_resource_group: "rg"

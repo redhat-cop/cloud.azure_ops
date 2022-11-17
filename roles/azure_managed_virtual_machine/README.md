@@ -1,4 +1,4 @@
-virtual_machine
+azure_managed_virtual_machine
 ==================
 
 A role to Create/Delete/Configure an Azure Virtual Machine.
@@ -58,7 +58,7 @@ Example Playbook
         azure_resource_group: 'my_resource_group'
       roles:
         - name: Create a load balanced virtual machine with a default network interface
-          role: cloud.azure_roles.virtual_machine
+          role: cloud.azure_roles.azure_managed_virtual_machine
           operation: 'create'
           azure_vm:
             name: "{{ azure_resource_group }}-example-vm"
@@ -75,7 +75,7 @@ Example Playbook
                 load_balancer: 'existing-lb'
 
         - name: Delete virtual machine and all autocreated resources
-          role: cloud.azure_roles.virtual_machine
+          role: cloud.azure_roles.azure_managed_virtual_machine
           operation: 'delete'
           remove_on_absent: 'all_autocreated'
           azure_vm:

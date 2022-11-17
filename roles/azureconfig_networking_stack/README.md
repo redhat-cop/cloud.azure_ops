@@ -1,4 +1,4 @@
-networking_stack
+azureconfig_networking_stack
 ================
 
 This role create/delete azure networking stack which include virtual network and add/delete a subnet.
@@ -34,7 +34,7 @@ Example Playbook
 
     - hosts: localhost
       roles:
-         - role: cloud.azure_roles.networking_stack
+         - role: cloud.azure_roles.azureconfig_networking_stack
            operation: "create"
            azure_region: "eastus"
            azure_resource_group: "testing-resource-group"

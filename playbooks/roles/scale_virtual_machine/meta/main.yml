@@ -1,4 +1,3 @@
 ---
 collections:
-  - cloud.azure_roles
   - azure.azcollection
