@@ -1,39 +1,43 @@
 ---
-- fail:
-    msg: "Azure location must be defined as azure_region"
+- name: Check Azure location
+  ansible.builtin.fail:
+    msg: Azure location must be defined as azure_region
   when:
     - server_info.servers | length == 0
     - rg_info.resourcegroups | length == 0
     - azure_region is not defined
 
-- fail:
-    msg: "Azure PostgreSQL Server admin user must be defined as azure_postgresql_admin_username"
+- name: Check Azure PostgreSQL admin user
+  ansible.builtin.fail:
+    msg: Azure PostgreSQL Server admin user must be defined as azure_postgresql_admin_username
   when:
     - server_info.servers | length == 0
     - azure_postgresql_admin_username is not defined
 
-- fail:
-    msg: "Azure PostgreSQL Server admin password must be defined as azure_postgresql_admin_password"
+- name: Check Azure PostgreSQL admin password
+  ansible.builtin.fail:
+    msg: Azure PostgreSQL Server admin password must be defined as azure_postgresql_admin_password
   when:
     - server_info.servers | length == 0
     - azure_postgresql_admin_password is not defined
 
 - name: Create resource group
-  include_role:
+  ansible.builtin.include_role:
     name: cloud.azure_roles.resource_group
   when: rg_info.resourcegroups | length == 0
 
-- fail:
-    msg: "Azure PostgreSQL Server restore point in time must be defined (ISO8601 format) as azure_postgresql_create_mode is set to 'point_in_time_restore'"
+- name: Check Azure PostgreSQL server restore point
+  ansible.builtin.fail:
+    msg: Azure PostgreSQL Server restore point in time must be defined (ISO8601 format) as azure_postgresql_create_mode is set to 'point_in_time_restore'
   when:
     - azure_postgresql_create_mode | default('') == 'point_in_time_restore'
     - azure_postgresql_restore_point_in_time is not defined
 
 - name: Create/Update PostgreSQL Server
-  azure_rm_postgresqlserver:
+  azure.azcollection.azure_rm_postgresqlserver:
     resource_group: "{{ azure_resource_group }}"
     name: "{{ azure_postgresql_name }}"
-    sku: "{{ azure_postgresql_sku | default(omit)  }}"
+    sku: "{{ azure_postgresql_sku | default(omit) }}"
     location: "{{ azure_region | default(omit) }}"
     storage_mb: "{{ azure_postgresql_storage_mb | default(omit) }}"
     geo_redundant_backup: "{{ azure_postgresql_geo_redundant_backup | default(omit) }}"
@@ -49,7 +53,7 @@
     tags: "{{ azure_tags | default(omit) }}"
 
 - name: Update PostgreSQL Server configuration settings
-  azure_rm_postgresqlconfiguration:
+  azure.azcollection.azure_rm_postgresqlconfiguration:
     resource_group: "{{ azure_resource_group }}"
     server_name: "{{ azure_postgresql_name }}"
     name: "{{ item.name }}"
@@ -59,7 +63,7 @@
     - azure_postgresql_settings | length > 0
 
 - name: Update PostgreSQL Server Firewall rules
-  azure_rm_postgresqlfirewallrule:
+  azure.azcollection.azure_rm_postgresqlfirewallrule:
     resource_group: "{{ azure_resource_group }}"
     server_name: "{{ azure_postgresql_name }}"
     name: "{{ item.name }}"
@@ -70,7 +74,7 @@
     - azure_postgresql_firewall_rules | length > 0
 
 - name: Create/Update PostgreSQL Database instances
-  azure_rm_postgresqldatabase:
+  azure.azcollection.azure_rm_postgresqldatabase:
     resource_group: "{{ azure_resource_group }}"
     server_name: "{{ azure_postgresql_name }}"
     name: "{{ item.name }}"

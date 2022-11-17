@@ -1,21 +1,21 @@
 ---
 - name: Extract subnet & vnet names from resource id
-  set_fact:
+  ansible.builtin.set_fact:
     subnet_name: "{{ subnet_id['id'] | regex_search('[^/]+$') }}"
     vnet_name: "{{ subnet_id['id'].split('/')[((subnet_id['id'].split('/') | length) - 3 | int)] }}"
 
 - name: Get subnet info
-  azure_rm_subnet_info:
+  azure.azcollection.azure_rm_subnet_info:
     resource_group: "{{ azure_resource_group }}"
     name: "{{ subnet_name }}"
     virtual_network_name: "{{ vnet_name }}"
   register: subnet_result
 
 - name: Remove unsupported params from dictionary
-  set_fact:
-    subnet: "{{ subnet | default({}) | combine( { item.key: item.value } ) }}"
+  ansible.builtin.set_fact:
+    subnet: "{{ subnet | default({}) | combine({item.key: item.value}) }}"
   with_dict: "{{ subnet_result.subnets[0] }}"
   when: item.key not in ['security_group', 'id', 'provisioning_state']
 
 - name: Update subnet to detach from security group
-  azure_rm_subnet: "{{ subnet | combine( { 'security_group': '' } ) }}"
+  azure.azcollection.azure_rm_subnet: "{{ subnet | combine({'security_group': ''}) }}"

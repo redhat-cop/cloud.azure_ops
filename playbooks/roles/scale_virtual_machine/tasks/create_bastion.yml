@@ -1,22 +1,23 @@
 ---
 - name: Define Bastion facts
-  set_fact:
+  ansible.builtin.set_fact:
     bastion_public_ip_name: "{{ azure_vm_name }}bastion-ip"
     bastion_nic_name: "{{ azure_vm_name }}bastion-nic"
 
 - name: Create public ip for Bastion VM
-  azure_rm_publicipaddress:
+  azure.azcollection.azure_rm_publicipaddress:
     resource_group: "{{ azure_resource_group }}"
     allocation_method: static
     name: "{{ bastion_public_ip_name }}"
     sku: Basic
   register: public_ip
 
-- set_fact:
+- name: Set bastion_public_ip variable
+  ansible.builtin.set_fact:
     bastion_public_ip: "{{ public_ip.state.ip_address }}"
 
 - name: Create network interface for Bastion host
-  azure_rm_networkinterface:
+  azure.azcollection.azure_rm_networkinterface:
     resource_group: "{{ azure_resource_group }}"
     name: "{{ bastion_nic_name }}"
     virtual_network: "{{ azure_virtual_network }}"
@@ -27,14 +28,14 @@
         public_ip_address_name: "{{ bastion_public_ip_name }}"
 
 - name: Create virtual machine
-  azure_rm_virtualmachine:
+  azure.azcollection.azure_rm_virtualmachine:
     resource_group: "{{ azure_resource_group }}"
     name: "{{ azure_vm_name }}bastion"
     admin_username: "{{ azure_vm_user }}"
     admin_password: "{{ azure_vm_user_password }}"
     image: "{{ azure_vm_image }}"
     vm_size: "{{ azure_bastion_vm_size | default('Standard_DS4_v2') }}"
-    ssh_password_enabled: yes
+    ssh_password_enabled: true
     managed_disk_type: "{{ azure_vm_image_disk_type | default('Standard_LRS') }}"
     os_type: "{{ azure_vm_os | default('Linux') }}"
     virtual_network_name: "{{ azure_virtual_network }}"

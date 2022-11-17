@@ -1,4 +1,4 @@
 ---
 # defaults file for networking_stack
-operation: 'create'
-delete_option: 'all'
+operation: create
+delete_option: all

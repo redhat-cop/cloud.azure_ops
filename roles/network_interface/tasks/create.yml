@@ -1,46 +1,46 @@
 ---
 - name: Ensure vnet is specified
-  fail:
+  ansible.builtin.fail:
     msg: "Missing parameter: key 'vnet_name' not found in azure_network_interface"
   when: azure_network_interface.vnet_name is undefined
 
 - name: Ensure subnet is specified
-  fail:
+  ansible.builtin.fail:
     msg: "Missing parameter: key 'subnet_name' not found in azure_network_interface"
   when: azure_network_interface.subnet_name is undefined
 
 - name: Get vnet info
-  azure_rm_virtualnetwork_info:
+  azure.azcollection.azure_rm_virtualnetwork_info:
     resource_group: "{{ azure_resource_group }}"
     name: "{{ azure_network_interface.vnet_name }}"
   register: vnet_info
 
 - name: Ensure vnet exists
-  fail:
-    msg: "Virtual network '{{ azure_network_interface.vnet_name }}' does not exist"
+  ansible.builtin.fail:
+    msg: Virtual network '{{ azure_network_interface.vnet_name }}' does not exist
   when: vnet_info.virtualnetworks | length == 0
 
 - name: Ensure subnet exists
   block:
     - name: Get subnet info
-      azure_rm_subnet_info:
+      azure.azcollection.azure_rm_subnet_info:
         resource_group: "{{ azure_resource_group }}"
         name: "{{ azure_network_interface.subnet_name }}"
         virtual_network_name: "{{ azure_network_interface.vnet_name }}"
       register: subnet_info
 
     - name: Ensure subnet exists
-      fail:
-        msg: "Subnet '{{ azure_network_interface.subnet_name }}' does not exist"
+      ansible.builtin.fail:
+        msg: Subnet '{{ azure_network_interface.subnet_name }}' does not exist
       when: subnet_info.subnets | length == 0
 
   rescue:
     - name: Throw better error message
-      fail:
-        msg: "Subnet '{{ azure_network_interface.subnet_name }}' does not exist"
+      ansible.builtin.fail:
+        msg: Subnet '{{ azure_network_interface.subnet_name }}' does not exist
 
 - name: Create/Update a Network Interface
-  azure_rm_networkinterface:
+  azure.azcollection.azure_rm_networkinterface:
     name: "{{ azure_network_interface.name }}"
     resource_group: "{{ azure_resource_group }}"
     virtual_network: "{{ azure_network_interface.vnet_name }}"

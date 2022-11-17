@@ -1,69 +1,67 @@
 ---
 # Pre-flight checks
 - name: Ensure admin username is defined
-  fail:
+  ansible.builtin.fail:
     msg: "Missing parameter: key 'admin_username' not found in azure_vm"
   when: azure_vm.admin_username is not defined
 
 - name: Ensure vm size is defined
-  fail:
+  ansible.builtin.fail:
     msg: "Missing parameter: key 'size' not found in azure_vm"
   when: azure_vm.size is not defined
 
 - name: Ensure vm image is defined
-  fail:
+  ansible.builtin.fail:
     msg: "Missing parameter: key 'image' not found in azure_vm"
   when: azure_vm.image is not defined
 
 # Create resource group if not existing
 - name: Resource Group Does Not Exist -> Create Resource Group
-  include_role:
+  ansible.builtin.include_role:
     name: resource_group
   when: rg_info.resourcegroups | length == 0
 
 # If nic is not specified, assert virtual network exists and create default public ip & nic
-- block:
-  - name: No network interface specified -> get virtual network info
-    azure_rm_virtualnetwork_info:
-      resource_group: "{{ azure_resource_group }}"
-    register: vnet_info
-
-  - name: Ensure vnet exists
-    fail:
-      msg: 'When no network interfaces are specified, a virtual network must exist'
-    when: vnet_info.virtualnetworks | length == 0
-
-  - name: Create default public ip for default nic
-    azure_rm_publicipaddress:
-      resource_group: "{{ azure_resource_group }}"
-      name: "{{ vm_name }}"
-      allocation_method: 'static'
-
-  - name: Create default nic with default security group and public ip
-    include_role:
-      name: network_interface
-    vars:
-      azure_network_interface:
-        name: "{{ vm_name }}"
-        vnet_name: "{{ vnet_info.virtualnetworks[0].name }}" # This is how the azure_rm_virtualmachine module creates its default network interface - using the first vnet
-        subnet_name: "{{ vnet_info.virtualnetworks[0].subnets[0].name }}"
-        ip_configurations:
-          - name: 'default'
-            primary: yes
-            public_ip_address_name: "{{ vm_name }}"
-            load_balancer_backend_address_pools: "{{ azure_vm.load_balancer_backend_address_pools | default(omit) }}"
-
-  - name: Tag all autocreated resources for cleanup
-    set_fact:
-      vm_tags: "{{ azure_vm.tags | default({}) | combine({ '_own_pip_': vm_name },
-                                                         { '_own_nic_': vm_name },
-                                                         { '_own_nsg_': vm_name }) }}"
-
+- name: Ensure default nic and default public ip
   when: azure_vm.network_interfaces is undefined
+  block:
+    - name: No network interface specified -> get virtual network info
+      azure.azcollection.azure_rm_virtualnetwork_info:
+        resource_group: "{{ azure_resource_group }}"
+      register: vnet_info
+
+    - name: Ensure vnet exists
+      ansible.builtin.fail:
+        msg: When no network interfaces are specified, a virtual network must exist
+      when: vnet_info.virtualnetworks | length == 0
+
+    - name: Create default public ip for default nic
+      azure.azcollection.azure_rm_publicipaddress:
+        resource_group: "{{ azure_resource_group }}"
+        name: "{{ vm_name }}"
+        allocation_method: static
+
+    - name: Create default nic with default security group and public ip
+      ansible.builtin.include_role:
+        name: network_interface
+      vars:
+        azure_network_interface:
+          name: "{{ vm_name }}"
+          vnet_name: "{{ vnet_info.virtualnetworks[0].name }}" # This is how the azure_rm_virtualmachine module creates its default network interface - using the first vnet
+          subnet_name: "{{ vnet_info.virtualnetworks[0].subnets[0].name }}"
+          ip_configurations:
+            - name: default
+              primary: true
+              public_ip_address_name: "{{ vm_name }}"
+              load_balancer_backend_address_pools: "{{ azure_vm.load_balancer_backend_address_pools | default(omit) }}"
+
+    - name: Tag all autocreated resources for cleanup
+      ansible.builtin.set_fact:
+        vm_tags: "{{ azure_vm.tags | default({}) | combine({'_own_pip_': vm_name}, {'_own_nic_': vm_name}, {'_own_nsg_': vm_name}) }}"
 
 # Create/update availability set
 - name: Create availability set
-  azure_rm_availabilityset:
+  azure.azcollection.azure_rm_availabilityset:
     resource_group: "{{ azure_resource_group }}"
     name: "{{ azure_availability_set.name }}"
     platform_update_domain_count: "{{ azure_availability_set.platform_update_domain_count | default(omit) }}"
@@ -72,7 +70,7 @@
 
 # Create/update VM
 - name: Create/Update VM
-  azure_rm_virtualmachine:
+  azure.azcollection.azure_rm_virtualmachine:
     resource_group: "{{ azure_resource_group }}"
     name: "{{ vm_name }}"
     vm_size: "{{ azure_vm.size | default(omit) }}"

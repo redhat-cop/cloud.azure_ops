@@ -4,7 +4,7 @@
   gather_facts: no
 
   tasks:
-    - set_fact:
+    - ansible.builtin.set_fact:
         azure_resource_group: "webapp-testing-{{ lookup('password', '/dev/null chars=digits length=4') }}"
         azure_number_vm: 3
 
@@ -20,12 +20,12 @@
 
   tasks:
     - name: Get resource group info
-      azure_rm_resourcegroup_info:
+      azure.azcollection.azure_rm_resourcegroup_info:
         name: '{{ azure_resource_group }}'
       register: resource
 
     - name: Assert that resource group was created
-      assert:
+      ansible.builtin.assert:
         that:
           - resource.resourcegroups | length == 1
 
@@ -39,7 +39,7 @@
 
   tasks:
     - name: Define facts to scale up the application
-      set_fact:
+      ansible.builtin.set_fact:
         azure_number_vm: 5
 
 - name: Run webapp demo for azure
@@ -61,7 +61,7 @@
 
   tasks:
     - name: Define facts to scale down the application
-      set_fact:
+      ansible.builtin.set_fact:
         azure_number_vm: 1
 
 - name: Run webapp demo for azure
@@ -86,7 +86,7 @@
   - cloud.azure_roles
 
   tasks:
-    - import_role:
+    - ansible.builtin.import_role:
         name: resource_group
       vars:
         operation: "delete"

@@ -1,4 +1,4 @@
 ---
 # defaults file for network_interface
-operation: 'create'
+operation: create
 azure_network_interface: {}

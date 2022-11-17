@@ -1,29 +1,29 @@
 ---
 # Flag for migrating from VM / creating from scratch
-migrate_app: no
+migrate_app: false
 
 # Region (required when creating)
 azure_region: eastus
 
 # PostgreSQL Server variables
-azure_postgresql_name: "{{ azure_resource_group | regex_replace('[^a-zA-Z0-9]','-') }}-dbserver"
-azure_postgresql_admin_username: "ansible"
-azure_postgresql_admin_password: "4fB5In3ueO7,"
+azure_postgresql_name: "{{ azure_resource_group | regex_replace('[^a-zA-Z0-9]', '-') }}-dbserver"
+azure_postgresql_admin_username: ansible
+azure_postgresql_admin_password: 4fB5In3ueO7,
 azure_postgresql_database_instances:
   - name: pyapp
     charset: UTF8
 
 # Application variables
-azure_app_image: "quay.io/jtorcass/pywebapp"
-azure_app_container_name: "{{ azure_resource_group | regex_replace('[^a-zA-Z0-9]','-') }}-container"
+azure_app_image: quay.io/jtorcass/pywebapp
+azure_app_container_name: "{{ azure_resource_group | regex_replace('[^a-zA-Z0-9]', '-') }}-container"
 azure_app_mem: 1
 azure_app_ports:
   - 5000
 azure_app_env_vars:
   - name: FLASK_APP
-    value: "/app/pyapp"
+    value: /app/pyapp
   - name: FLASK_ENV
-    value: "development"
+    value: development
   - name: DATABASE_HOST
     value: "{{ azure_postgresql_name }}"
   - name: DATABASE_INSTANCE
@@ -33,6 +33,6 @@ azure_app_env_vars:
   - name: DATABASE_PASSWORD
     value: "{{ azure_postgresql_admin_password }}"
   - name: ADMIN_USER
-    value: "admin"
+    value: admin
   - name: ADMIN_PASSWORD
-    value: "admin"
+    value: admin

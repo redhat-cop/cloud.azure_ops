@@ -1,2 +1,3 @@
 ---
-- include_tasks: "{{ operation }}.yml"
+- name: Include operation tasks
+  ansible.builtin.include_tasks: "{{ operation }}.yml"

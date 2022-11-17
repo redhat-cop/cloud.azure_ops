@@ -1,21 +1,21 @@
 ---
 - name: Get nic resource
-  azure_rm_resource_info:
+  azure.azcollection.azure_rm_resource_info:
     url: "{{ nic_id['id'] }}"
   register: nic_obj
 
 - name: Get nic info
-  azure_rm_networkinterface_info:
+  azure.azcollection.azure_rm_networkinterface_info:
     resource_group: "{{ azure_resource_group }}"
     name: "{{ nic_obj.response[0].name }}"
   register: nic_result
 
 - name: Init nic
-  set_fact:
+  ansible.builtin.set_fact:
     nic: "{{ nic_result.networkinterfaces[0] }}"
 
 - name: Remove unsupported params from dictionary
-  set_fact:
+  ansible.builtin.set_fact:
     nic: "{{ nic | dict2items | rejectattr('key', 'search', item) | list | items2dict }}"
   loop:
     - security_group
@@ -26,23 +26,25 @@
 
 ### Only works for 1 ip configuration. If we want to keep this we can just loop ip configs, but didnt want to spend too much time here.
 - name: Init ipconf
-  set_fact:
+  ansible.builtin.set_fact:
     ipconf: "{{ nic['ip_configurations'][0] }}"
 
 - name: Remove null params from ip configs dict
-  set_fact:
+  ansible.builtin.set_fact:
     ipconf: "{{ ipconf | dict2items | rejectattr('key', 'search', item.key) | list | items2dict }}"
   with_dict: "{{ ipconf }}"
   when: item.value is none
 
 - name: Replace incorrect public ip param (pip resource id) to correct one (pip name) if nic has a public ip
-  set_fact:
-    ipconf: "{{ ipconf | dict2items | rejectattr('key', 'search', 'public_ip_address') | list | items2dict | combine({ 'public_ip_address_name': ipconf['public_ip_address'] | regex_search('[^/]+$') })}}"
+  ansible.builtin.set_fact:
+    ipconf: "{{ ipconf | dict2items | rejectattr('key', 'search', 'public_ip_address') | list | items2dict | combine({'public_ip_address_name': ipconf['public_ip_address']\
+      \ | regex_search('[^/]+$')}) }}"
   when: "'public_ip_address' is in ipconf"
 
 - name: Replace old ip config with new and ensure default security group is disabled
-  set_fact:
-    nic: "{{ nic | dict2items | rejectattr('key', 'search', 'ip_configurations') | list | items2dict | combine({ 'ip_configurations': [ ipconf ] }) | combine({ 'create_with_security_group': false }) }}"
+  ansible.builtin.set_fact:
+    nic: "{{ nic | dict2items | rejectattr('key', 'search', 'ip_configurations') | list | items2dict | combine({'ip_configurations': [ipconf]}) | combine({'create_with_security_group':\
+      \ false}) }}"
 
 - name: Update nic to detach from security group
-  azure_rm_networkinterface: "{{ nic }}"
+  azure.azcollection.azure_rm_networkinterface: "{{ nic }}"

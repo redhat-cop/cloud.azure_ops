@@ -1,17 +1,18 @@
 ---
 - name: Validate successful deployment of application
   hosts: localhost
-  gather_facts: no
+  gather_facts: false
   tasks:
     - name: Check app url is defined
-      fail:
-        msg: 'Azure application url must be defined as azure_app_url'
+      ansible.builtin.fail:
+        msg: Azure application url must be defined as azure_app_url
       when:
         - azure_app_url is undefined
 
     - name: Check that you can connect (GET) to a page and it returns a status 200
-      uri:
-        url: '{{ azure_app_url }}'
+      ansible.builtin.uri:
+        url: "{{ azure_app_url }}"
 
-    - debug:
-        msg: "Web application accessible at {{ azure_app_url }}"
+    - name: Show web application url
+      ansible.builtin.debug:
+        msg: Web application accessible at {{ azure_app_url }}

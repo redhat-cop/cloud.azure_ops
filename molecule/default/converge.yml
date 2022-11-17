@@ -4,8 +4,8 @@
   collections:
     - azure.azcollection
   tasks:
-    - name: test resource_group role
-      include_tasks:
+    - name: Test resource_group role
+      ansible.builtin.include_tasks:
         file: tasks/resource_group.yml
         apply:
           tags:
@@ -13,8 +13,8 @@
       tags:
         - always
 
-    - name: test networking_stack role
-      include_tasks:
+    - name: Test networking_stack role
+      ansible.builtin.include_tasks:
         file: tasks/networking_stack.yml
         apply:
           tags:
@@ -22,8 +22,8 @@
       tags:
         - always
 
-    - name: test managed_postgresql role
-      include_tasks:
+    - name: Test managed_postgresql role
+      ansible.builtin.include_tasks:
         file: tasks/managed_postgresql.yml
         apply:
           tags:
@@ -31,8 +31,8 @@
       tags:
         - always
 
-    - name: test virtual_machine role
-      include_tasks:
+    - name: Test virtual_machine role
+      ansible.builtin.include_tasks:
         file: tasks/virtual_machine.yml
         apply:
           tags:
@@ -40,8 +40,8 @@
       tags:
         - always
 
-    - name: test network_interface role
-      include_tasks:
+    - name: Test network_interface role
+      ansible.builtin.include_tasks:
         file: tasks/network_interface.yml
         apply:
           tags:
@@ -49,8 +49,8 @@
       tags:
         - always
 
-    - name: test load_balancer role
-      include_tasks:
+    - name: Test load_balancer role
+      ansible.builtin.include_tasks:
         file: tasks/load_balancer.yml
         apply:
           tags:
@@ -58,8 +58,8 @@
       tags:
         - always
 
-    - name: test security_group role
-      include_tasks:
+    - name: Test security_group role
+      ansible.builtin.include_tasks:
         file: tasks/security_group.yml
         apply:
           tags:

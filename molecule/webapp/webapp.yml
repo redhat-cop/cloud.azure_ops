@@ -4,7 +4,7 @@
   gather_facts: no
 
   tasks:
-    - set_fact:
+    - ansible.builtin.set_fact:
         azure_resource_group: "webapp-testing-{{ lookup('password', '/dev/null chars=digits length=4') }}"
         azure_number_vm: 3
 
