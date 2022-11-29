@@ -17,13 +17,13 @@ Click on the name of a plugin or module to view that content's documentation:
 ### Roles
 Name | Description
 --- | ---
-[cloud.azure_roles.azureconfig_load_balancer](https://github.com/ansible-collections/cloud.azure_roles/blob/main/roles/azureconfig_load_balancer/README.md)|A role to manage Azure Load Balancer.
-[cloud.azure_roles.azure_managed_postgresql](https://github.com/ansible-collections/cloud.azure_roles/blob/main/roles/azure_managed_postgresql/README.md)|A role to manage Azure PostGreSQL Database.
-[cloud.azure_roles.azureconfig_network_interface](https://github.com/ansible-collections/cloud.azure_roles/blob/main/roles/azureconfig_network_interface/README.md)|A role to manage Azure Network Interface.
-[cloud.azure_roles.azureconfig_networking_stack](https://github.com/ansible-collections/cloud.azure_roles/blob/main/roles/azureconfig_networking_stack/README.md)|A role to manage Azure Networking Stack.
+[cloud.azure_roles.azure_load_balancer](https://github.com/ansible-collections/cloud.azure_roles/blob/main/roles/azure_load_balancer/README.md)|A role to manage Azure Load Balancer.
+[cloud.azure_roles.azure_rds_postgresql](https://github.com/ansible-collections/cloud.azure_roles/blob/main/roles/azure_rds_postgresql/README.md)|A role to manage Azure PostGreSQL Database.
+[cloud.azure_roles.azure_network_interface](https://github.com/ansible-collections/cloud.azure_roles/blob/main/roles/azure_network_interface/README.md)|A role to manage Azure Network Interface.
+[cloud.azure_roles.azure_networking_stack](https://github.com/ansible-collections/cloud.azure_roles/blob/main/roles/azure_networking_stack/README.md)|A role to manage Azure Networking Stack.
 [cloud.azure_roles.azure_resource_group](https://github.com/ansible-collections/cloud.azure_roles/blob/main/roles/azure_resource_group/README.md)|A role to manage Azure Resource Group.
-[cloud.azure_roles.azureconfig_security_group](https://github.com/ansible-collections/cloud.azure_roles/blob/main/roles/azureconfig_security_group/README.md)|A role to manage Azure Security Group.
-[cloud.azure_roles.azure_managed_virtual_machine](https://github.com/ansible-collections/cloud.azure_roles/blob/main/roles/azure_managed_virtual_machine/README.md)|A role to manage Azure Virtual Machine.
+[cloud.azure_roles.azure_security_group](https://github.com/ansible-collections/cloud.azure_roles/blob/main/roles/azure_security_group/README.md)|A role to manage Azure Security Group.
+[cloud.azure_roles.azure_virtual_machine](https://github.com/ansible-collections/cloud.azure_roles/blob/main/roles/azure_virtual_machine/README.md)|A role to manage Azure Virtual Machine.
 
 
 ### Playbooks

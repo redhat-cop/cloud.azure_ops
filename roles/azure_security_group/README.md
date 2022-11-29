@@ -1,4 +1,4 @@
-azureconfig_security_group
+azure_security_group
 ==============
 
 A role to manage an Azure Security Group. User can create or delete a security group, as well as add/remove rules from a security group.
@@ -45,7 +45,7 @@ Example Playbook
         azure_region: 'eastus'
       roles:
         - name: Create a security group with custom rules
-          role: cloud.azure_roles.azureconfig_security_group
+          role: cloud.azure_roles.azure_security_group
           operation: 'create'
           azure_security_group:
             name: "{{ azure_resource_group }}-sg"
@@ -67,7 +67,7 @@ Example Playbook
                 direction: Inbound
 
         - name: Remove rules from security group
-          role: cloud.azure_roles.azureconfig_security_group
+          role: cloud.azure_roles.azure_security_group
           azure_security_group:
             name: "{{ azure_resource_group }}-sg"
             rules_to_remove:

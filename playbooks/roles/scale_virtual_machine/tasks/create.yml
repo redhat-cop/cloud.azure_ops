@@ -24,7 +24,7 @@
 # Create a virtual network
 - name: Create the networking stack
   ansible.builtin.include_role:
-    name: cloud.azure_roles.azureconfig_networking_stack
+    name: cloud.azure_roles.azure_networking_stack
 
 # Create a public IP address for the load balancer
 - name: Create a public ip address for the load balancer

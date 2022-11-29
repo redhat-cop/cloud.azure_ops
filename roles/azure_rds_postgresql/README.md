@@ -1,4 +1,4 @@
-azure_managed_postgresql
+azure_rds_postgresql
 ==================
 
 A role to Create/Delete/Configure an Azure Database for PostgreSQL server.
@@ -58,7 +58,7 @@ Example Playbook
 
     - hosts: localhost
       roles:
-         - role: cloud.azure_roles.azure_managed_postgresql
+         - role: cloud.azure_roles.azure_rds_postgresql
            operation: "create"
            azure_region: "eastus"
            azure_resource_group: "postgresql-rg"
