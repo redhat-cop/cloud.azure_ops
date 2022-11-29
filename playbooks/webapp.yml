@@ -31,7 +31,7 @@
 
         - name: Create PostgreSQL database instance
           ansible.builtin.import_role:
-            name: cloud.azure_roles.azure_managed_postgresql
+            name: cloud.azure_roles.azure_rds_postgresql
           when: _server.servers | length == 0
 
 - name: Deploy resource from Bastion Host
