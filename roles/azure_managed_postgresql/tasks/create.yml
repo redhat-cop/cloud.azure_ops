@@ -23,7 +23,7 @@
 
 - name: Create resource group
   ansible.builtin.include_role:
-    name: cloud.azure_roles.resource_group
+    name: cloud.azure_ops.resource_group
   when: rg_info.resourcegroups | length == 0
 
 - name: Check Azure PostgreSQL server restore point

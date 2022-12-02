@@ -1,4 +1,4 @@
-azure_load_balancer
+azure_load_balancer_with_public_ip
 ==================
 
 A role to Create/Delete/Configure an Azure Load Balancer.
@@ -61,7 +61,7 @@ Example Playbook
 
     - hosts: localhost
       roles:
-        - role: cloud.azure_roles.azure_load_balancer
+        - role: cloud.azure_ops.azure_load_balancer_with_public_ip_with_public_ip
           operation: "create"
           azure_region: "canadacentral"
           azure_resource_group: "rg"
@@ -87,7 +87,7 @@ License
 
 GNU General Public License v3.0 or later
 
-See [LICENCE](https://github.com/ansible-collections/cloud.azure_roles/blob/main/LICENSE) to see the full text.
+See [LICENCE](https://github.com/ansible-collections/cloud.azure_ops/blob/main/LICENSE) to see the full text.
 
 Author Information
 ------------------
