@@ -1,4 +1,4 @@
-azure_networking_stack
+azure_manage_networking_stack
 ================
 
 This role create/delete azure networking stack which include virtual network and add/delete a subnet.

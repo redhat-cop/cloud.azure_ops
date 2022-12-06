@@ -1,4 +1,4 @@
-azure_resource_group
+azure_manage_resource_group
 ==============
 
 A role to manage Azure Resource Group. User can create or delete resource group.

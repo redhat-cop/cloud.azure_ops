@@ -1,4 +1,4 @@
-azure_network_interface
+azure_manage_network_interface
 ==================
 
 A role to Create/Delete/Configure an Azure Network Interface.

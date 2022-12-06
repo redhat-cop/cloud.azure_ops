@@ -1,4 +1,4 @@
-azure_managed_postgresql
+azure_manage_postgresql
 ==================
 
 A role to Create/Delete/Configure an Azure Database for PostgreSQL server.

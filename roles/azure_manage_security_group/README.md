@@ -1,4 +1,4 @@
-azure_security_group
+azure_manage_security_group
 ==============
 
 A role to manage an Azure Security Group. User can create or delete a security group, as well as add/remove rules from a security group.
