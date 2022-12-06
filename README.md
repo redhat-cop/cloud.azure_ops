@@ -17,13 +17,13 @@ Click on the name of a plugin or module to view that content's documentation:
 ### Roles
 Name | Description
 --- | ---
-[cloud.azure_ops.azure_load_balancer_with_public_ip_with_public_ip](https://github.com/ansible-collections/cloud.azure_ops/blob/main/roles/azure_load_balancer/README.md)|A role to manage Azure Load Balancer.
-[cloud.azure_ops.azure_managed_postgresql](https://github.com/ansible-collections/cloud.azure_ops/blob/main/roles/azure_rds_postgresql/README.md)|A role to manage Azure PostGreSQL Database.
-[cloud.azure_ops.azure_network_interface](https://github.com/ansible-collections/cloud.azure_ops/blob/main/roles/azure_network_interface/README.md)|A role to manage Azure Network Interface.
-[cloud.azure_ops.azure_networking_stack](https://github.com/ansible-collections/cloud.azure_ops/blob/main/roles/azure_networking_stack/README.md)|A role to manage Azure Networking Stack.
-[cloud.azure_ops.azure_resource_group](https://github.com/ansible-collections/cloud.azure_ops/blob/main/roles/azure_resource_group/README.md)|A role to manage Azure Resource Group.
-[cloud.azure_ops.azure_security_group](https://github.com/ansible-collections/cloud.azure_ops/blob/main/roles/azure_security_group/README.md)|A role to manage Azure Security Group.
-[cloud.azure_ops.azure_virtual_machine](https://github.com/ansible-collections/cloud.azure_ops/blob/main/roles/azure_virtual_machine/README.md)|A role to manage Azure Virtual Machine.
+[cloud.azure_ops.azure_load_balancer_with_public_ip](https://github.com/redhat-cop/cloud.azure_ops/blob/main/roles/azure_load_balancer_with_public_ip/README.md)|A role to manage Azure Load Balancer.
+[cloud.azure_ops.azure_manage_postgresql](https://github.com/redhat-cop/cloud.azure_ops/blob/main/roles/azure_manage_postgresql/README.md)|A role to manage Azure PostGreSQL Database.
+[cloud.azure_ops.azure_manage_network_interface](https://github.com/redhat-cop/cloud.azure_ops/blob/main/roles/azure_manage_network_interface/README.md)|A role to manage Azure Network Interface.
+[cloud.azure_ops.azure_manage_networking_stack](https://github.com/redhat-cop/cloud.azure_ops/blob/main/roles/azure_manage_networking_stack/README.md)|A role to manage Azure Networking Stack.
+[cloud.azure_ops.azure_manage_resource_group](https://github.com/redhat-cop/cloud.azure_ops/blob/main/roles/azure_manage_resource_group/README.md)|A role to manage Azure Resource Group.
+[cloud.azure_ops.azure_manage_security_group](https://github.com/redhat-cop/cloud.azure_ops/blob/main/roles/azure_manage_security_group/README.md)|A role to manage Azure Security Group.
+[cloud.azure_ops.azure_virtual_machine_with_public_ip](https://github.com/redhat-cop/cloud.azure_ops/blob/main/roles/azure_virtual_machine_with_public_ip/README.md)|A role to manage Azure Virtual Machine.
 
 
 ### Playbooks
@@ -60,4 +60,4 @@ There are also integration tests in the `molecule` directory which are meant to 
 
 GNU General Public License v3.0 or later
 
-See [LICENCE](https://github.com/ansible-collections/cloud.azure_ops/blob/main/LICENSE) to see the full text.
+See [LICENCE](https://github.com/redhat-cop/cloud.azure_ops/blob/main/LICENSE) to see the full text.

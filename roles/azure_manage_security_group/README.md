@@ -45,7 +45,7 @@ Example Playbook
         azure_region: 'eastus'
       roles:
         - name: Create a security group with custom rules
-          role: cloud.azure_ops.azure_security_group
+          role: cloud.azure_ops.azure_manage_security_group
           operation: 'create'
           azure_security_group:
             name: "{{ azure_resource_group }}-sg"
@@ -67,7 +67,7 @@ Example Playbook
                 direction: Inbound
 
         - name: Remove rules from security group
-          role: cloud.azure_ops.azure_security_group
+          role: cloud.azure_ops.azure_manage_security_group
           azure_security_group:
             name: "{{ azure_resource_group }}-sg"
             rules_to_remove:
@@ -79,7 +79,7 @@ License
 
 GNU General Public License v3.0 or later
 
-See [LICENCE](https://github.com/ansible-collections/cloud.azure_ops/blob/main/LICENSE) to see the full text.
+See [LICENCE](https://github.com/redhat-cop/cloud.azure_ops/blob/main/LICENSE) to see the full text.
 
 Author Information
 ------------------

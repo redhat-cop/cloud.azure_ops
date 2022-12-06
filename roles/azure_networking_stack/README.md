@@ -34,7 +34,7 @@ Example Playbook
 
     - hosts: localhost
       roles:
-         - role: cloud.azure_ops.azure_networking_stack
+         - role: cloud.azure_ops.azure_manage_networking_stack
            operation: "create"
            azure_region: "eastus"
            azure_resource_group: "testing-resource-group"
@@ -54,7 +54,7 @@ License
 
 GNU General Public License v3.0 or later
 
-See [LICENCE](https://github.com/ansible-collections/cloud.azure_ops/blob/main/LICENSE) to see the full text.
+See [LICENCE](https://github.com/redhat-cop/cloud.azure_ops/blob/main/LICENSE) to see the full text.
 
 Author Information
 ------------------
