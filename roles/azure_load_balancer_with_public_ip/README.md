@@ -61,7 +61,7 @@ Example Playbook
 
     - hosts: localhost
       roles:
-        - role: cloud.azure_ops.azure_load_balancer_with_public_ip_with_public_ip_with_public_ip_with_public_ip
+        - role: cloud.azure_ops.azure_load_balancer_with_public_ip
           operation: "create"
           azure_region: "canadacentral"
           azure_resource_group: "rg"
