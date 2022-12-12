@@ -4,7 +4,7 @@
   gather_facts: false
 
   collections:
-    - cloud.azure_roles
+    - cloud.azure_ops
     - azure.azcollection
 
   vars_files:
@@ -165,7 +165,7 @@
   gather_facts: false
 
   collections:
-    - cloud.azure_roles
+    - cloud.azure_ops
     - azure.azcollection
 
   vars_files:

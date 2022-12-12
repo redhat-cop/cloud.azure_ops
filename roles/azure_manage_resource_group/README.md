@@ -1,4 +1,4 @@
-resource_group
+azure_manage_resource_group
 ==============
 
 A role to manage Azure Resource Group. User can create or delete resource group.
@@ -30,7 +30,7 @@ Example Playbook
 
     - hosts: localhost
       roles:
-         - role: cloud.azure_roles.resource_group
+         - role: cloud.azure_ops.azure_manage_resource_group
            operation: "create"
            azure_region: "eastus"
            azure_resource_group: "testing-resource-group"
@@ -44,7 +44,7 @@ License
 
 GNU General Public License v3.0 or later
 
-See [LICENCE](https://github.com/ansible-collections/cloud.azure_roles/blob/main/LICENSE) to see the full text.
+See [LICENCE](https://github.com/redhat-cop/cloud.azure_ops/blob/main/LICENSE) to see the full text.
 
 Author Information
 ------------------

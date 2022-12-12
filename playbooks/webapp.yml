@@ -4,7 +4,7 @@
   gather_facts: false
 
   collections:
-    - cloud.azure_roles
+    - cloud.azure_ops
     - azure.azcollection
 
   vars_files:
@@ -31,7 +31,7 @@
 
         - name: Create PostgreSQL database instance
           ansible.builtin.import_role:
-            name: managed_postgresql
+            name: cloud.azure_ops.azure_manage_postgresql
           when: _server.servers | length == 0
 
 - name: Deploy resource from Bastion Host
