@@ -3,7 +3,7 @@
   ansible.builtin.set_fact:
     resource_group: test-{{ lookup('password', '/dev/null chars=ascii_lowercase,digits length=6') }}
     azure_tags:
-      cloud.azure_roles: load_balancer
+      cloud.azure_roles: azure_load_balancer_with_public_ip
 
 - name: Define region
   ansible.builtin.set_fact:
@@ -15,7 +15,7 @@
       block:
         - name: Create load balancer
           ansible.builtin.import_role:
-            name: load_balancer
+            name: azure_load_balancer_with_public_ip
       rescue:
         - name: Print error message
           ansible.builtin.debug:
@@ -25,7 +25,7 @@
       block:
         - name: Create load balancer
           ansible.builtin.include_role:
-            name: load_balancer
+            name: cloud.azure_roles.azure_load_balancer_with_public_ip
           vars:
             operation: create
             azure_resource_group: "{{ resource_group }}"
@@ -61,7 +61,7 @@
 
         - name: Delete load balancer
           ansible.builtin.include_role:
-            name: load_balancer
+            name: cloud.azure_roles.azure_load_balancer_with_public_ip
           vars:
             operation: delete
             azure_resource_group: "{{ resource_group }}"
@@ -92,7 +92,7 @@
       block:
         - name: Create load balancer with public ip specified
           ansible.builtin.include_role:
-            name: load_balancer
+            name: cloud.azure_roles.azure_load_balancer_with_public_ip
           vars:
             operation: create
             azure_resource_group: "{{ resource_group }}"
@@ -125,7 +125,7 @@
 
         - name: Delete load balancer
           ansible.builtin.include_role:
-            name: load_balancer
+            name: cloud.azure_roles.azure_load_balancer_with_public_ip
           vars:
             operation: delete
             azure_resource_group: "{{ resource_group }}"
@@ -146,7 +146,7 @@
       block:
         - name: Create load balancer
           ansible.builtin.include_role:
-            name: load_balancer
+            name: cloud.azure_roles.azure_load_balancer_with_public_ip
           vars:
             operation: create
             azure_resource_group: "{{ resource_group }}"
@@ -185,7 +185,7 @@
 
         - name: Delete load balancer
           ansible.builtin.include_role:
-            name: load_balancer
+            name: cloud.azure_roles.azure_load_balancer_with_public_ip
           vars:
             operation: delete
             azure_resource_group: "{{ resource_group }}"
@@ -206,7 +206,7 @@
       block:
         - name: Create load balancer with custom frontend ip conf
           ansible.builtin.include_role:
-            name: load_balancer
+            name: cloud.azure_roles.azure_load_balancer_with_public_ip
           vars:
             operation: create
             azure_resource_group: "{{ resource_group }}"
@@ -241,7 +241,7 @@
 
         - name: Delete load balancer
           ansible.builtin.include_role:
-            name: load_balancer
+            name: cloud.azure_roles.azure_load_balancer_with_public_ip
           vars:
             operation: delete
             azure_resource_group: "{{ resource_group }}"
@@ -262,7 +262,7 @@
       block:
         - name: Create load balancer with backend address pool input
           ansible.builtin.include_role:
-            name: load_balancer
+            name: cloud.azure_roles.azure_load_balancer_with_public_ip
           vars:
             operation: create
             azure_resource_group: "{{ resource_group }}"
@@ -296,7 +296,7 @@
 
         - name: Delete load balancer
           ansible.builtin.include_role:
-            name: load_balancer
+            name: cloud.azure_roles.azure_load_balancer_with_public_ip
           vars:
             operation: delete
             azure_resource_group: "{{ resource_group }}"
@@ -317,7 +317,7 @@
       block:
         - name: Create load balancer with custom probes, rules, tags, and sku input
           ansible.builtin.include_role:
-            name: load_balancer
+            name: cloud.azure_roles.azure_load_balancer_with_public_ip
           vars:
             operation: create
             azure_resource_group: "{{ resource_group }}"
@@ -364,7 +364,7 @@
 
         - name: Delete load balancer
           ansible.builtin.include_role:
-            name: load_balancer
+            name: cloud.azure_roles.azure_load_balancer_with_public_ip
           vars:
             operation: delete
             azure_resource_group: "{{ resource_group }}"

@@ -3,9 +3,9 @@
   ansible.builtin.set_fact:
     resource_group: netstack-{{ lookup('password', '/dev/null chars=ascii_lowercase,digits length=8') }}
     azure_tags:
-      cloud.azure_roles: networking_stack
+      cloud.azure_roles: azure_manage_networking_stack
 
-- name: Test networking_stack role
+- name: Test azure_manage_networking_stack role
   block:
     - name: Define common variables
       ansible.builtin.set_fact:
@@ -19,7 +19,7 @@
 
     - name: Create a networking stack
       ansible.builtin.include_role:
-        name: networking_stack
+        name: cloud.azure_roles.azure_manage_networking_stack
       vars:
         operation: create
 
@@ -56,9 +56,9 @@
         that:
           - subnet.subnets | length == 1
 
-    - name: Delete subnet using networking_stack role
+    - name: Delete subnet using azure_manage_networking_stack role
       ansible.builtin.include_role:
-        name: networking_stack
+        name: cloud.azure_roles.azure_manage_networking_stack
       vars:
         operation: delete
         delete_option: subnet
@@ -98,9 +98,9 @@
           - subnet is failed
           - subnet.msg == 'Could not get facts for Subnet.'
 
-    - name: Delete virtual network using networking_stack role
+    - name: Delete virtual network using azure_manage_networking_stack role
       ansible.builtin.include_role:
-        name: networking_stack
+        name: cloud.azure_roles.azure_manage_networking_stack
       vars:
         operation: delete
         delete_option: virtual_network
@@ -133,7 +133,7 @@
 
     - name: Create a networking stack (with existing resource group)
       ansible.builtin.include_role:
-        name: networking_stack
+        name: cloud.azure_roles.azure_manage_networking_stack
       vars:
         operation: create
 
@@ -170,9 +170,9 @@
         that:
           - subnet.subnets | length == 1
 
-    - name: Delete all resource created using networking_stack role
+    - name: Delete all resource created using azure_manage_networking_stack role
       ansible.builtin.include_role:
-        name: networking_stack
+        name: cloud.azure_roles.azure_manage_networking_stack
       vars:
         operation: delete
 
