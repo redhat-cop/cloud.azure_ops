@@ -40,7 +40,7 @@ Clone the collection repository.
 ```shell
   mkdir -p ~/.ansible/collections/ansible_collections/cloud/azure_roles
   cd ~/.ansible/collections/ansible_collections/cloud/azure_roles
-  git clone https://github.com/redhat-cop/cloud.azure_roles
+  git clone https://github.com/redhat-cop/cloud.azure_roles .
 ```
 
 ### Using this collection
