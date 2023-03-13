@@ -38,21 +38,21 @@ cloud.azure_ops.webapp|A playbook to create a webapp on Azure.
 Clone the collection repository.
 
 ```shell
-  mkdir -p ~/.ansible/collections/ansible_collections/cloud/azure_roles
-  cd ~/.ansible/collections/ansible_collections/cloud/azure_roles
-  git clone https://github.com/redhat-cop/cloud.azure_roles .
+  mkdir -p ~/.ansible/collections/ansible_collections/cloud/azure_ops
+  cd ~/.ansible/collections/ansible_collections/cloud/azure_ops
+  git clone https://github.com/redhat-cop/cloud.azure_ops .
 ```
 
 ### Using this collection
 
-Once installed, you can reference the cloud.azure_roles collection content by its fully qualified collection name (FQCN), for example:
+Once installed, you can reference the cloud.azure_ops collection content by its fully qualified collection name (FQCN), for example:
 
 ```yaml
   - hosts: all
     tasks:
         - name: Create load balancer
             ansible.builtin.include_role:
-                name: cloud.azure_roles.azure_load_balancer_with_public_ip
+                name: cloud.azure_ops.azure_load_balancer_with_public_ip
             vars:
                 operation: create
                 azure_resource_group: "{{ resource_group }}"
@@ -73,7 +73,7 @@ We welcome community contributions to this collection. If you find problems, ple
 
 The project uses `ansible-lint` and `black`.
 Assuming this repository is checked out in the proper structure,
-e.g. `collections_root/ansible_collections/cloud/azure_roles/`, run:
+e.g. `collections_root/ansible_collections/cloud/azure_ops/`, run:
 
 ```shell
   tox -e linters

@@ -3,7 +3,7 @@
   ansible.builtin.set_fact:
     resource_group: netstack-{{ lookup('password', '/dev/null chars=ascii_lowercase,digits length=8') }}
     azure_tags:
-      cloud.azure_roles: azure_manage_networking_stack
+      cloud.azure_ops: azure_manage_networking_stack
 
 - name: Test azure_manage_networking_stack role
   block:
@@ -19,7 +19,7 @@
 
     - name: Create a networking stack
       ansible.builtin.include_role:
-        name: cloud.azure_roles.azure_manage_networking_stack
+        name: cloud.azure_ops.azure_manage_networking_stack
       vars:
         operation: create
 
@@ -58,7 +58,7 @@
 
     - name: Delete subnet using azure_manage_networking_stack role
       ansible.builtin.include_role:
-        name: cloud.azure_roles.azure_manage_networking_stack
+        name: cloud.azure_ops.azure_manage_networking_stack
       vars:
         operation: delete
         delete_option: subnet
@@ -100,7 +100,7 @@
 
     - name: Delete virtual network using azure_manage_networking_stack role
       ansible.builtin.include_role:
-        name: cloud.azure_roles.azure_manage_networking_stack
+        name: cloud.azure_ops.azure_manage_networking_stack
       vars:
         operation: delete
         delete_option: virtual_network
@@ -133,7 +133,7 @@
 
     - name: Create a networking stack (with existing resource group)
       ansible.builtin.include_role:
-        name: cloud.azure_roles.azure_manage_networking_stack
+        name: cloud.azure_ops.azure_manage_networking_stack
       vars:
         operation: create
 
@@ -172,7 +172,7 @@
 
     - name: Delete all resource created using azure_manage_networking_stack role
       ansible.builtin.include_role:
-        name: cloud.azure_roles.azure_manage_networking_stack
+        name: cloud.azure_ops.azure_manage_networking_stack
       vars:
         operation: delete
 

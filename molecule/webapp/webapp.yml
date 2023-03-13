@@ -9,4 +9,4 @@
         azure_number_vm: 3
 
 - name: Run webapp demo for azure
-  import_playbook: cloud.azure_roles.webapp_demo
+  import_playbook: cloud.azure_ops.webapp_demo
