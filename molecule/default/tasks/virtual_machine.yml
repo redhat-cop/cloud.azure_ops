@@ -7,7 +7,7 @@
           block:
             - name: Call vm role
               ansible.builtin.include_role:
-                name: virtual_machine
+                name: cloud.azure_ops.azure_virtual_machine_with_public_ip
               vars:
                 operation: create
           rescue:
@@ -21,13 +21,13 @@
         resource_group: test-vm-{{ lookup('password', '/dev/null chars=ascii_lowercase,digits length=6') }}
         azure_region: canadacentral
         azure_tags:
-          cloud.azure_roles: virtual_machine
+          cloud.azure_ops: azure_virtual_machine_with_public_ip
 
     - name: Attempt to delete VM with invalid delete option - should fail
       block:
         - name: Delete VM
           ansible.builtin.include_role:
-            name: virtual_machine
+            name: cloud.azure_ops.azure_virtual_machine_with_public_ip
           vars:
             operation: delete
             azure_resource_group: "{{ resource_group }}"
@@ -45,7 +45,7 @@
       block:
         - name: Delete VM
           ansible.builtin.include_role:
-            name: virtual_machine
+            name: cloud.azure_ops.azure_virtual_machine_with_public_ip
           vars:
             operation: delete
             azure_resource_group: "{{ resource_group }}"
@@ -63,7 +63,7 @@
       block:
         - name: Call vm role
           ansible.builtin.include_role:
-            name: virtual_machine
+            name: cloud.azure_ops.azure_virtual_machine_with_public_ip
           vars:
             operation: create
             azure_resource_group: "{{ resource_group }}"
@@ -77,7 +77,7 @@
       block:
         - name: Call vm role
           ansible.builtin.include_role:
-            name: virtual_machine
+            name: cloud.azure_ops.azure_virtual_machine_with_public_ip
           vars:
             operation: create
             azure_resource_group: "{{ resource_group }}"
@@ -93,7 +93,7 @@
       block:
         - name: Call vm role
           ansible.builtin.include_role:
-            name: virtual_machine
+            name: cloud.azure_ops.azure_virtual_machine_with_public_ip
           vars:
             operation: create
             azure_resource_group: "{{ resource_group }}"
@@ -110,7 +110,7 @@
       block:
         - name: Call vm role
           ansible.builtin.include_role:
-            name: virtual_machine
+            name: cloud.azure_ops.azure_virtual_machine_with_public_ip
           vars:
             operation: create
             azure_resource_group: "{{ resource_group }}"
@@ -128,7 +128,7 @@
       block:
         - name: Call vm role
           ansible.builtin.include_role:
-            name: virtual_machine
+            name: cloud.azure_ops.azure_virtual_machine_with_public_ip
           vars:
             operation: create
             azure_resource_group: "{{ resource_group }}"
@@ -184,7 +184,7 @@
       block:
         - name: Create virtual machine and availability set
           ansible.builtin.include_role:
-            name: virtual_machine
+            name: cloud.azure_ops.azure_virtual_machine_with_public_ip
           vars:
             operation: create
             azure_resource_group: "{{ resource_group }}"
@@ -225,7 +225,7 @@
       block:
         - name: Create virtual machine with defaults
           ansible.builtin.include_role:
-            name: virtual_machine
+            name: cloud.azure_ops.azure_virtual_machine_with_public_ip
           vars:
             operation: create
             azure_resource_group: "{{ resource_group }}"
@@ -288,7 +288,7 @@
             backend_address_pools: [name: default]
         - name: Create virtual machine with default nic with lb
           ansible.builtin.include_role:
-            name: virtual_machine
+            name: cloud.azure_ops.azure_virtual_machine_with_public_ip
           vars:
             operation: create
             azure_resource_group: "{{ resource_group }}"
@@ -340,7 +340,7 @@
       block:
         - name: Power Off VM
           ansible.builtin.include_role:
-            name: virtual_machine
+            name: cloud.azure_ops.azure_virtual_machine_with_public_ip
           vars:
             operation: power_off
             azure_resource_group: "{{ resource_group }}"
@@ -359,7 +359,7 @@
 
         - name: Power On VM
           ansible.builtin.include_role:
-            name: virtual_machine
+            name: cloud.azure_ops.azure_virtual_machine_with_public_ip
           vars:
             operation: power_on
             azure_resource_group: "{{ resource_group }}"
@@ -378,7 +378,7 @@
 
         - name: Restart VM
           ansible.builtin.include_role:
-            name: virtual_machine
+            name: cloud.azure_ops.azure_virtual_machine_with_public_ip
           vars:
             operation: restart
             azure_resource_group: "{{ resource_group }}"
@@ -397,7 +397,7 @@
 
         - name: Deallocate VM
           ansible.builtin.include_role:
-            name: virtual_machine
+            name: cloud.azure_ops.azure_virtual_machine_with_public_ip
           vars:
             operation: deallocate
             azure_resource_group: "{{ resource_group }}"
@@ -450,7 +450,7 @@
 
         - name: Delete virtual machine and all autocreated resources
           ansible.builtin.include_role:
-            name: virtual_machine
+            name: cloud.azure_ops.azure_virtual_machine_with_public_ip
           vars:
             operation: delete
             azure_resource_group: "{{ resource_group }}"
@@ -497,7 +497,7 @@
 
         - name: Create virtual machine with existing nic
           ansible.builtin.include_role:
-            name: virtual_machine
+            name: cloud.azure_ops.azure_virtual_machine_with_public_ip
           vars:
             operation: create
             azure_resource_group: "{{ resource_group }}"
@@ -564,7 +564,7 @@
 
         - name: Delete virtual machine with defaults
           ansible.builtin.include_role:
-            name: virtual_machine
+            name: cloud.azure_ops.azure_virtual_machine_with_public_ip
           vars:
             operation: delete
             azure_resource_group: "{{ resource_group }}"

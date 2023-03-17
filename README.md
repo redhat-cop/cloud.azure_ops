@@ -34,27 +34,63 @@ cloud.azure_ops.webapp|A playbook to create a webapp on Azure.
 
 ## Installation and Usage
 
-### Installing the Collection from Ansible Galaxy
+### Installation
+Clone the collection repository.
 
-Before using the cloud.azure_ops collection, you need to install it with the Ansible Galaxy CLI:
-
-    ansible-galaxy collection install cloud.azure_ops
-
-You can also include it in a `requirements.yml` file and install it via `ansible-galaxy collection install -r requirements.yml`, using the format:
-
-```yaml
----
-collections:
-  - name: cloud.azure_ops
-    version: 0.1.0
+```shell
+  mkdir -p ~/.ansible/collections/ansible_collections/cloud/azure_ops
+  cd ~/.ansible/collections/ansible_collections/cloud/azure_ops
+  git clone https://github.com/redhat-cop/cloud.azure_ops .
 ```
 
-### Testing with `molecule`
+### Using this collection
+
+Once installed, you can reference the cloud.azure_ops collection content by its fully qualified collection name (FQCN), for example:
+
+```yaml
+  - hosts: all
+    tasks:
+        - name: Create load balancer
+            ansible.builtin.include_role:
+                name: cloud.azure_ops.azure_load_balancer_with_public_ip
+            vars:
+                operation: create
+                azure_resource_group: "{{ resource_group }}"
+                azure_load_balancer:
+                name: "{{ resource_group }}-lb"
+```
+
+### See Also
+
+* [Ansible Using collections](https://docs.ansible.com/ansible/latest/user_guide/collections_using.html) for more details.
+
+
+## Contributing to this collection
+
+We welcome community contributions to this collection. If you find problems, please open an issue or create a PR against this collection repository.
+
+### Testing and Development
+
+The project uses `ansible-lint` and `black`.
+Assuming this repository is checked out in the proper structure,
+e.g. `collections_root/ansible_collections/cloud/azure_ops/`, run:
+
+```shell
+  tox -e linters
+```
+
+Sanity and unit tests are run as normal:
+
+```shell
+  ansible-test sanity
+```
 
 There are also integration tests in the `molecule` directory which are meant to be run against an azure subscription.
 
+```shell
     az login
     molecule test
+```
 
 ## License
 

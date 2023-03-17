@@ -5,7 +5,7 @@
       block:
         - name: Attempt to create security group without name (should fail)
           ansible.builtin.include_role:
-            name: security_group
+            name: cloud.azure_ops.azure_manage_security_group
           vars:
             operation: create
 
@@ -20,13 +20,13 @@
         resource_group: test-sg-{{ lookup('password', '/dev/null chars=ascii_lowercase,digits length=6') }}
         azure_region: canadacentral
         azure_tags:
-          cloud.azure_roles: security_group
+          cloud.azure_ops: azure_manage_security_group
 
     - name: Attempt to create security group with no name - should fail
       block:
         - name: Call security_group role with no name defined
           ansible.builtin.include_role:
-            name: security_group
+            name: cloud.azure_ops.azure_manage_security_group
           vars:
             operation: create
             azure_resource_group: "{{ resource_group }}"
@@ -45,7 +45,7 @@
       block:
         - name: Create security group
           ansible.builtin.include_role:
-            name: security_group
+            name: cloud.azure_ops.azure_manage_security_group
           vars:
             operation: create
             azure_resource_group: "{{ resource_group }}"
@@ -79,7 +79,7 @@
       block:
         - name: Update security group with rules
           ansible.builtin.include_role:
-            name: security_group
+            name: cloud.azure_ops.azure_manage_security_group
           vars:
             azure_resource_group: "{{ resource_group }}"
             azure_security_group:
@@ -207,7 +207,7 @@
 
         - name: Test removing first rule (ssh rule)
           ansible.builtin.include_role:
-            name: security_group
+            name: cloud.azure_ops.azure_manage_security_group
           vars:
             azure_resource_group: "{{ resource_group }}"
             azure_security_group:
@@ -231,7 +231,7 @@
 
         - name: Test removing last rule
           ansible.builtin.include_role:
-            name: security_group
+            name: cloud.azure_ops.azure_manage_security_group
           vars:
             azure_resource_group: "{{ resource_group }}"
             azure_security_group:
@@ -255,7 +255,7 @@
 
         - name: Test removing last remaining rule
           ansible.builtin.include_role:
-            name: security_group
+            name: cloud.azure_ops.azure_manage_security_group
           vars:
             azure_resource_group: "{{ resource_group }}"
             azure_security_group:
@@ -290,7 +290,7 @@
 
         - name: Delete security group & detach from any NICs or subnets
           ansible.builtin.include_role:
-            name: security_group
+            name: cloud.azure_ops.azure_manage_security_group
           vars:
             operation: delete
             azure_resource_group: "{{ resource_group }}"
@@ -312,7 +312,7 @@
       block:
         - name: Create security group
           ansible.builtin.include_role:
-            name: security_group
+            name: cloud.azure_ops.azure_manage_security_group
           vars:
             operation: create
             azure_resource_group: "{{ resource_group }}"
@@ -332,7 +332,7 @@
 
         - name: Delete security group
           ansible.builtin.include_role:
-            name: security_group
+            name: cloud.azure_ops.azure_manage_security_group
           vars:
             operation: delete
             azure_resource_group: "{{ resource_group }}"

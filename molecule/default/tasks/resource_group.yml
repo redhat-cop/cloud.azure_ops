@@ -3,13 +3,13 @@
   ansible.builtin.set_fact:
     azure_resource_group: test-{{ lookup('password', '/dev/null chars=ascii_lowercase,digits length=16') }}
     tags:
-      azure_roles: resource_group
+      azure_ops: azure_manage_resource_group
 
 - name: Test resource group role
   block:
-    - name: Include resource_group role
+    - name: Include azure_manage_resource_group role
       ansible.builtin.include_role:
-        name: resource_group
+        name: cloud.azure_ops.azure_manage_resource_group
       vars:
         operation: create
         azure_region: eastus
@@ -36,7 +36,7 @@
 
     - name: Run the role once again and lock the resource group and add tags
       ansible.builtin.include_role:
-        name: resource_group
+        name: cloud.azure_ops.azure_manage_resource_group
       vars:
         operation: create
         azure_region: eastus
@@ -54,7 +54,7 @@
 
     - name: Trying to delete resource group locked should failed
       ansible.builtin.include_role:
-        name: resource_group
+        name: cloud.azure_ops.azure_manage_resource_group
         apply:
           ignore_errors: true
       vars:
@@ -72,7 +72,7 @@
 
     - name: Force locked resource group deletion
       ansible.builtin.include_role:
-        name: resource_group
+        name: cloud.azure_ops.azure_manage_resource_group
       vars:
         operation: delete
         azure_force_delete_locked: true

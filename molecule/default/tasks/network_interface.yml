@@ -5,9 +5,9 @@
       block:
         - name: Attempt to create nic with no resource group - should fail
           block:
-            - name: Call network_interface role with no resource group defined
+            - name: Call azure_manage_network_interface role with no resource group defined
               ansible.builtin.include_role:
-                name: network_interface
+                name: cloud.azure_ops.azure_manage_network_interface
               vars:
                 operation: create
           rescue:
@@ -21,13 +21,13 @@
         resource_group: test_{{ lookup('password', '/dev/null chars=ascii_lowercase,digits length=6') }}
         azure_region: canadacentral
         azure_tags:
-          cloud.azure_roles: network_interface
+          cloud.azure_ops: azure_manage_network_interface
 
     - name: Attempt to create nic with nonexistent resource group - should fail
       block:
-        - name: Call network_interface role with nonexistent resource group
+        - name: Call azure_manage_network_interface role with nonexistent resource group
           ansible.builtin.include_role:
-            name: network_interface
+            name: cloud.azure_ops.azure_manage_network_interface
           vars:
             operation: create
             azure_resource_group: "{{ resource_group }}"
@@ -48,9 +48,9 @@
 
     - name: Attempt to create nic with no name - should fail
       block:
-        - name: Call network_interface role with no name defined
+        - name: Call azure_manage_network_interface role with no name defined
           ansible.builtin.include_role:
-            name: network_interface
+            name: cloud.azure_ops.azure_manage_network_interface
           vars:
             operation: create
             azure_resource_group: "{{ resource_group }}"
@@ -62,9 +62,9 @@
 
     - name: Attempt to create nic with no vnet name - should fail
       block:
-        - name: Call network_interface role with no vnet name defined
+        - name: Call azure_manage_network_interface role with no vnet name defined
           ansible.builtin.include_role:
-            name: network_interface
+            name: cloud.azure_ops.azure_manage_network_interface
           vars:
             operation: create
             azure_resource_group: "{{ resource_group }}"
@@ -78,9 +78,9 @@
 
     - name: Attempt to create nic with no subnet name - should fail
       block:
-        - name: Call network_interface role with no subnet name defined
+        - name: Call azure_manage_network_interface role with no subnet name defined
           ansible.builtin.include_role:
-            name: network_interface
+            name: cloud.azure_ops.azure_manage_network_interface
           vars:
             operation: create
             azure_resource_group: "{{ resource_group }}"
@@ -109,9 +109,9 @@
 
     - name: Attempt to create nic with nonexistent virtual network - should fail
       block:
-        - name: Call network_interface role with nonexistent virtual network
+        - name: Call azure_manage_network_interface role with nonexistent virtual network
           ansible.builtin.include_role:
-            name: network_interface
+            name: cloud.azure_ops.azure_manage_network_interface
           vars:
             operation: create
             azure_resource_group: "{{ resource_group }}"
@@ -132,9 +132,9 @@
 
     - name: Attempt to create nic with nonexistent subnet - should fail
       block:
-        - name: Call network_interface role with nonexistent subnet
+        - name: Call azure_manage_network_interface role with nonexistent subnet
           ansible.builtin.include_role:
-            name: network_interface
+            name: cloud.azure_ops.azure_manage_network_interface
           vars:
             operation: create
             azure_resource_group: "{{ resource_group }}"
@@ -157,7 +157,7 @@
       block:
         - name: Create nic with default values
           ansible.builtin.include_role:
-            name: network_interface
+            name: cloud.azure_ops.azure_manage_network_interface
           vars:
             operation: create
             azure_resource_group: "{{ resource_group }}"
@@ -183,7 +183,7 @@
 
         - name: Update nic with public ip
           ansible.builtin.include_role:
-            name: network_interface
+            name: cloud.azure_ops.azure_manage_network_interface
           vars:
             operation: create
             azure_resource_group: "{{ resource_group }}"
@@ -216,7 +216,7 @@
 
             - name: Update nic with security group
               ansible.builtin.include_role:
-                name: network_interface
+                name: cloud.azure_ops.azure_manage_network_interface
               vars:
                 operation: create
                 azure_resource_group: "{{ resource_group }}"
@@ -243,7 +243,7 @@
 
             - name: Update nic with no default security group
               ansible.builtin.include_role:
-                name: network_interface
+                name: cloud.azure_ops.azure_manage_network_interface
               vars:
                 operation: create
                 azure_resource_group: "{{ resource_group }}"
@@ -272,7 +272,7 @@
           block:
             - name: Update nic with extra params
               ansible.builtin.include_role:
-                name: network_interface
+                name: cloud.azure_ops.azure_manage_network_interface
               vars:
                 operation: create
                 azure_resource_group: "{{ resource_group }}"
@@ -308,7 +308,7 @@
       block:
         - name: Delete network interface
           ansible.builtin.include_role:
-            name: network_interface
+            name: cloud.azure_ops.azure_manage_network_interface
           vars:
             operation: delete
             azure_resource_group: "{{ resource_group }}"
@@ -333,7 +333,7 @@
 
         - name: Create nic with default security group
           ansible.builtin.include_role:
-            name: network_interface
+            name: cloud.azure_ops.azure_manage_network_interface
           vars:
             operation: create
             azure_resource_group: "{{ resource_group }}"
@@ -360,7 +360,7 @@
 
         - name: Delete nic & its security group
           ansible.builtin.include_role:
-            name: network_interface
+            name: cloud.azure_ops.azure_manage_network_interface
           vars:
             operation: delete
             azure_resource_group: "{{ resource_group }}"

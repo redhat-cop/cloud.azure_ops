@@ -37,7 +37,7 @@ requirements:
 
 EXAMPLES = '''
 - name: Ping a simple PostgreSQL database
-  postgresql_ping_db:
+  cloud.azure_ops.postgresql_ping_db:
     host: "ansible-postgresql-00.postgres.database.azure.com"
     dbname: "db-00"
     user: "ansible@ansible-postgresql-00"

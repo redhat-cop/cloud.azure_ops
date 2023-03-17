@@ -9,7 +9,7 @@
         azure_number_vm: 3
 
 - name: Run webapp demo for azure
-  import_playbook: cloud.azure_roles.webapp_demo
+  import_playbook: cloud.azure_ops.webapp_demo
 
 - name: Validate application is running
   hosts: localhost
@@ -43,7 +43,7 @@
         azure_number_vm: 5
 
 - name: Run webapp demo for azure
-  import_playbook: cloud.azure_roles.webapp_demo
+  import_playbook: cloud.azure_ops.webapp_demo
 
 
 - name: Validate application has been scale up
@@ -65,7 +65,7 @@
         azure_number_vm: 1
 
 - name: Run webapp demo for azure
-  import_playbook: cloud.azure_roles.webapp_demo
+  import_playbook: cloud.azure_ops.webapp_demo
 
 
 - name: Validate application has been scale down
@@ -83,7 +83,7 @@
   gather_facts: no
 
   collections:
-  - cloud.azure_roles
+  - cloud.azure_ops
 
   tasks:
     - ansible.builtin.import_role:
