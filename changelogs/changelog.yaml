@@ -1,0 +1,9 @@
+ancestor: null
+releases:
+  2.0.0:
+    changes:
+      breaking_changes:
+      - the collection has been renamed to cloud.azure_ops (https://github.com/redhat-cop/cloud.azure_ops/pull/38).
+    fragments:
+    - rename.yml
+    release_date: '2023-03-17'
