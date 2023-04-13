@@ -36,7 +36,6 @@
         repo: "{{ application_src }}"
         dest: "{{ app_data }}"
         force: true
-        version: HEAD
 
     - name: Create Docker image
       ansible.builtin.command:
