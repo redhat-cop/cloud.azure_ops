@@ -3,10 +3,6 @@
   hosts: localhost
   gather_facts: false
 
-  collections:
-    - cloud.azure_ops
-    - azure.azcollection
-
   vars_files:
     - vars/main.yml
 
@@ -121,6 +117,7 @@
         ANSIBLE_ROLES_PATH: "{{ ansible_venv_path }}/playbook/zuul-jobs/roles"
       args:
         chdir: "{{ ansible_venv_path }}/playbook"
+      changed_when: false
 
 - name: Show web application URL
   hosts: localhost

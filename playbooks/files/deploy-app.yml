@@ -36,13 +36,15 @@
         repo: "{{ application_src }}"
         dest: "{{ app_data }}"
         force: true
+        version: HEAD
 
     - name: Create Docker image
-      command:
+      ansible.builtin.command:
         cmd: docker build -t {{ docker_image }} {{ app_data }}
+      changed_when: false
 
     - name: Init Application db
-      ansible.builtin.shell: >-
+      ansible.builtin.command: >-
         docker run --rm
         -e FLASK_APP="{{ docker_dir }}"
         -e FLASK_ENV="{{ docker_env }}"
@@ -56,16 +58,19 @@
         -e WORKERS_HOSTS="{{ workers_hosts }}"
         {{ docker_image }} flask {{ app_force_init | bool | ternary('force-init-db', 'init-db') }}
       run_once: true
+      changed_when: false
 
     - name: Run application
       block:
         - name: Stop running container
-          command:
+          ansible.builtin.command:
             cmd: docker container stop {{ docker_container_name }}
           ignore_errors: true
+          register: ignore_errors_register
+          changed_when: false
 
         - name: Start container
-          ansible.builtin.shell: >-
+          ansible.builtin.command: >-
             docker run --rm
             -e FLASK_APP="{{ docker_dir }}"
             -e FLASK_ENV="{{ docker_env }}"
@@ -79,3 +84,4 @@
             -e WORKERS_HOSTS="{{ workers_hosts }}"
             -p 5000:5000 --name {{ docker_container_name }}
             -d {{ docker_image }}
+          changed_when: false

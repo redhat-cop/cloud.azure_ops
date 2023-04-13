@@ -3,10 +3,6 @@
   hosts: localhost
   gather_facts: false
 
-  collections:
-    - cloud.azure_ops
-    - azure.azcollection
-
   vars_files:
     - vars/vmss_migrate_vars.yml
 
@@ -159,14 +155,11 @@
         ANSIBLE_ROLES_PATH: "{{ ansible_venv_path }}/playbook/zuul-jobs/roles"
       args:
         chdir: "{{ ansible_venv_path }}/playbook"
+      changed_when: false
 
 - name: Cleanup web application resources
   hosts: localhost
   gather_facts: false
-
-  collections:
-    - cloud.azure_ops
-    - azure.azcollection
 
   vars_files:
     - vars/vmss_migrate_vars.yml

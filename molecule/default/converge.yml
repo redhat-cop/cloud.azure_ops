@@ -1,8 +1,6 @@
 ---
 - name: Converge
   hosts: localhost
-  collections:
-    - azure.azcollection
   tasks:
     - name: Test resource_group role
       ansible.builtin.include_tasks:

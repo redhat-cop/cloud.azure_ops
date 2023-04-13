@@ -3,9 +3,6 @@
   hosts: localhost
   gather_facts: false
 
-  collections:
-    - azure.azcollection
-
   vars_files:
     - vars/webapp_container_vars.yml
 
