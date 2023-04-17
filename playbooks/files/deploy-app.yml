@@ -31,7 +31,7 @@
       ansible.builtin.include_role:
         name: ensure-docker
 
-    - name: Git clone application
+    - name: Git clone application # noqa: latest
       ansible.builtin.git:
         repo: "{{ application_src }}"
         dest: "{{ app_data }}"
