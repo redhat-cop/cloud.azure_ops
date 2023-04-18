@@ -33,3 +33,6 @@ jobs:
 
       - name: Test with tox
         run: tox -e linters -vv
+
+  ansible-lint:
+    uses: ansible-network/github_actions/.github/workflows/ansible-lint.yml@main
