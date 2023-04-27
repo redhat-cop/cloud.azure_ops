@@ -1,5 +1,5 @@
 ---
-name: CI
+name: Linters
 'on':
   push:
     branches:
