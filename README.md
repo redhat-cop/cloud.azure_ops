@@ -92,6 +92,8 @@ There are also integration tests in the `molecule` directory which are meant to 
     molecule test
 ```
 
+This collection is tested using GitHub Actions. To know more about CI, refer to [CI.md](https://github.com/redhat-cop/cloud.azure_ops/blob/main/CI.md).
+
 ## License
 
 GNU General Public License v3.0 or later
