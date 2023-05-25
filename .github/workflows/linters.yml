@@ -8,10 +8,7 @@ on:
     types:
       - opened
       - reopened
-      - labeled
-      - unlabeled
       - synchronize
-      - closed
     branches:
       - main
       - stable-*
