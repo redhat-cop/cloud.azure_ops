@@ -1,14 +1,19 @@
 ---
 name: Linters
-'on':
+on:
   push:
     branches:
       - main
   pull_request:
+    types:
+      - opened
+      - reopened
+      - synchronize
     branches:
       - main
-  schedule:
-    - cron: '0 6 * * *'
+      - stable-*
+    tags:
+      - '*'
 
 jobs:
 
