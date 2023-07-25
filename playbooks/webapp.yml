@@ -61,7 +61,7 @@
       ansible.builtin.yum:
         name:
           - python3
-          - python-virtualenv
+          - python3-virtualenv
           - sshpass
           - git
         state: present
