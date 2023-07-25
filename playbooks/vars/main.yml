@@ -5,7 +5,7 @@ azure_vm_user_password: 4fB5In3ueO7,
 azure_vm_image:
   offer: RHEL
   publisher: RedHat
-  sku: 7-LVM
+  sku: 8-LVM
   version: latest
 azure_vm_size: Standard_A2
 azure_bastion_vm_size: Standard_A1_v2
