@@ -7,7 +7,7 @@ azure_vm_image:
   publisher: RedHat
   sku: 8-LVM
   version: latest
-azure_vm_size: Standard_A2
+azure_vm_size: Standard_A1_v2
 azure_bastion_vm_size: Standard_A1_v2
 azure_number_vm: 3
 
