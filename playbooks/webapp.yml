@@ -71,7 +71,7 @@
       ansible.builtin.pip:
         virtualenv: "{{ ansible_venv_path }}"
         virtualenv_python: python3
-        name: ansible==2.10.7
+        name: ansible==2.11.*
 
     - name: Create application directories
       ansible.builtin.file:
