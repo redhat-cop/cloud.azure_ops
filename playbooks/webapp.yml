@@ -1,5 +1,5 @@
 ---
-- name: Bootstrap a web app application using azure collection
+- name: Bootstrap a web app application using Azure collection
   hosts: localhost
   gather_facts: false
 
