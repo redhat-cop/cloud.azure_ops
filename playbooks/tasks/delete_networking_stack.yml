@@ -1,0 +1,8 @@
+---
+- name: Include networking stack configuration
+  ansible.builtin.include_vars:
+    file: networking_stack_deletion.yml
+
+- name: Delete networking stack
+  ansible.builtin.include_role:
+    name: cloud.azure_ops.azure_manage_networking_stack

@@ -1,0 +1,5 @@
+---
+delete_option: "{{ item }}"
+operation: delete
+azure_virtual_network: "{{ vnet_info.virtualnetworks[0].name }}"
+azure_subnet: "{{ vnet_info.virtualnetworks[0].subnets[0].name }}"

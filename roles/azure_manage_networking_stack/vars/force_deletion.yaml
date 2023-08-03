@@ -1,0 +1,3 @@
+---
+azure_force_delete_nonempty: true
+azure_force_delete_locked: true

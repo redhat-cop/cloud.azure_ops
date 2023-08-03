@@ -41,20 +41,14 @@
         name: "{{ vm_name }}"
         allocation_method: static
 
+    - name: Include network interface variables
+      ansible.builtin.include_vars:
+        file: network_interfaces.yaml
+
     - name: Create default nic with default security group and public ip
       ansible.builtin.include_role:
-        name: network_interface
-      vars:
-        azure_network_interface:
-          name: "{{ vm_name }}"
-          vnet_name: "{{ vnet_info.virtualnetworks[0].name }}" # This is how the azure_rm_virtualmachine module creates its default network interface - using the first vnet
-          subnet_name: "{{ vnet_info.virtualnetworks[0].subnets[0].name }}"
-          ip_configurations:
-            - name: default
-              primary: true
-              public_ip_address_name: "{{ vm_name }}"
-              load_balancer_backend_address_pools: "{{ azure_vm.load_balancer_backend_address_pools | default(omit) }}"
-
+        name: cloud.azure_ops.azure_manage_network_interface
+        
     - name: Tag all autocreated resources for cleanup
       ansible.builtin.set_fact:
         vm_tags: "{{ azure_vm.tags | default({}) | combine({'_own_pip_': vm_name}, {'_own_nic_': vm_name}, {'_own_nsg_': vm_name}) }}"

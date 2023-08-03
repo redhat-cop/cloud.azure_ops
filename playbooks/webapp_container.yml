@@ -84,16 +84,18 @@
             resource_group: "{{ azure_resource_group }}"
           register: lb_info
 
-        - name: Remove load balancer
-          ansible.builtin.include_role:
-            name: cloud.azure_ops.azure_load_balancer_with_public_ip
-          vars:
-            operation: delete
-            azure_lb_name: "{{ lb_info.ansible_info.azure_loadbalancers[0].name }}"
-          when:
-            - lb_info.ansible_info.azure_loadbalancers[0].name is defined
+        - name: Delete load balancer
+          when: lb_info.ansible_info.azure_loadbalancers[0].name is defined
+          block:
+            - name: Include load balancer deletion vars
+              ansible.builtin.include_vars:
+                file: load_balancer_deletion.yml
 
-        - name: Get lb ip
+            - name: Remove load balancer
+              ansible.builtin.include_role:
+                name: cloud.azure_ops.azure_load_balancer_with_public_ipd
+
+        - name: Get load balancer ip
           azure.azcollection.azure_rm_resource_info:
             url: "{{ lb_info.ansible_info.azure_loadbalancers[0].properties.frontendIPConfigurations[0].properties.publicIPAddress.id }}"
           register: lb_pip_info
@@ -113,14 +115,16 @@
             resource_group: "{{ azure_resource_group }}"
           register: vm_info
 
-        - name: Delete Virtual Machine
-          ansible.builtin.include_role:
-            name: cloud.azure_ops.azure_virtual_machine_with_public_ip
-          vars:
-            operation: delete
-            azure_vm_name: "{{ vm_info.vms[0].name }}"
-          when:
-            - vm_info.vms[0].name is defined
+        - name: Delete virtual machine with public IP
+          when: vm_info.vms[0].name is defined
+          block:
+            - name: Include virtual machine deletion vars
+              ansible.builtin.include_vars:
+                file: vm_with_public_ip_deletion.yml
+
+            - name: Delete Virtual Machine
+              ansible.builtin.include_role:
+                name: cloud.azure_ops.azure_virtual_machine_with_public_ip
 
         - name: Get network security group info
           azure.azcollection.azure_rm_securitygroup_info:
@@ -128,13 +132,15 @@
           register: sg_info
 
         - name: Delete security group
-          ansible.builtin.include_role:
-            name: cloud.azure_ops.azure_manage_security_group
-          vars:
-            operation: delete
-            azure_security_group: "{{ sg_info.securitygroups[0].name }}"
-          when:
-            - sg_info.securitygroups[0].name is defined
+          when: sg_info.securitygroups[0].name is defined
+          block:
+            - name: Include security group deletion vars
+              ansible.builtin.include_vars:
+                file: security_group_deletion.yml
+
+            - name: Delete security group
+              ansible.builtin.include_role:
+                name: cloud.azure_ops.azure_manage_security_group
 
         - name: Get vnet info
           azure.azcollection.azure_rm_virtualnetwork_info:
@@ -142,13 +148,7 @@
           register: vnet_info
 
         - name: Delete networking stack
-          ansible.builtin.include_role:
-            name: cloud.azure_ops.azure_manage_networking_stack
-          vars:
-            delete_option: "{{ item }}"
-            operation: delete
-            azure_virtual_network: "{{ vnet_info.virtualnetworks[0].name }}"
-            azure_subnet: "{{ vnet_info.virtualnetworks[0].subnets[0].name }}"
+          ansible.builtin.include_tasks: tasks/delete_networking_stack.yml
           with_items:
             - subnet
             - virtual_network
