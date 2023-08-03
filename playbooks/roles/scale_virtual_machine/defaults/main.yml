@@ -18,4 +18,3 @@ azure_load_balancer:
   name: "{{ azure_resource_group }}-lb"
   public_ip_name: "{{ azure_resource_group }}-lb-public-ip"
   backend_address_pool: "{{ azure_resource_group }}-vm-pool"
-azure_force_delete_nonempty: true

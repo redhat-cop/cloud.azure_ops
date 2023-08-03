@@ -47,15 +47,12 @@
     - delete_option is defined
     - delete_option == 'server'
 
-- name: Force resource group deletion
+- name: Delete Resource group
+  ansible.builtin.include_role:
+    name: cloud.azure_ops.azure_manage_resource_group
+  vars:
+    azure_force_delete_nonempty: true
+    azure_force_delete_locked: true
   when:
     - delete_option is defined
     - delete_option == 'all'
-  block:
-    - name: Include required variables
-      ansible.builtin.include_vars:
-        file: force_deletion.yaml
-
-    - name: Delete Resource group
-      ansible.builtin.include_role:
-        name: cloud.azure_ops.azure_manage_resource_group

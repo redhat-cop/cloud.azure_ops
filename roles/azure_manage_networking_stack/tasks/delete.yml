@@ -1,14 +1,11 @@
 ---
-- name: Force resource group deletion
+- name: Delete resource group
+  ansible.builtin.import_role:
+    name: cloud.azure_ops.azure_manage_resource_group
+  vars:
+    azure_force_delete_nonempty: true
+    azure_force_delete_locked: true
   when: delete_option == 'all'
-  block:
-    - name: Include required variables
-      ansible.builtin.include_vars:
-        file: force_deletion.yaml
-
-    - name: Delete resource group
-      ansible.builtin.import_role:
-        name: cloud.azure_ops.azure_manage_resource_group
 
 - name: Delete virtual network
   azure.azcollection.azure_rm_virtualnetwork:
