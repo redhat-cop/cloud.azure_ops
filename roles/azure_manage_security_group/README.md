@@ -12,8 +12,8 @@ Role Variables
 --------------
 
 * **azure_manage_security_group_operation**: Operation to perform. Valid values are 'create', 'delete'. Default is 'create'.
-* **azure_manage_security_group_resource_group**: (Required) Resource group on/from which the security group will reside. When `operation='create'`, this resource group will be created if it does not exist.
-* **azure_manage_security_group_region**: (Required) Azure region.
+* **azure_manage_security_group_resource_group**: (Required) Resource group on/from which the security group will reside. When `azure_manage_security_group_operation='create'`, this resource group will be created if it does not exist.
+* **azure_manage_security_group_region**: Azure region, required when the provided resource group does not exist.
 * **azure_manage_security_group_security_group**: (Required) Object used to provide details for a security group. Contains the following:
   - **name**: (Required) Name of the security group.
   - **rules**: List of security rules to apply to a subnet or NIC. Each rule consists of:
@@ -41,12 +41,11 @@ Example Playbook
 ----------------
 
     - hosts: localhost
-      vars:
-        azure_resource_group: 'my_resource_group'
-        azure_region: 'eastus'
       roles:
         - name: Create a security group with custom rules
           role: cloud.azure_ops.azure_manage_security_group
+          azure_manage_security_group_resource_group: 'my_resource_group'
+          azure_manage_security_group_region: eastus
           azure_manage_security_group_operation: 'create'
           azure_manage_security_group_security_group:
             name: "{{ azure_resource_group }}-sg"
@@ -69,6 +68,7 @@ Example Playbook
 
         - name: Remove rules from security group
           role: cloud.azure_ops.azure_manage_security_group
+          azure_manage_security_group_resource_group: 'my_resource_group'
           azure_manage_security_group_security_group:
             name: "{{ azure_resource_group }}-sg"
             rules_to_remove:

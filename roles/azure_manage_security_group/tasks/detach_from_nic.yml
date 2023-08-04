@@ -6,7 +6,7 @@
 
 - name: Get nic info
   azure.azcollection.azure_rm_networkinterface_info:
-    resource_group: "{{ azure_resource_group }}"
+    resource_group: "{{ azure_manage_security_group_resource_group }}"
     name: "{{ nic_obj.response[0].name }}"
   register: nic_result
 
