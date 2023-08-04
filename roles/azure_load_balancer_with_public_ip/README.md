@@ -12,7 +12,7 @@ Role Variables
 --------------
 
 * **azure_load_balancer_with_public_ip_operation**: Operation to perform. Valid values are 'create', 'delete'. Default is **create**.
-* **azure_load_balancer_with_public_ip_resource_group**: Resource group on/from which the load balancer will reside. When **operation** is set to create, this resource group will be created if it does not exist.
+* **azure_load_balancer_with_public_ip_resource_group**: Resource group on/from which the load balancer will reside. When **azure_load_balancer_with_public_ip_operation** is set to create, this resource group will be created if it does not exist.
 * **azure_load_balancer_with_public_ip_region**: An Azure location for the resources.
 * **azure_load_balancer_with_public_ip_tags**: Dictionary of string:string pairs to assign as metadata to the resource group.
 * **azure_load_balancer_with_public_ip_load_balancer**: Object used to provide details for a load balancer. Contains the following:
