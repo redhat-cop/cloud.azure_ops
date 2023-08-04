@@ -6,7 +6,7 @@
 
 - name: Get subnet info
   azure.azcollection.azure_rm_subnet_info:
-    resource_group: "{{ azure_resource_group }}"
+    resource_group: "{{ azure_manage_security_group_resource_group }}"
     name: "{{ subnet_name }}"
     virtual_network_name: "{{ vnet_name }}"
   register: subnet_result

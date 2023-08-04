@@ -1,0 +1,24 @@
+---
+security_group_name: "{{ resource_prefix }}-sg"
+security_group_rules:
+  - name: 'allow_ssh'
+    protocol: Tcp
+    destination_port_range:
+      - 22
+    access: Allow
+    priority: 100
+    direction: Inbound
+  - name: 'allow_http_traffic'
+    protocol: Tcp
+    destination_port_range:
+      - 80
+    access: Allow
+    priority: 101
+    direction: Inbound
+  - name: 'allow_https_traffic'
+    protocol: Tcp
+    destination_port_range:
+      - 80
+    access: Allow
+    priority: 102
+    direction: Inbound
