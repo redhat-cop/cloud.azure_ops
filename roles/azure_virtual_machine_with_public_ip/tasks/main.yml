@@ -1,55 +1,55 @@
 ---
 - name: Check operation validation
   ansible.builtin.fail:
-    msg: Please provide operation as 'create', 'delete', 'power_on', 'power_off', 'deallocate', or 'restart'
-  when: operation not in ['create', 'delete', 'power_on', 'power_off', 'deallocate', 'restart']
+    msg: Please provide azure_virtual_machine_with_public_ip_operation as 'create', 'delete', 'power_on', 'power_off', 'deallocate', or 'restart'
+  when: azure_virtual_machine_with_public_ip_operation not in ['create', 'delete', 'power_on', 'power_off', 'deallocate', 'restart']
 
 - name: Ensure resource group is defined
   ansible.builtin.fail:
-    msg: Azure resource group name must be defined as azure_resource_group
-  when: azure_resource_group is not defined
+    msg: Azure resource group name must be defined as azure_virtual_machine_with_public_ip_resource_group
+  when: azure_virtual_machine_with_public_ip_resource_group is not defined
 
 - name: Ensure vm name is defined
   ansible.builtin.fail:
-    msg: "Missing parameter: key 'name' not found in azure_vm"
-  when: azure_vm.name is not defined
+    msg: "Missing parameter: key 'name' not found in azure_virtual_machine_with_public_ip_operation_vm"
+  when: azure_virtual_machine_with_public_ip_operation_vm.name is not defined
 
 - name: Replace invalid chars in name
   ansible.builtin.set_fact:
-    vm_name: "{{ azure_vm.name | regex_replace('[^a-zA-Z0-9]', '-') }}"
+    vm_name: "{{ azure_virtual_machine_with_public_ip_operation_vm.name | regex_replace('[^a-zA-Z0-9]', '-') }}"
 
 - name: Get resource group info
   azure.azcollection.azure_rm_resourcegroup_info:
-    name: "{{ azure_resource_group }}"
+    name: "{{ azure_virtual_machine_with_public_ip_resource_group }}"
   register: rg_info
 
 - name: Power Off VM
   azure.azcollection.azure_rm_virtualmachine:
-    resource_group: "{{ azure_resource_group }}"
+    resource_group: "{{ azure_virtual_machine_with_public_ip_resource_group }}"
     name: "{{ vm_name }}"
     started: false
   when: operation == 'power_off'
 
 - name: Deallocate VM
   azure.azcollection.azure_rm_virtualmachine:
-    resource_group: "{{ azure_resource_group }}"
+    resource_group: "{{ azure_virtual_machine_with_public_ip_resource_group }}"
     name: "{{ vm_name }}"
     allocated: false
   when: operation == 'deallocate'
 
 - name: Power On VM
   azure.azcollection.azure_rm_virtualmachine:
-    resource_group: "{{ azure_resource_group }}"
+    resource_group: "{{ azure_virtual_machine_with_public_ip_resource_group }}"
     name: "{{ vm_name }}"
   when: operation == 'power_on'
 
 - name: Restart VM
   azure.azcollection.azure_rm_virtualmachine:
-    resource_group: "{{ azure_resource_group }}"
+    resource_group: "{{ azure_virtual_machine_with_public_ip_resource_group }}"
     name: "{{ vm_name }}"
     restarted: true
   when: operation == 'restart'
 
 - name: Create or delete VM
-  ansible.builtin.include_tasks: "{{ operation }}.yml"
+  ansible.builtin.include_tasks: "{{ azure_virtual_machine_with_public_ip_operation }}.yml"
   when: operation in ['create', 'delete']

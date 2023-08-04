@@ -1,6 +1,6 @@
 ---
-operation: create
-azure_postgresql_version: "9.5"
-azure_postgresql_settings: []
-azure_postgresql_firewall_rules: []
-azure_postgresql_database_instances: []
+azure_manage_postgresql_operation: create
+azure_manage_postgresql_postgresql_version: "9.5"
+azure_manage_postgresql_postgresql_settings: []
+azure_manage_postgresql_postgresql_firewall_rules: []
+azure_manage_postgresql_postgresql_database_instances: []

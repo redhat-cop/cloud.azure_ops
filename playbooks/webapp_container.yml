@@ -25,6 +25,14 @@
     - name: Create infrastructure
       ansible.builtin.include_role:
         name: cloud.azure_ops.azure_manage_postgresql
+      vars:
+        azure_manage_postgresql_operation: create
+        azure_manage_postgresql_resource_group: "{{ azure_resource_group }}"
+        azure_manage_postgresql_region: "{{ azure_region }}"
+        azure_manage_postgresql_postgresql_name: "{{ azure_postgresql_name }}"
+        azure_manage_postgresql_postgresql_admin_username: "{{ azure_postgresql_admin_username }}"
+        azure_manage_postgresql_postgresql_admin_password: "{{ azure_postgresql_admin_password }}"
+        azure_manage_postgresql_postgresql_database_instances: "{{ azure_postgresql_database_instances }}"
       when: not migrate_app
 
     - name: Get pgsql info
@@ -88,8 +96,8 @@
           ansible.builtin.include_role:
             name: cloud.azure_ops.azure_load_balancer_with_public_ip
           vars:
-            operation: delete
-            azure_lb_name: "{{ lb_info.ansible_info.azure_loadbalancers[0].name }}"
+            azure_load_balancer_with_public_ip_operation: delete
+            azure_load_balancer_with_public_ip_lb_name: "{{ lb_info.ansible_info.azure_loadbalancers[0].name }}"
           when:
             - lb_info.ansible_info.azure_loadbalancers[0].name is defined
 
@@ -117,8 +125,10 @@
           ansible.builtin.include_role:
             name: cloud.azure_ops.azure_virtual_machine_with_public_ip
           vars:
-            operation: delete
-            azure_vm_name: "{{ vm_info.vms[0].name }}"
+            azure_virtual_machine_with_public_ip_resource_group: "{{ azure_resource_group }}"
+            azure_virtual_machine_with_public_ip_region: "{{ azure_region }}"
+            azure_virtual_machine_with_public_ip_operation: delete
+            azure_virtual_machine_with_public_ip_vm_name: "{{ vm_info.vms[0].name }}"
           when:
             - vm_info.vms[0].name is defined
 
@@ -131,8 +141,10 @@
           ansible.builtin.include_role:
             name: cloud.azure_ops.azure_manage_security_group
           vars:
-            operation: delete
-            azure_security_group: "{{ sg_info.securitygroups[0].name }}"
+            azure_manage_security_group_resource_group: "{{ azure_resource_group }}"
+            azure_manage_security_group_region: "{{ azure_region }}"
+            azure_manage_security_group_operation: delete
+            azure_manage_security_group_security_group: "{{ sg_info.securitygroups[0].name }}"
           when:
             - sg_info.securitygroups[0].name is defined
 
@@ -145,10 +157,11 @@
           ansible.builtin.include_role:
             name: cloud.azure_ops.azure_manage_networking_stack
           vars:
-            delete_option: "{{ item }}"
-            operation: delete
-            azure_virtual_network: "{{ vnet_info.virtualnetworks[0].name }}"
-            azure_subnet: "{{ vnet_info.virtualnetworks[0].subnets[0].name }}"
+            azure_manage_networking_stack_delete_option: "{{ item }}"
+            azure_manage_networking_stack_operation: delete
+            azure_manage_networking_stack_virtual_network: "{{ vnet_info.virtualnetworks[0].name }}"
+            azure_manage_networking_stack_subnet: "{{ vnet_info.virtualnetworks[0].subnets[0].name }}"
+            azure_manage_networking_stack_resource_group: "{{ azure_resource_group }}"
           with_items:
             - subnet
             - virtual_network

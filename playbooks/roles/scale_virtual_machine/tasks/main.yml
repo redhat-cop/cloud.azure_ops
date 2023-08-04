@@ -1,3 +1,13 @@
 ---
+- name: Check Resource group name
+  ansible.builtin.fail:
+    msg: Azure Resource group name must be defined as scale_virtual_machine_resource_group
+  when: scale_virtual_machine_resource_group is not defined
+
+- name: Check azure region
+  ansible.builtin.fail:
+    msg: Azure region must be defined as scale_virtual_machine_region
+  when: scale_virtual_machine_region is not defined
+
 - name: Include operation tasks
   ansible.builtin.include_tasks: "{{ operation }}.yml"

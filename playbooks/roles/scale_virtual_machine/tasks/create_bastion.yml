@@ -1,12 +1,12 @@
 ---
 - name: Define Bastion facts
   ansible.builtin.set_fact:
-    bastion_public_ip_name: "{{ azure_vm_name }}bastion-ip"
-    bastion_nic_name: "{{ azure_vm_name }}bastion-nic"
+    bastion_public_ip_name: "{{ scale_virtual_machine_vm_name }}bastion-ip"
+    bastion_nic_name: "{{ scale_virtual_machine_vm_name }}bastion-nic"
 
 - name: Create public ip for Bastion VM
   azure.azcollection.azure_rm_publicipaddress:
-    resource_group: "{{ azure_resource_group }}"
+    resource_group: "{{ scale_virtual_machine_resource_group }}"
     allocation_method: static
     name: "{{ bastion_public_ip_name }}"
     sku: Basic
@@ -18,28 +18,28 @@
 
 - name: Create network interface for Bastion host
   azure.azcollection.azure_rm_networkinterface:
-    resource_group: "{{ azure_resource_group }}"
+    resource_group: "{{ scale_virtual_machine_resource_group }}"
     name: "{{ bastion_nic_name }}"
-    virtual_network: "{{ azure_virtual_network }}"
-    subnet_name: "{{ azure_subnet }}"
-    security_group: "{{ azure_security_group }}"
+    virtual_network: "{{ scale_virtual_machine_virtual_network }}"
+    subnet_name: "{{ scale_virtual_machine_subnet }}"
+    security_group: "{{ scale_virtual_machine_security_group }}"
     ip_configurations:
       - name: public_ip
         public_ip_address_name: "{{ bastion_public_ip_name }}"
 
 - name: Create virtual machine
   azure.azcollection.azure_rm_virtualmachine:
-    resource_group: "{{ azure_resource_group }}"
-    name: "{{ azure_vm_name }}bastion"
-    admin_username: "{{ azure_vm_user }}"
-    admin_password: "{{ azure_vm_user_password }}"
-    image: "{{ azure_vm_image }}"
-    vm_size: "{{ azure_bastion_vm_size | default('Standard_DS4_v2') }}"
+    resource_group: "{{ scale_virtual_machine_resource_group }}"
+    name: "{{ scale_virtual_machine_vm_name }}bastion"
+    admin_username: "{{ scale_virtual_machine_vm_user }}"
+    admin_password: "{{ scale_virtual_machine_vm_user_password }}"
+    image: "{{ scale_virtual_machine_vm_image }}"
+    vm_size: "{{ scale_virtual_machine_bastion_vm_size | default('Standard_DS4_v2') }}"
     ssh_password_enabled: true
-    managed_disk_type: "{{ azure_vm_image_disk_type | default('Standard_LRS') }}"
-    os_type: "{{ azure_vm_os | default('Linux') }}"
-    virtual_network_name: "{{ azure_virtual_network }}"
-    subnet_name: "{{ azure_subnet }}"
+    managed_disk_type: "{{ scale_virtual_machine_vm_image_disk_type | default('Standard_LRS') }}"
+    os_type: "{{ scale_virtual_machine_vm_os | default('Linux') }}"
+    virtual_network_name: "{{ scale_virtual_machine_virtual_network }}"
+    subnet_name: "{{ scale_virtual_machine_subnet }}"
     network_interface_names:
-      - resource_group: "{{ azure_resource_group }}"
+      - resource_group: "{{ scale_virtual_machine_resource_group }}"
         name: "{{ bastion_nic_name }}"

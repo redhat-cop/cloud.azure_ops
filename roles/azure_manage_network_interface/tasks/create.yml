@@ -1,55 +1,55 @@
 ---
 - name: Ensure vnet is specified
   ansible.builtin.fail:
-    msg: "Missing parameter: key 'vnet_name' not found in azure_network_interface"
-  when: azure_network_interface.vnet_name is undefined
+    msg: "Missing parameter: key 'vnet_name' not found in azure_manage_network_interface_interface"
+  when: azure_manage_network_interface_interface.vnet_name is undefined
 
 - name: Ensure subnet is specified
   ansible.builtin.fail:
-    msg: "Missing parameter: key 'subnet_name' not found in azure_network_interface"
-  when: azure_network_interface.subnet_name is undefined
+    msg: "Missing parameter: key 'subnet_name' not found in azure_manage_network_interface_interface"
+  when: azure_manage_network_interface_interface.subnet_name is undefined
 
 - name: Get vnet info
   azure.azcollection.azure_rm_virtualnetwork_info:
-    resource_group: "{{ azure_resource_group }}"
-    name: "{{ azure_network_interface.vnet_name }}"
+    resource_group: "{{ azure_manage_network_interface_resource_group }}"
+    name: "{{ azure_manage_network_interface_interface.vnet_name }}"
   register: vnet_info
 
 - name: Ensure vnet exists
   ansible.builtin.fail:
-    msg: Virtual network '{{ azure_network_interface.vnet_name }}' does not exist
+    msg: Virtual network '{{ azure_manage_network_interface_interface.vnet_name }}' does not exist
   when: vnet_info.virtualnetworks | length == 0
 
 - name: Ensure subnet exists
   block:
     - name: Get subnet info
       azure.azcollection.azure_rm_subnet_info:
-        resource_group: "{{ azure_resource_group }}"
-        name: "{{ azure_network_interface.subnet_name }}"
-        virtual_network_name: "{{ azure_network_interface.vnet_name }}"
+        resource_group: "{{ azure_manage_network_interface_resource_group }}"
+        name: "{{ azure_manage_network_interface_interface.subnet_name }}"
+        virtual_network_name: "{{ azure_manage_network_interface_interface.vnet_name }}"
       register: subnet_info
 
     - name: Ensure subnet exists
       ansible.builtin.fail:
-        msg: Subnet '{{ azure_network_interface.subnet_name }}' does not exist
+        msg: Subnet '{{ azure_manage_network_interface_interface.subnet_name }}' does not exist
       when: subnet_info.subnets | length == 0
 
   rescue:
     - name: Throw better error message
       ansible.builtin.fail:
-        msg: Subnet '{{ azure_network_interface.subnet_name }}' does not exist
+        msg: Subnet '{{ azure_manage_network_interface_interface.subnet_name }}' does not exist
 
 - name: Create/Update a Network Interface
   azure.azcollection.azure_rm_networkinterface:
-    name: "{{ azure_network_interface.name }}"
-    resource_group: "{{ azure_resource_group }}"
-    virtual_network: "{{ azure_network_interface.vnet_name }}"
-    subnet_name: "{{ azure_network_interface.subnet_name }}"
-    security_group: "{{ azure_network_interface.security_group_name | default(omit) }}"
-    create_with_security_group: "{{ azure_network_interface.create_with_security_group | default(omit) }}"
-    os_type: "{{ azure_network_interface.os_type | default(omit) }}"
-    enable_accelerated_networking: "{{ azure_network_interface.enable_accelerated_networking | default(omit) }}"
-    ip_forwarding: "{{ azure_network_interface.ip_forwarding | default(omit) }}"
-    dns_servers: "{{ azure_network_interface.dns_servers | default(omit) }}"
-    ip_configurations: "{{ azure_network_interface.ip_configurations | default(omit) }}"
-    tags: "{{ azure_network_interface.tags | default(omit) }}"
+    name: "{{ azure_manage_network_interface_interface.name }}"
+    resource_group: "{{ azure_manage_network_interface_resource_group }}"
+    virtual_network: "{{ azure_manage_network_interface_interface.vnet_name }}"
+    subnet_name: "{{ azure_manage_network_interface_interface.subnet_name }}"
+    security_group: "{{ azure_manage_network_interface_interface.security_group_name | default(omit) }}"
+    create_with_security_group: "{{ azure_manage_network_interface_interface.create_with_security_group | default(omit) }}"
+    os_type: "{{ azure_manage_network_interface_interface.os_type | default(omit) }}"
+    enable_accelerated_networking: "{{ azure_manage_network_interface_interface.enable_accelerated_networking | default(omit) }}"
+    ip_forwarding: "{{ azure_manage_network_interface_interface.ip_forwarding | default(omit) }}"
+    dns_servers: "{{ azure_manage_network_interface_interface.dns_servers | default(omit) }}"
+    ip_configurations: "{{ azure_manage_network_interface_interface.ip_configurations | default(omit) }}"
+    tags: "{{ azure_manage_network_interface_interface.tags | default(omit) }}"

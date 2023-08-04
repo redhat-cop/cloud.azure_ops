@@ -1,3 +1,2 @@
 ---
-operation: create
-azure_load_balancer: {}
+azure_load_balancer_with_public_ip_operation: create

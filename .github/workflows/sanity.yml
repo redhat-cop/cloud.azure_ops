@@ -1,17 +1,10 @@
-name: sanity
+name: Sanity
 concurrency:
-  group: ${{ github.head_ref }}
+  group: ${{ github.workflow }}-${{ github.ref }}
   cancel-in-progress: true
 
 on:
   pull_request:
-    types:
-      - opened
-      - reopened
-      - labeled
-      - unlabeled
-      - synchronize
-      - closed
     branches:
       - main
       - stable-*
@@ -75,6 +68,10 @@ jobs:
             {
               "ansible-version": "devel",
               "python-version": "3.8"
+            },
+            {
+              "ansible-version": "devel",
+              "python-version": "3.9"
             }
           ]
   all_green:

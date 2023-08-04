@@ -1,0 +1,3 @@
+cloud/azure
+role/azure_manage_security_group
+time=1m

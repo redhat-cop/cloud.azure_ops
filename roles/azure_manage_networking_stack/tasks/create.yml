@@ -7,6 +7,11 @@
 - name: Create resource group when it does not exists
   ansible.builtin.include_role:
     name: cloud.azure_ops.azure_manage_resource_group
+  vars:
+    azure_manage_resource_group_operation: create
+    azure_manage_resource_group_name: "{{ azure_manage_networking_stack_resource_group }}"
+    azure_manage_resource_group_region: "{{ azure_manage_networking_stack_region }}"
+    azure_manage_resource_group_tags: "{{ azure_manage_networking_stack_tags }}"
   when: result.resourcegroups | length == 0
 
 - name: Create azure virtual network

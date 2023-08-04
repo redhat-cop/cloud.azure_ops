@@ -1,29 +1,29 @@
 ---
-- name: Check operation validation
+- name: Check azure_load_balancer_with_public_ip_operation validation
   ansible.builtin.fail:
-    msg: Please provide operation as 'create' or 'delete'
-  when: operation not in ['create', 'delete']
+    msg: Please provide azure_load_balancer_with_public_ip_operation as 'create' or 'delete'
+  when: azure_load_balancer_with_public_ip_operation not in ['create', 'delete']
 
 - name: Ensure resource group is defined
   ansible.builtin.fail:
-    msg: Azure resource group must be defined as azure_resource_group
-  when: azure_resource_group is not defined
+    msg: Azure resource group must be defined as azure_load_balancer_with_public_ip_resource_group
+  when: azure_load_balancer_with_public_ip_resource_group is not defined
 
 - name: Ensure load balancer name is defined
   ansible.builtin.fail:
-    msg: Azure load balancer name must be defined as azure_load_balancer.name
-  when: azure_load_balancer.name is not defined
+    msg: Azure load balancer name must be defined as azure_load_balancer_with_public_ip_load_balancer.name
+  when: azure_load_balancer_with_public_ip_load_balancer.name is not defined
 
 - name: Get load balancer info
   azure.azcollection.azure_rm_loadbalancer_info:
-    resource_group: "{{ azure_resource_group }}"
-    name: "{{ azure_load_balancer.name }}"
+    resource_group: "{{ azure_load_balancer_with_public_ip_resource_group }}"
+    name: "{{ azure_load_balancer_with_public_ip_load_balancer.name }}"
   register: lb_info
 
 - name: Get resource group info
   azure.azcollection.azure_rm_resourcegroup_info:
-    name: "{{ azure_resource_group }}"
+    name: "{{ azure_load_balancer_with_public_ip_resource_group }}"
   register: rg_info
 
 - name: Create or delete load balancer
-  ansible.builtin.include_tasks: "{{ operation }}.yml"
+  ansible.builtin.include_tasks: "{{ azure_load_balancer_with_public_ip_operation }}.yml"

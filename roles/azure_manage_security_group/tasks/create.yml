@@ -1,20 +1,20 @@
 ---
 - name: Create Resource Group
   azure.azcollection.azure_rm_resourcegroup:
-    name: "{{ azure_resource_group }}"
-    location: "{{ azure_region }}"
+    name: "{{ azure_manage_security_group_resource_group }}"
+    location: "{{ azure_manage_security_group_region }}"
   when:
     - rg_info.resourcegroups | length == 0
 
 - name: Create/Update Security Group
   azure.azcollection.azure_rm_securitygroup:
-    resource_group: "{{ azure_resource_group }}"
-    name: "{{ azure_security_group.name }}"
-    purge_rules: "{{ azure_security_group.purge_rules | default(omit) }}"
-    rules: "{{ azure_security_group.rules | default(omit) }}"
-    tags: "{{ azure_tags | default(omit) }}"
+    resource_group: "{{ azure_manage_security_group_resource_group }}"
+    name: "{{ azure_manage_security_group_security_group.name }}"
+    purge_rules: "{{ azure_manage_security_group_security_group.purge_rules | default(omit) }}"
+    rules: "{{ azure_manage_security_group_security_group.rules | default(omit) }}"
+    tags: "{{ azure_manage_security_group_security_group.tags | default(omit) }}"
 
 - name: Remove Rules from Security Group
   ansible.builtin.include_tasks: remove_rules.yml
   when:
-    - azure_security_group.rules_to_remove | default([]) | length > 0
+    - azure_manage_security_group_security_group.rules_to_remove | default([]) | length > 0
