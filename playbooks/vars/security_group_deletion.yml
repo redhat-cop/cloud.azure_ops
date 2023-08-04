@@ -1,3 +1,0 @@
----
-operation: delete
-azure_security_group: "{{ sg_info.securitygroups[0].name }}"

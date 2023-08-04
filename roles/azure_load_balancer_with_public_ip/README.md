@@ -11,11 +11,11 @@ Requirements
 Role Variables
 --------------
 
-* **operation**: Operation to perform. Valid values are 'create', 'delete'. Default is **create**.
-* **azure_resource_group**: Resource group on/from which the load balancer will reside. When **operation** is set to create, this resource group will be created if it does not exist.
-* **azure_region**: An Azure location for the resources.
-* **azure_tags**: Dictionary of string:string pairs to assign as metadata to the resource group.
-* **azure_load_balancer**: Object used to provide details for a load balancer. Contains the following:
+* **azure_load_balancer_with_public_ip_operation**: Operation to perform. Valid values are 'create', 'delete'. Default is **create**.
+* **azure_load_balancer_with_public_ip_resource_group**: Resource group on/from which the load balancer will reside. When **operation** is set to create, this resource group will be created if it does not exist.
+* **azure_load_balancer_with_public_ip_region**: An Azure location for the resources.
+* **azure_load_balancer_with_public_ip_tags**: Dictionary of string:string pairs to assign as metadata to the resource group.
+* **azure_load_balancer_with_public_ip_load_balancer**: Object used to provide details for a load balancer. Contains the following:
   - **name**: (Required) Name of the load balancer.
   - **public_ip_name**: Name of load balancer's public ip. Will be defaulted to '**name**-ip' if omitted.
   - **frontend_ip_configurations**: List of frontend IPs to be used. If omitted a default will be created with the name of 'default' using the load balancers public ip. Each frontend IP consists of:
@@ -62,11 +62,11 @@ Example Playbook
     - hosts: localhost
       roles:
         - role: cloud.azure_ops.azure_load_balancer_with_public_ip
-          operation: "create"
-          azure_region: "canadacentral"
-          azure_resource_group: "rg"
-          azure_load_balancer:
-            name: "{{ azure_resource_group }}-lb"
+          azure_load_balancer_with_public_ip_operation: "create"
+          azure_load_balancer_with_public_ip_region: "canadacentral"
+          azure_load_balancer_with_public_ip_resource_group: "rg"
+          azure_load_balancer_with_public_ip_load_balancer:
+            name: "example-lb"
             probes:
               - name: lb-probe
                 port: 5000

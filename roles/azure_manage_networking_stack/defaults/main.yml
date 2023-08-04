@@ -1,4 +1,4 @@
 ---
 # defaults file for networking_stack
-operation: create
-delete_option: all
+azure_manage_networking_stack_operation: create
+azure_manage_networking_stack_delete_option: all

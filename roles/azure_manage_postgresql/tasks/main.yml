@@ -1,29 +1,29 @@
 ---
 - name: Check operation validation
   ansible.builtin.fail:
-    msg: Please provide operation as 'create' or 'delete'
-  when: operation not in ['create', 'delete']
+    msg: Please provide azure_manage_postgresql_operation as 'create' or 'delete'
+  when: azure_manage_postgresql_operation not in ['create', 'delete']
 
 - name: Check Azure resource group
   ansible.builtin.fail:
-    msg: Azure resource group must be defined as azure_resource_group
-  when: azure_resource_group is not defined
+    msg: Azure resource group must be defined as azure_manage_postgresql_resource_group
+  when: azure_manage_postgresql_resource_group is not defined
 
 - name: Check Azure PostgreSQL server name
   ansible.builtin.fail:
-    msg: Azure Postgresql server name must be defined as azure_postgresql_name
-  when: azure_postgresql_name is not defined
+    msg: Azure Postgresql server name must be defined as azure_manage_postgresql_postgresql_name
+  when: azure_manage_postgresql_postgresql_name is not defined
 
 - name: Get server info
   azure.azcollection.azure_rm_postgresqlserver_info:
-    resource_group: "{{ azure_resource_group }}"
-    name: "{{ azure_postgresql_name }}"
+    resource_group: "{{ azure_manage_postgresql_resource_group }}"
+    name: "{{ azure_manage_postgresql_postgresql_name }}"
   register: server_info
 
 - name: Get Resource group info
   azure.azcollection.azure_rm_resourcegroup_info:
-    name: "{{ azure_resource_group }}"
+    name: "{{ azure_manage_postgresql_resource_group }}"
   register: rg_info
 
 - name: Create or delete Azure PostgreSQL server
-  ansible.builtin.include_tasks: "{{ operation }}.yml"
+  ansible.builtin.include_tasks: "{{ azure_manage_postgresql_operation }}.yml"

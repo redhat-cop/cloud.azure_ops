@@ -1,58 +1,58 @@
 ---
 - name: Check operation validation
   ansible.builtin.fail:
-    msg: Please provide operation as 'create' or 'delete'
-  when: operation not in ['create', 'delete']
+    msg: Please provide azure_manage_networking_stack_operation as 'create' or 'delete'
+  when: azure_manage_networking_stack_operation not in ['create', 'delete']
 
 - name: Check resource group name
   ansible.builtin.fail:
-    msg: Azure resource group must be defined as azure_resource_group
-  when: azure_resource_group is not defined
+    msg: Azure resource group must be defined as azure_manage_networking_stack_resource_group
+  when: azure_manage_networking_stack_resource_group is not defined
 
 - name: Check create options
-  when: operation == 'create'
+  when: azure_manage_networking_stack_operation == 'create'
   block:
     - name: Check virtual network
       ansible.builtin.fail:
-        msg: Azure virtual network must be defined as azure_virtual_network
-      when: azure_virtual_network is not defined
+        msg: Azure virtual network must be defined as azure_manage_networking_stack_virtual_network
+      when: azure_manage_networking_stack_virtual_network is not defined
 
     - name: Check subnet
       ansible.builtin.fail:
-        msg: Azure subnet must be defined as azure_subnet
-      when: azure_subnet is not defined
+        msg: Azure subnet must be defined as azure_manage_networking_stack_subnet
+      when: azure_manage_networking_stack_subnet is not defined
 
     - name: Check virtual network CIDR address prefixes
       ansible.builtin.fail:
-        msg: Azure virtual network CIDR address prefixes must be defined as azure_vnet_address_prefixes_cidr
-      when: azure_vnet_address_prefixes_cidr is not defined
+        msg: Azure virtual network CIDR address prefixes must be defined as azure_manage_networking_stack_vnet_address_prefixes_cidr
+      when: azure_manage_networking_stack_vnet_address_prefixes_cidr is not defined
 
     - name: Check subnet CIDR address prefixes
       ansible.builtin.fail:
-        msg: Azure subnet CIDR address prefixes must be defined as azure_subnet_address_prefixes_cidr
-      when: azure_subnet_address_prefixes_cidr is not defined
+        msg: Azure subnet CIDR address prefixes must be defined as azure_manage_networking_stack_subnet_address_prefixes_cidr
+      when: azure_manage_networking_stack_subnet_address_prefixes_cidr is not defined
 
 - name: Check delete options
-  when: operation == 'delete'
+  when: azure_manage_networking_stack_operation == 'delete'
   block:
     - name: Check delete option
       ansible.builtin.fail:
         msg: Please provide delete_option as one of 'all', 'virtual_network', 'subnet'
-      when: delete_option not in ['all', 'virtual_network', 'subnet']
+      when: azure_manage_networking_stack_delete_option not in ['all', 'virtual_network', 'subnet']
 
     - name: Check virtual network
       ansible.builtin.fail:
-        msg: Azure virtual network must be defined as azure_virtual_network
+        msg: Azure virtual network must be defined as azure_manage_networking_stack_virtual_network
       when:
-        - operation in ['virtual_network', 'subnet']
-        - azure_virtual_network is not defined
+        - azure_manage_networking_stack_delete_option in ['virtual_network', 'subnet']
+        - azure_manage_networking_stack_virtual_network is not defined
 
     - name: Check subnet
       ansible.builtin.fail:
-        msg: Azure subnet must be defined as azure_subnet
+        msg: Azure subnet must be defined as azure_manage_networking_stack_subnet
       when:
-        - operation == 'subnet'
-        - azure_subnet is not defined
+        - azure_manage_networking_stack_delete_option == 'subnet'
+        - azure_manage_networking_stack_subnet is not defined
 
 - name: Create or delete networking stack
-  ansible.builtin.include_tasks: "{{ operation }}.yml"
+  ansible.builtin.include_tasks: "{{ azure_manage_networking_stack_operation }}.yml"

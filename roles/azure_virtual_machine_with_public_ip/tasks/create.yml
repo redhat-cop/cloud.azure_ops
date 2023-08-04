@@ -2,18 +2,18 @@
 # Pre-flight checks
 - name: Ensure admin username is defined
   ansible.builtin.fail:
-    msg: "Missing parameter: key 'admin_username' not found in azure_vm"
-  when: azure_vm.admin_username is not defined
+    msg: "Missing parameter: key 'admin_username' not found in azure_virtual_machine_with_public_ip_vm"
+  when: azure_virtual_machine_with_public_ip_vm.admin_username is not defined
 
 - name: Ensure vm size is defined
   ansible.builtin.fail:
-    msg: "Missing parameter: key 'size' not found in azure_vm"
-  when: azure_vm.size is not defined
+    msg: "Missing parameter: key 'size' not found in azure_virtual_machine_with_public_ip_vm"
+  when: azure_virtual_machine_with_public_ip_vm.size is not defined
 
 - name: Ensure vm image is defined
   ansible.builtin.fail:
-    msg: "Missing parameter: key 'image' not found in azure_vm"
-  when: azure_vm.image is not defined
+    msg: "Missing parameter: key 'image' not found in azure_virtual_machine_with_public_ip_vm"
+  when: azure_virtual_machine_with_public_ip_vm.image is not defined
 
 # Create resource group if not existing
 - name: Resource Group Does Not Exist -> Create Resource Group
@@ -23,11 +23,11 @@
 
 # If nic is not specified, assert virtual network exists and create default public ip & nic
 - name: Ensure default nic and default public ip
-  when: azure_vm.network_interfaces is undefined
+  when: azure_virtual_machine_with_public_ip_vm.network_interfaces is undefined
   block:
     - name: No network interface specified -> get virtual network info
       azure.azcollection.azure_rm_virtualnetwork_info:
-        resource_group: "{{ azure_resource_group }}"
+        resource_group: "{{ azure_virtual_machine_with_public_ip_resource_group }}"
       register: vnet_info
 
     - name: Ensure vnet exists
@@ -37,7 +37,7 @@
 
     - name: Create default public ip for default nic
       azure.azcollection.azure_rm_publicipaddress:
-        resource_group: "{{ azure_resource_group }}"
+        resource_group: "{{ azure_virtual_machine_with_public_ip_resource_group }}"
         name: "{{ vm_name }}"
         allocation_method: static
 
@@ -45,7 +45,9 @@
       ansible.builtin.include_role:
         name: cloud.azure_ops.azure_manage_network_interface
       vars:
-        azure_manage_network_interface__interface:
+        azure_manage_network_interface_operation: create
+        azure_manage_network_interface_resource_group: "{{ azure_virtual_machine_with_public_ip_resource_group }}"
+        azure_manage_network_interface_interface:
           name: "{{ vm_name }}"
           vnet_name: "{{ vnet_info.virtualnetworks[0].name }}" # This is how the azure_rm_virtualmachine module creates its default network interface - using the first vnet
           subnet_name: "{{ vnet_info.virtualnetworks[0].subnets[0].name }}"
@@ -57,7 +59,7 @@
 
     - name: Tag all autocreated resources for cleanup
       ansible.builtin.set_fact:
-        vm_tags: "{{ azure_vm.tags | default({}) | combine({'_own_pip_': vm_name}, {'_own_nic_': vm_name}, {'_own_nsg_': vm_name}) }}"
+        vm_tags: "{{ azure_virtual_machine_with_public_ip_tags | default({}) | combine({'_own_pip_': vm_name}, {'_own_nic_': vm_name}, {'_own_nsg_': vm_name}) }}"
 
 # Create/update availability set
 - name: Create availability set
@@ -71,16 +73,16 @@
 # Create/update VM
 - name: Create/Update VM
   azure.azcollection.azure_rm_virtualmachine:
-    resource_group: "{{ azure_resource_group }}"
+    resource_group: "{{ azure_virtual_machine_with_public_ip_resource_group }}"
     name: "{{ vm_name }}"
-    vm_size: "{{ azure_vm.size | default(omit) }}"
-    network_interfaces: "{{ azure_vm.network_interfaces | default(vm_name) }}"
-    os_type: "{{ azure_vm.os | default(omit) }}"
-    availability_set: "{{ azure_vm.availability_set | default(omit) }}"
-    image: "{{ azure_vm.image | default(omit) }}"
-    admin_username: "{{ azure_vm.admin_username | default(omit) }}"
-    admin_password: "{{ azure_vm.admin_password | default(omit) }}"
-    ssh_password_enabled: "{{ azure_vm.ssh_pw_enabled | default(omit) }}"
-    ssh_public_keys: "{{ azure_vm.ssh_public_keys | default(omit) }}"
-    data_disks: "{{ azure_vm.data_disks | default(omit) }}"
-    tags: "{{ vm_tags | default(azure_vm.tags | default(omit)) }}"
+    vm_size: "{{ azure_virtual_machine_with_public_ip_vm.size | default(omit) }}"
+    network_interfaces: "{{ azure_virtual_machine_with_public_ip_vm.network_interfaces | default(vm_name) }}"
+    os_type: "{{ azure_virtual_machine_with_public_ip_vm.os | default(omit) }}"
+    availability_set: "{{ azure_virtual_machine_with_public_ip_vm.availability_set | default(omit) }}"
+    image: "{{ azure_virtual_machine_with_public_ip_vm.image | default(omit) }}"
+    admin_username: "{{ azure_virtual_machine_with_public_ip_vm.admin_username | default(omit) }}"
+    admin_password: "{{ azure_virtual_machine_with_public_ip_vm.admin_password | default(omit) }}"
+    ssh_password_enabled: "{{ azure_virtual_machine_with_public_ip_vm.ssh_pw_enabled | default(omit) }}"
+    ssh_public_keys: "{{ azure_virtual_machine_with_public_ip_vm.ssh_public_keys | default(omit) }}"
+    data_disks: "{{ azure_virtual_machine_with_public_ip_vm.data_disks | default(omit) }}"
+    tags: "{{ vm_tags }}"

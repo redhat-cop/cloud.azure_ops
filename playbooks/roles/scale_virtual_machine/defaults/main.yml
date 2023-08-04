@@ -1,20 +1,20 @@
 ---
-operation: create
+scale_virtual_machine_operation: create
 
-azure_tags:
+scale_virtual_machine_tags:
   application: python-demo-webapp-for-ansible-cloud-team
 
-azure_region: eastus
+scale_virtual_machine_vm_name: "{{ scale_virtual_machine_resource_group }}-vm"
 
 # Networking variables
-azure_virtual_network: "{{ azure_resource_group }}-vnet"
-azure_subnet: "{{ azure_resource_group }}-subnet"
-azure_vnet_address_prefixes_cidr:
+scale_virtual_machine_virtual_network: "{{ scale_virtual_machine_resource_group }}-vnet"
+scale_virtual_machine_subnet: "{{ scale_virtual_machine_resource_group }}-subnet"
+scale_virtual_machine_vnet_address_prefixes_cidr:
   - 10.1.0.0/16
-azure_subnet_address_prefixes_cidr: 10.1.0.0/24
-azure_security_group: "{{ azure_resource_group }}-nsg"
+scale_virtual_machine_subnet_address_prefixes_cidr: 10.1.0.0/24
+scale_virtual_machine_security_group: "{{ scale_virtual_machine_resource_group }}-nsg"
 
-azure_load_balancer:
-  name: "{{ azure_resource_group }}-lb"
-  public_ip_name: "{{ azure_resource_group }}-lb-public-ip"
-  backend_address_pool: "{{ azure_resource_group }}-vm-pool"
+scale_virtual_machine_load_balancer:
+  name: "{{ scale_virtual_machine_resource_group }}-lb"
+  public_ip_name: "{{ scale_virtual_machine_resource_group }}-lb-public-ip"
+  backend_address_pool: "{{ scale_virtual_machine_resource_group }}-vm-pool"

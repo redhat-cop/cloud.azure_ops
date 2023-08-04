@@ -1,3 +1,0 @@
----
-operation: delete
-azure_vm_name: "{{ vm_info.vms[0].name }}"

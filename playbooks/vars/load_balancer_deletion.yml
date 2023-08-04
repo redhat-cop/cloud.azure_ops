@@ -1,3 +1,0 @@
----
-operation: delete
-azure_lb_name: "{{ lb_info.ansible_info.azure_loadbalancers[0].name }}"
