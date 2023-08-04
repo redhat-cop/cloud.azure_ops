@@ -9,11 +9,6 @@
     msg: Azure resource group name must be defined as azure_manage_security_group_resource_group
   when: azure_manage_security_group_resource_group is not defined
 
-- name: Check azure region
-  ansible.builtin.fail:
-    msg: Azure region must be defined as azure_manage_security_group_region
-  when: azure_manage_security_group_region is not defined
-
 - name: Check security group name
   ansible.builtin.fail:
     msg: "Missing parameter: key 'name' not found in azure_manage_security_group_security_group"
@@ -23,6 +18,13 @@
   azure.azcollection.azure_rm_resourcegroup_info:
     name: "{{ azure_manage_security_group_resource_group }}"
   register: rg_info
+
+- name: Check azure region
+  ansible.builtin.fail:
+    msg: Azure region must be defined as azure_manage_security_group_region
+  when:
+    - azure_manage_security_group_region is not defined
+    - rg_info.resourcegroups | length == 0
 
 - name: Create or delete security group
   ansible.builtin.include_tasks: "{{ azure_manage_security_group_operation }}.yml"

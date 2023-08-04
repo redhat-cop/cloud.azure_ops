@@ -1,0 +1,87 @@
+---
+- name: Ensure Network interface does not already exists
+  azure.azcollection.azure_rm_networkinterface_info:
+    name: "{{ network_interface_name }}"
+    resource_group: "{{ resource_group }}"
+  register: __interfaces
+  failed_when: __interfaces.networkinterfaces | length > 0
+
+- name: Test role cloud.azure_ops.azure_manage_network_interface
+  block:
+    - name: Create Virtual network
+      azure.azcollection.azure_rm_virtualnetwork:
+        name: "{{ network_interface_virtual_network }}"
+        address_prefixes_cidr:
+          - 10.1.0.0/24
+        resource_group: "{{ resource_group }}"
+
+    - name: Create azure subnet
+      azure.azcollection.azure_rm_subnet:
+        name: "{{ network_interface_subnet }}"
+        virtual_network: "{{ network_interface_virtual_network }}"
+        address_prefix_cidr: 10.1.0.0/26
+        resource_group: "{{ resource_group }}"
+
+    # Test: create Network interface
+    - name: Create security group with required rules
+      ansible.builtin.include_role:
+        name: cloud.azure_ops.azure_manage_network_interface
+      vars:
+        azure_manage_network_interface_operation: create
+        azure_manage_network_interface_resource_group: "{{ resource_group }}"
+        azure_manage_network_interface_interface:
+          name: "{{ network_interface_name }}"
+          vnet_name: "{{ network_interface_virtual_network }}"
+          subnet_name: "{{ network_interface_subnet }}"
+          ip_configurations: "{{ network_interface_ip_config }}"
+
+    - name: Gather Network interface info
+      azure.azcollection.azure_rm_networkinterface_info:
+        name: "{{ network_interface_name }}"
+        resource_group: "{{ resource_group }}"
+      register: __interfaces
+
+    - name: Ensure Network interface has been created
+      ansible.builtin.assert:
+        that:
+          - __interfaces.networkinterfaces | length == 1
+          - __interfaces.networkinterfaces.0.subnet == network_interface_subnet
+          - __interfaces.networkinterfaces.0.virtual_network.name == network_interface_virtual_network
+          - __interfaces.networkinterfaces.0.ip_configurations | length == network_interface_ip_config | length
+
+    # Delete Network interface
+    - name: Create security group with required rules
+      ansible.builtin.include_role:
+        name: cloud.azure_ops.azure_manage_network_interface
+      vars:
+        azure_manage_network_interface_operation: delete
+        azure_manage_network_interface_resource_group: "{{ resource_group }}"
+        azure_manage_network_interface_interface:
+          name: "{{ network_interface_name }}"
+          vnet_name: "{{ network_interface_virtual_network }}"
+          subnet_name: "{{ network_interface_subnet }}"
+
+    - name: Gather Network interface info
+      azure.azcollection.azure_rm_networkinterface_info:
+        name: "{{ network_interface_name }}"
+        resource_group: "{{ resource_group }}"
+      register: __interfaces
+
+    - name: Ensure Network interface was created
+      ansible.builtin.assert:
+        that:
+          - __interfaces.networkinterfaces | length == 0
+
+  always:
+    - name: Delete Subnet
+      azure.azcollection.azure_rm_subnet:
+        name: "{{ network_interface_subnet }}"
+        virtual_network: "{{ network_interface_virtual_network }}"
+        resource_group: "{{ resource_group }}"
+        state: absent
+
+    - name: Delete Virtual network
+      azure.azcollection.azure_rm_virtualnetwork:
+        name: "{{ network_interface_virtual_network }}"
+        resource_group: "{{ resource_group }}"
+        state: absent
