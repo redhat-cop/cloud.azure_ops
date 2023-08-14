@@ -11,8 +11,9 @@ Requirements
 Role Variables
 --------------
 
-* **operation**: Operation to perform. Valid values are 'create', 'delete'. Default is 'create'.
-* **azure_network_interface**: Object used to provide details for a network interface. Contains the following:
+* **azure_manage_network_interface_operation**: Operation to perform. Valid values are 'create', 'delete'. Default is 'create'.
+* **azure_manage_network_interface_resource_group**: Operation to perform. Valid values are 'create', 'delete'. Default is 'create'.
+* **azure_manage_network_interface_interface**: Object used to provide details for a network interface. Contains the following:
   - **name**: (Required) Name of the network interface.
   - **vnet_name**: Name of the existing azure virtual network where the network interface will reside. Required when `operation=create`.
   - **subnet_name**: Name of the existing azure subnet where the network interface will reside. Required when `operation=create`.
@@ -51,9 +52,9 @@ Example Playbook
       roles:
         - name: Create a Network Interface with Default Security Group
           role: cloud.azure_ops.azure_manage_network_interface
-          operation: 'create'
-          azure_resource_group: 'nic-example'
-          azure_network_interface:
+          azure_manage_network_interface_operation: 'create'
+          azure_manage_network_interface_resource_group: 'nic-example'
+          azure_manage_network_interface_interface:
             name: 'nic'
             vnet_name: 'vnet'
             subnet_name: 'subnet'
@@ -67,9 +68,9 @@ Example Playbook
 
         - name: Cleanup Network Interface and Default Security Group
           role: cloud.azure_ops.azure_manage_network_interface
-          operation: 'delete'
-          azure_resource_group: 'nic-example'
-          azure_network_interface:
+          azure_manage_network_interface_operation: 'delete'
+          azure_manage_network_interface_resource_group: 'nic-example'
+          azure_manage_network_interface_interface:
             name: 'nic'
 
 License

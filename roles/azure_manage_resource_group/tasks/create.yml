@@ -1,21 +1,21 @@
 ---
 - name: Check Region Setting
   ansible.builtin.fail:
-    msg: Azure Region must be defined as azure_region
-  when: azure_region is not defined
+    msg: Azure Region must be defined as azure_manage_resource_group_region
+  when: azure_manage_resource_group_region is not defined
 
 - name: Create resource group
   azure.azcollection.azure_rm_resourcegroup:
-    name: "{{ azure_resource_group }}"
-    location: "{{ azure_region }}"
-    tags: "{{ azure_tags | default(omit) }}"
+    name: "{{ azure_manage_resource_group_name }}"
+    location: "{{ azure_manage_resource_group_region }}"
+    tags: "{{ azure_manage_resource_group_tags | default(omit) }}"
   register: result
 
 - name: Lock resource group
   azure.azcollection.azure_rm_lock:
-    name: "{{ azure_resource_group }}-lock"
+    name: "{{ azure_manage_resource_group_name }}-lock"
     level: can_not_delete
     managed_resource_id: "{{ result.state.id }}"
   when:
-    - azure_lock_resource_group is defined
-    - azure_lock_resource_group | bool
+    - azure_manage_resource_group_lock_resource_group is defined
+    - azure_manage_resource_group_lock_resource_group | bool

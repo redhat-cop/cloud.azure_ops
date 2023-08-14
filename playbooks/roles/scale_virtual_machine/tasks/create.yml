@@ -3,12 +3,17 @@
 - name: Create resource group
   ansible.builtin.include_role:
     name: cloud.azure_ops.azure_manage_resource_group
+  vars:
+    azure_manage_resource_group_tags: "{{ scale_virtual_machine_tags }}"
+    azure_manage_resource_group_operation: create
+    azure_manage_resource_group_name: "{{ scale_virtual_machine_resource_group }}"
+    azure_manage_resource_group_region: "{{ scale_virtual_machine_region }}"
 
 # Create a security group to restrict access to my VMs except within the VPC
 - name: Create Network security Group
   azure.azcollection.azure_rm_securitygroup:
-    resource_group: "{{ azure_resource_group }}"
-    name: "{{ azure_security_group }}"
+    resource_group: "{{ scale_virtual_machine_resource_group }}"
+    name: "{{ scale_virtual_machine_security_group }}"
     rules:
       - name: SSH
         destination_port_range: 22
@@ -25,15 +30,22 @@
 - name: Create the networking stack
   ansible.builtin.include_role:
     name: cloud.azure_ops.azure_manage_networking_stack
+  vars:
+    azure_manage_networking_stack_operation: create
+    azure_manage_networking_stack_virtual_network: "{{ scale_virtual_machine_virtual_network }}"
+    azure_manage_networking_stack_subnet: "{{ scale_virtual_machine_subnet }}"
+    azure_manage_networking_stack_vnet_address_prefixes_cidr: "{{ scale_virtual_machine_vnet_address_prefixes_cidr }}"
+    azure_manage_networking_stack_subnet_address_prefixes_cidr: "{{ scale_virtual_machine_subnet_address_prefixes_cidr }}"
+    azure_manage_networking_stack_resource_group: "{{ scale_virtual_machine_resource_group }}"
 
 # Create a public IP address for the load balancer
 - name: Create a public ip address for the load balancer
   azure.azcollection.azure_rm_publicipaddress:
-    resource_group: "{{ azure_resource_group }}"
+    resource_group: "{{ scale_virtual_machine_resource_group }}"
     allocation_method: static
-    name: "{{ azure_load_balancer.public_ip_name }}"
+    name: "{{ scale_virtual_machine_load_balancer.public_ip_name }}"
     sku: Basic
-    domain_name: "{{ azure_load_balancer.domain_name | default(omit) }}"
+    domain_name: "{{ scale_virtual_machine_load_balancer.domain_name | default(omit) }}"
   register: public_ip
 
 - name: Define load balancer ip address
@@ -43,14 +55,14 @@
 # Deploy Load Balancer that provides public internet access to application routing back to app servers
 - name: Create load Balancer
   azure.azcollection.azure_rm_loadbalancer:
-    resource_group: "{{ azure_resource_group }}"
-    name: "{{ azure_load_balancer.name }}"
+    resource_group: "{{ scale_virtual_machine_resource_group }}"
+    name: "{{ scale_virtual_machine_load_balancer.name }}"
     sku: Basic
     frontend_ip_configurations:
       - name: frontend
-        public_ip_address: "{{ azure_load_balancer.public_ip_name }}"
+        public_ip_address: "{{ scale_virtual_machine_load_balancer.public_ip_name }}"
     backend_address_pools:
-      - name: "{{ azure_load_balancer.backend_address_pool }}"
+      - name: "{{ scale_virtual_machine_load_balancer.backend_address_pool }}"
     probes:
       - name: ping_server
         port: 5000
@@ -59,7 +71,7 @@
     load_balancing_rules:
       - name: flask
         frontend_ip_configuration: frontend
-        backend_address_pool: "{{ azure_load_balancer.backend_address_pool }}"
+        backend_address_pool: "{{ scale_virtual_machine_load_balancer.backend_address_pool }}"
         protocol: Tcp
         frontend_port: 5000
         backend_port: 5000
@@ -73,30 +85,30 @@
 # Create VM Scale Set
 - name: Create Virtual machine scale set
   azure.azcollection.azure_rm_virtualmachinescaleset:
-    resource_group: "{{ azure_resource_group }}"
-    name: "{{ azure_vm_name }}ss"
-    vm_size: "{{ azure_vm_size }}"
-    capacity: "{{ azure_number_vm }}"
-    tier: "{{ azure_vm_size | regex_search('(Standard|Basic)_*', '\\1') | first }}"
+    resource_group: "{{ scale_virtual_machine_resource_group }}"
+    name: "{{ scale_virtual_machine_vm_name }}ss"
+    vm_size: "{{ scale_virtual_machine_vm_size }}"
+    capacity: "{{ scale_virtual_machine_number_vm }}"
+    tier: "{{ scale_virtual_machine_vm_size | regex_search('(Standard|Basic)_*', '\\1') | first }}"
     upgrade_policy: Manual
-    admin_username: "{{ azure_vm_user }}"
-    admin_password: "{{ azure_vm_user_password }}"
+    admin_username: "{{ scale_virtual_machine_vm_user }}"
+    admin_password: "{{ scale_virtual_machine_vm_user_password }}"
     ssh_password_enabled: true
-    image: "{{ azure_vm_image }}"
-    os_type: "{{ azure_vm_os | default('Linux') }}"
-    managed_disk_type: "{{ azure_vm_image_disk_type | default('Standard_LRS') }}"
-    virtual_network_resource_group: "{{ azure_resource_group }}"
-    virtual_network_name: "{{ azure_virtual_network }}"
-    subnet_name: "{{ azure_subnet }}"
+    image: "{{ scale_virtual_machine_vm_image }}"
+    os_type: "{{ scale_virtual_machine_vm_os | default('Linux') }}"
+    managed_disk_type: "{{ scale_virtual_machine_vm_image_disk_type | default('Standard_LRS') }}"
+    virtual_network_resource_group: "{{ scale_virtual_machine_resource_group }}"
+    virtual_network_name: "{{ scale_virtual_machine_virtual_network }}"
+    subnet_name: "{{ scale_virtual_machine_subnet }}"
     public_ip_per_vm: false
-    load_balancer: "{{ azure_load_balancer.name }}"
-    security_group: "{{ azure_security_group }}"
+    load_balancer: "{{ scale_virtual_machine_load_balancer.name }}"
+    security_group: "{{ scale_virtual_machine_security_group }}"
     scale_in_policy: Default
 
 - name: Get virtual machine scale set instance info
   azure.azcollection.azure_rm_virtualmachinescalesetinstance_info:
-    resource_group: "{{ azure_resource_group }}"
-    vmss_name: "{{ azure_vm_name }}ss"
+    resource_group: "{{ scale_virtual_machine_resource_group }}"
+    vmss_name: "{{ scale_virtual_machine_vm_name }}ss"
   register: result
 
 - name: Init vm instance list
@@ -117,11 +129,11 @@
 - name: Add bastion host to inventory
   ansible.builtin.add_host:
     hostname: bastion
-    ansible_ssh_user: "{{ azure_vm_user }}"
-    ansible_ssh_pass: "{{ azure_vm_user_password }}"
-    ansible_sudo_pass: "{{ azure_vm_user_password }}"
+    ansible_ssh_user: "{{ scale_virtual_machine_vm_user }}"
+    ansible_ssh_pass: "{{ scale_virtual_machine_vm_user_password }}"
+    ansible_sudo_pass: "{{ scale_virtual_machine_vm_user_password }}"
     ansible_host: "{{ bastion_public_ip }}"
     ansible_ssh_common_args: -o "UserKnownHostsFile=/dev/null" -o StrictHostKeyChecking=no
     workers: "{{ vm_instances }}"
     workers_join: "{{ join_instances | join(',') }}"
-    azure_resource_group: "{{ azure_resource_group }}"
+    azure_resource_group: "{{ scale_virtual_machine_resource_group }}"

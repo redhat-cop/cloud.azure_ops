@@ -1,7 +1,7 @@
 ---
-- name: Assert resource group exists {{ azure_resource_group }}
+- name: Assert resource group exists {{ azure_load_balancer_with_public_ip_resource_group }}
   ansible.builtin.fail:
-    msg: Resource group '{{ azure_resource_group }}' does not exist.
+    msg: Resource group '{{ azure_load_balancer_with_public_ip_resource_group }}' does not exist.
   when:
     - rg_info.resourcegroups | length == 0
 
@@ -12,12 +12,12 @@
 
 - name: Delete load balancer
   azure.azcollection.azure_rm_loadbalancer:
-    resource_group: "{{ azure_resource_group }}"
-    name: "{{ azure_load_balancer.name }}"
+    resource_group: "{{ azure_load_balancer_with_public_ip_resource_group }}"
+    name: "{{ azure_load_balancer_with_public_ip_load_balancer.name }}"
     state: absent
 
 - name: Delete load balancer's public ip
   azure.azcollection.azure_rm_publicipaddress:
-    resource_group: "{{ azure_resource_group }}"
+    resource_group: "{{ azure_load_balancer_with_public_ip_resource_group }}"
     name: "{{ pip.response[0].name }}"
     state: absent
