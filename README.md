@@ -38,12 +38,23 @@ Name | Description
 ## Installation and Usage
 
 ### Installation
-Clone the collection repository.
 
-```shell
-  mkdir -p ~/.ansible/collections/ansible_collections/cloud/azure_ops
-  cd ~/.ansible/collections/ansible_collections/cloud/azure_ops
-  git clone https://github.com/redhat-cop/cloud.azure_ops .
+To consume this Validated Content from Automation Hub, please ensure that you add the following lines to your ansible.cfg file.
+
+```
+[galaxy]
+server_list = automation_hub
+[galaxy_server.automation_hub]
+url=https://cloud.redhat.com/api/automation-hub/
+auth_url=https://sso.redhat.com/auth/realms/redhat-external/protocol/openid-connect/token
+token=<SuperSecretToken>
+```
+The token can be obtained from the [Automation Hub Web UI](https://console.redhat.com/ansible/automation-hub/token).
+
+Once the above steps are done, you can run the following command to install the collection.
+
+```
+ansible-galaxy collection install cloud.azure_ops
 ```
 
 ### Using this collection
