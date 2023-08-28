@@ -1,5 +1,5 @@
 ---
-- name: Deploy existing python app to container instance on azure
+- name: Deploy existing python app to container instance on Azure
   hosts: localhost
   gather_facts: false
 
