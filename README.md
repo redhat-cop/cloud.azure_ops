@@ -44,6 +44,7 @@ To consume this Validated Content from Automation Hub, please ensure that you ad
 ```
 [galaxy]
 server_list = automation_hub
+
 [galaxy_server.automation_hub]
 url=https://cloud.redhat.com/api/automation-hub/
 auth_url=https://sso.redhat.com/auth/realms/redhat-external/protocol/openid-connect/token
