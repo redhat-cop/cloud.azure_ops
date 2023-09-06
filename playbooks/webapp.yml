@@ -73,6 +73,7 @@
         virtualenv_python: python3
         name: ansible
         state: latest
+        update_only: true
 
     - name: Create application directories
       ansible.builtin.file:
