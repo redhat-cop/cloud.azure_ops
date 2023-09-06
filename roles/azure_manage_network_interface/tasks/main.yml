@@ -1,28 +1,28 @@
 ---
 - name: Check operation validation
   ansible.builtin.fail:
-    msg: Please provide operation as 'create' or 'delete'
-  when: operation not in ['create', 'delete']
+    msg: Please provide azure_manage_network_interface_operation as 'create' or 'delete'
+  when: azure_manage_network_interface_operation not in ['create', 'delete']
 
 - name: Ensure resource group is defined
   ansible.builtin.fail:
-    msg: Azure resource group name must be defined as azure_resource_group
-  when: azure_resource_group is not defined
+    msg: Azure resource group name must be defined as azure_manage_network_interface_resource_group
+  when: azure_manage_network_interface_resource_group is not defined
 
 - name: Ensure network interface name is defined
   ansible.builtin.fail:
-    msg: "Missing parameter: key 'name' not found in azure_network_interface"
-  when: azure_network_interface.name is not defined
+    msg: "Missing parameter: key 'name' not found in azure_manage_network_interface_interface"
+  when: azure_manage_network_interface_interface.name is not defined
 
 - name: Get resource group info
   azure.azcollection.azure_rm_resourcegroup_info:
-    name: "{{ azure_resource_group }}"
+    name: "{{ azure_manage_network_interface_resource_group }}"
   register: rg_info
 
 - name: Ensure resource group exists
   ansible.builtin.fail:
-    msg: Resource group '{{ azure_resource_group }}' does not exist
+    msg: Resource group '{{ azure_manage_network_interface_resource_group }}' does not exist
   when: rg_info.resourcegroups | length == 0
 
 - name: Create or delete network interface
-  ansible.builtin.include_tasks: "{{ operation }}.yml"
+  ansible.builtin.include_tasks: "{{ azure_manage_network_interface_operation }}.yml"

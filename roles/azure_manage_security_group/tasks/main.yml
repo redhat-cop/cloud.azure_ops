@@ -2,22 +2,27 @@
 - name: Check operation validation
   ansible.builtin.fail:
     msg: Please provide operation as 'create' or 'delete'
-  when: operation not in ['create', 'delete']
+  when: azure_manage_security_group_operation not in ['create', 'delete']
 
 - name: Check resource group name
   ansible.builtin.fail:
-    msg: Azure resource group name must be defined as azure_resource_group
-  when: azure_resource_group is not defined
+    msg: Azure resource group name must be defined as azure_manage_security_group_resource_group
+  when: azure_manage_security_group_resource_group is not defined
+
+- name: Check azure region
+  ansible.builtin.fail:
+    msg: Azure region must be defined as azure_manage_security_group_region
+  when: azure_manage_security_group_region is not defined
 
 - name: Check security group name
   ansible.builtin.fail:
-    msg: "Missing parameter: key 'name' not found in azure_security_group"
-  when: azure_security_group.name is not defined
+    msg: "Missing parameter: key 'name' not found in azure_manage_security_group_security_group"
+  when: azure_manage_security_group_security_group.name is not defined
 
 - name: Get resource group info
   azure.azcollection.azure_rm_resourcegroup_info:
-    name: "{{ azure_resource_group }}"
+    name: "{{ azure_manage_security_group_resource_group }}"
   register: rg_info
 
 - name: Create or delete security group
-  ansible.builtin.include_tasks: "{{ operation }}.yml"
+  ansible.builtin.include_tasks: "{{ azure_manage_security_group_operation }}.yml"

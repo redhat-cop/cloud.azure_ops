@@ -1,14 +1,14 @@
 ---
 - name: Fail if resource group doesnt exist
   ansible.builtin.fail:
-    msg: Resource group '{{ azure_resource_group }}' does not exist
+    msg: Resource group '{{ azure_manage_security_group_resource_group }}' does not exist
   when:
     - rg_info.resourcegroups | length == 0
 
 - name: Get security group info
   azure.azcollection.azure_rm_securitygroup_info:
-    resource_group: "{{ azure_resource_group }}"
-    name: "{{ azure_security_group.name }}"
+    resource_group: "{{ azure_manage_security_group_resource_group }}"
+    name: "{{ azure_manage_security_group_security_group.name }}"
   register: sg_info
 
 - name: Detach any NICs from security group prior to deletion
@@ -31,6 +31,6 @@
 
 - name: Delete security group
   azure.azcollection.azure_rm_securitygroup:
-    resource_group: "{{ azure_resource_group }}"
-    name: "{{ azure_security_group.name }}"
+    resource_group: "{{ azure_manage_security_group_resource_group }}"
+    name: "{{ azure_manage_security_group_security_group.name }}"
     state: absent
