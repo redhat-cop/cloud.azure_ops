@@ -97,7 +97,7 @@
       ansible.builtin.yum:
         name:
           - python3
-          - python-virtualenv
+          - python3-virtualenv
           - sshpass
           - git
         state: present
@@ -107,7 +107,9 @@
       ansible.builtin.pip:
         virtualenv: "{{ ansible_venv_path }}"
         virtualenv_python: python3
-        name: ansible==2.10.*
+        name: ansible
+        state: latest
+        update_only: true
 
     - name: Create application directories
       ansible.builtin.file:

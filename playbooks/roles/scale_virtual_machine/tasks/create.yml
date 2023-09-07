@@ -44,7 +44,7 @@
     resource_group: "{{ scale_virtual_machine_resource_group }}"
     allocation_method: static
     name: "{{ scale_virtual_machine_load_balancer.public_ip_name }}"
-    sku: Basic
+    sku: Standard
     domain_name: "{{ scale_virtual_machine_load_balancer.domain_name | default(omit) }}"
   register: public_ip
 
@@ -57,7 +57,7 @@
   azure.azcollection.azure_rm_loadbalancer:
     resource_group: "{{ scale_virtual_machine_resource_group }}"
     name: "{{ scale_virtual_machine_load_balancer.name }}"
-    sku: Basic
+    sku: Standard
     frontend_ip_configurations:
       - name: frontend
         public_ip_address: "{{ scale_virtual_machine_load_balancer.public_ip_name }}"
