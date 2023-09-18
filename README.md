@@ -7,7 +7,7 @@ The collection includes a variety of Ansible roles and playbook to help automate
 <!--start requires_ansible-->
 ## Ansible version compatibility
 
-This collection has been tested against following Ansible versions: **>=2.9.17**.
+This collection has been tested against following Ansible versions: **>=2.13.0**.
 
 ## Included content
 
