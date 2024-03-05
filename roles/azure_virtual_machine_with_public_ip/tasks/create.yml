@@ -55,7 +55,7 @@
             - name: default
               primary: true
               public_ip_address_name: "{{ vm_name }}"
-              load_balancer_backend_address_pools: "{{ azure_vm.load_balancer_backend_address_pools | default(omit) }}"
+              load_balancer_backend_address_pools: "{{ azure_virtual_machine_with_public_ip_vm.load_balancer_backend_address_pools | default(omit) }}"
 
     - name: Tag all autocreated resources for cleanup
       ansible.builtin.set_fact:
