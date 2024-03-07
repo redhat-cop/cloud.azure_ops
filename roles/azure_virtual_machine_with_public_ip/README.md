@@ -12,8 +12,8 @@ Role Variables
 --------------
 
 * **azure_virtual_machine_with_public_ip_operation**: Operation to perform. Valid values are 'create', 'delete', 'power_on', 'power_off', 'deallocate', 'restart'. Default is 'create'.
-* **azure_virtual_machine_with_public_ip_remove_on_absent**: Specify which resources to remove when `operation='delete'`. 'all' removes all resources attached to the VM being removed; 'all_autocreated' removes the resources that were automatically created while provisioning the VM (public ip, network interface, security group). To remove only specific resources, use the values 'network_interfaces', 'virtual_storage', or 'public_ips'. The default value is 'all'.
-* **azure_virtual_machine_with_public_ip_resource_group**: Resource group on/from which the virtual machine will reside. When `operation='create'`, this resource group will be created if it does not exist.
+* **azure_virtual_machine_with_public_ip_remove_on_absent**: Specify which resources to remove when `azure_virtual_machine_with_public_ip_operation='delete'`. 'all' removes all resources attached to the VM being removed; 'all_autocreated' removes the resources that were automatically created while provisioning the VM (public ip, network interface, security group). To remove only specific resources, use the values 'network_interfaces', 'virtual_storage', or 'public_ips'. The default value is 'all'.
+* **azure_virtual_machine_with_public_ip_resource_group**: Resource group on/from which the virtual machine will reside. When `azure_virtual_machine_with_public_ip_operation='create'`, this resource group will be created if it does not exist.
 * **azure_virtual_machine_with_public_ip_region**: An Azure location for the resources.
 * **azure_virtual_machine_with_public_ip_tags**: Dictionary of string:string pairs to assign as metadata to the resource group.
 * **azure_virtual_machine_with_public_ip_vm**: Object used to provide details for a virtual machine. Contains the following:
