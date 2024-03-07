@@ -9,5 +9,5 @@
     msg: Azure region must be defined as scale_virtual_machine_region
   when: scale_virtual_machine_region is not defined
 
-- name: Include operation tasks
-  ansible.builtin.include_tasks: "{{ operation }}.yml"
+- name: "Include operation tasks. {{ scale_virtual_machine_operation }}"
+  ansible.builtin.include_tasks: "{{ scale_virtual_machine_operation }}.yml"

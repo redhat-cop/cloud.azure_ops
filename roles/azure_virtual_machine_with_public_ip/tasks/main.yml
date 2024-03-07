@@ -11,12 +11,12 @@
 
 - name: Ensure vm name is defined
   ansible.builtin.fail:
-    msg: "Missing parameter: key 'name' not found in azure_virtual_machine_with_public_ip_operation_vm"
-  when: azure_virtual_machine_with_public_ip_operation_vm.name is not defined
+    msg: "Missing parameter: key 'name' not found in azure_virtual_machine_with_public_ip_vm"
+  when: azure_virtual_machine_with_public_ip_vm.name is not defined
 
 - name: Replace invalid chars in name
   ansible.builtin.set_fact:
-    vm_name: "{{ azure_virtual_machine_with_public_ip_operation_vm.name | regex_replace('[^a-zA-Z0-9]', '-') }}"
+    vm_name: "{{ azure_virtual_machine_with_public_ip_vm.name | regex_replace('[^a-zA-Z0-9]', '-') }}"
 
 - name: Get resource group info
   azure.azcollection.azure_rm_resourcegroup_info:
@@ -28,28 +28,28 @@
     resource_group: "{{ azure_virtual_machine_with_public_ip_resource_group }}"
     name: "{{ vm_name }}"
     started: false
-  when: operation == 'power_off'
+  when: azure_virtual_machine_with_public_ip_operation == 'power_off'
 
 - name: Deallocate VM
   azure.azcollection.azure_rm_virtualmachine:
     resource_group: "{{ azure_virtual_machine_with_public_ip_resource_group }}"
     name: "{{ vm_name }}"
     allocated: false
-  when: operation == 'deallocate'
+  when: azure_virtual_machine_with_public_ip_operation == 'deallocate'
 
 - name: Power On VM
   azure.azcollection.azure_rm_virtualmachine:
     resource_group: "{{ azure_virtual_machine_with_public_ip_resource_group }}"
     name: "{{ vm_name }}"
-  when: operation == 'power_on'
+  when: azure_virtual_machine_with_public_ip_operation == 'power_on'
 
 - name: Restart VM
   azure.azcollection.azure_rm_virtualmachine:
     resource_group: "{{ azure_virtual_machine_with_public_ip_resource_group }}"
     name: "{{ vm_name }}"
     restarted: true
-  when: operation == 'restart'
+  when: azure_virtual_machine_with_public_ip_operation == 'restart'
 
 - name: Create or delete VM
   ansible.builtin.include_tasks: "{{ azure_virtual_machine_with_public_ip_operation }}.yml"
-  when: operation in ['create', 'delete']
+  when: azure_virtual_machine_with_public_ip_operation in ['create', 'delete']

@@ -1,7 +1,7 @@
 ---
 - name: Check that resource group exists
   azure.azcollection.azure_rm_resourcegroup_info:
-    name: "{{ azure_resource_group }}"
+    name: "{{ azure_manage_networking_stack_resource_group }}"
   register: result
 
 - name: Create resource group when it does not exists
@@ -16,16 +16,16 @@
 
 - name: Create azure virtual network
   azure.azcollection.azure_rm_virtualnetwork:
-    location: "{{ azure_region }}"
-    name: "{{ azure_virtual_network }}"
-    address_prefixes_cidr: "{{ azure_vnet_address_prefixes_cidr }}"
-    resource_group: "{{ azure_resource_group }}"
-    tags: "{{ azure_tags | default(omit) }}"
+    location: "{{ azure_manage_networking_stack_region }}"
+    name: "{{ azure_manage_networking_stack_virtual_network }}"
+    address_prefixes_cidr: "{{ azure_manage_networking_stack_vnet_address_prefixes_cidr }}"
+    resource_group: "{{ azure_manage_networking_stack_resource_group }}"
+    tags: "{{ azure_manage_networking_stack_tags | default(omit) }}"
 
 - name: Create azure subnet
   azure.azcollection.azure_rm_subnet:
-    name: "{{ azure_subnet }}"
-    virtual_network: "{{ azure_virtual_network }}"
-    address_prefix_cidr: "{{ azure_subnet_address_prefixes_cidr }}"
-    resource_group: "{{ azure_resource_group }}"
-    security_group: "{{ azure_security_group | default(omit) }}"
+    name: "{{ azure_manage_networking_stack_subnet }}"
+    virtual_network: "{{ azure_manage_networking_stack_virtual_network }}"
+    address_prefixes_cidr: "{{ azure_manage_networking_stack_subnet_address_prefixes_cidr }}"
+    resource_group: "{{ azure_manage_networking_stack_resource_group }}"
+    security_group: "{{ azure_manage_networking_stack_security_group | default(omit) }}"
