@@ -1,0 +1,9 @@
+breaking_changes:
+  - "Update README.md and meta/runtime.yml to reflect our ansible core testing versions."
+
+trivial:
+- "Increase ansible-lint version to 1.22"
+
+bugfixes:
+  - roles/azure_manage_resource_group - Ensure the correct variable name is used for the operation.
+  - roles/azure_virtual_machine_with_public_ip - Ensure the correct variables names are defined inside defaults.

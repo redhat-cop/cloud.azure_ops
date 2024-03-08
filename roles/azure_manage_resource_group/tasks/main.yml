@@ -1,7 +1,7 @@
 ---
-- name: Check operation validation
+- name: Check azure_manage_resource_group_operation validation
   ansible.builtin.fail:
-    msg: Please provide operation as 'create' or 'delete'
+    msg: Please provide azure_manage_resource_group_operation as 'create' or 'delete'
   when: azure_manage_resource_group_operation not in ['create', 'delete']
 
 - name: Check Resource group name
