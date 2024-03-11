@@ -97,27 +97,27 @@ argument_specs:
                 description:
                   - The port used for internal connections on the endpoint.
                   - Acceptable values are between 0 and 65535. Note that value 0 enables "Any Port".
-                enable_floating_ip:
-                  description:
-                    - Configures a virtual machine's endpoint mapping to the Frontend IP address of the Load Balancer instead of backend instance's IP.
-                frontend_port:
-                  description:
-                    - The port for the external endpoint.
-                    - Frontend port numbers must be unique across all rules within the load balancer.
-                    - Acceptable values are between 0 and 65534. Note that value 0 enables "Any Port".
-                idle_timeout:
-                  description:
-                    - The timeout for the TCP idle connection.
-                    - The value can be set between 4 and 30 minutes.
-                    - This element is only used when the protocol is set to TCP.
-                  default: '4'
-                load_distribution:
-                  description: Session persistence policy for this rule.
-                  default: 'no persistence'
-                  choices: ['SourceIP', 'SourceIPProtocol', 'no persistence']
-                protocol:
-                  description: IP protocol for the rule.
-                  choices: ['Tcp', 'Udp', 'All']
+              enable_floating_ip:
+                description:
+                  - Configures a virtual machine's endpoint mapping to the Frontend IP address of the Load Balancer instead of backend instance's IP.
+              frontend_port:
+                description:
+                  - The port for the external endpoint.
+                  - Frontend port numbers must be unique across all rules within the load balancer.
+                  - Acceptable values are between 0 and 65534. Note that value 0 enables "Any Port".
+              idle_timeout:
+                description:
+                  - The timeout for the TCP idle connection.
+                  - The value can be set between 4 and 30 minutes.
+                  - This element is only used when the protocol is set to TCP.
+                default: '4'
+              load_distribution:
+                description: Session persistence policy for this rule.
+                default: 'no persistence'
+                choices: ['SourceIP', 'SourceIPProtocol', 'no persistence']
+              protocol:
+                description: IP protocol for the rule.
+                choices: ['Tcp', 'Udp', 'All']
           sku:
             description:
               - Load balancer SKU.
