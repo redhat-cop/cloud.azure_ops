@@ -15,8 +15,8 @@ argument_specs:
       azure_virtual_machine_with_public_ip_remove_on_absent:
         description:
           - Specify which resources to remove when `azure_virtual_machine_with_public_ip_operation='delete'`.
-          - 'all' removes all resources attached to the VM being removed.
-          - 'all_autocreated' removes the resources that were automatically created while provisioning the VM (public ip, network interface, security group).
+          - Value 'all' removes all resources attached to the VM being removed.
+          - Value 'all_autocreated' removes the resources that were automatically created while provisioning the VM.
           - To remove only specific resources, use the values 'network_interfaces', 'virtual_storage', or 'public_ips'.
         default: 'all'
       azure_virtual_machine_with_public_ip_resource_group:
