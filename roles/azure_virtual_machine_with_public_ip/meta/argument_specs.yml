@@ -1,0 +1,105 @@
+---
+argument_specs:
+  main:
+    version_added: 2.0.0
+    short_description: A role to Create/Delete/Configure an Azure Virtual Machine.
+    description:
+      - A role to Create/Delete/Configure an Azure Virtual Machine.
+      - This role requires an azure user account with valid permission.
+    options:
+      azure_virtual_machine_with_public_ip_operation:
+        description:
+          - Operation to perform
+        default: "create"
+        choices: ['create', 'delete', 'power_on', 'power_off', 'deallocate', 'restart']
+      azure_virtual_machine_with_public_ip_remove_on_absent:
+        description:
+          - Specify which resources to remove when `azure_virtual_machine_with_public_ip_operation='delete'`.
+          - 'all' removes all resources attached to the VM being removed.
+          - 'all_autocreated' removes the resources that were automatically created while provisioning the VM (public ip, network interface, security group).
+          - To remove only specific resources, use the values 'network_interfaces', 'virtual_storage', or 'public_ips'.
+        default: 'all'
+      azure_virtual_machine_with_public_ip_resource_group:
+        description:
+          - Resource group on/from which the virtual machine will reside.
+          - When `azure_virtual_machine_with_public_ip_operation='create'`, this resource group will be created if it does not exist.
+        required: true
+      azure_virtual_machine_with_public_ip_region:
+        description: An Azure location for the resources.
+      azure_virtual_machine_with_public_ip_tags:
+        description: Dictionary of string:string pairs to assign as metadata to the resource group.
+        type: dict
+      azure_virtual_machine_with_public_ip_vm:
+        description: Object used to provide details for a virtual machine.
+        type: dict
+        options:
+          name:
+            description: Name of the virtual machine.
+            required: true
+          admin_username:
+            description: Administrator's login name of a server. Required for creation.
+          admin_password:
+            description: Password of the administrator login. Not required when `os='Linux'` and `ssh_pw_enabled='false'`.
+          size:
+            description: Valid Azure VM size. Choices vary depending on the subscription and location.
+          network_interfaces:
+            description:
+              - List of network interfaces to add to the VM.
+              - Can be a string of name or resource ID of the network interface, can also be a dict containing 'resource_group' and 'name' of the network interface.
+              - A default network interface will be created if not provided.
+            type: raw
+          os:
+            description: Type of Operating System.
+            default: 'Linux'
+          availability_set:
+            description: Name or ID of existing availability set to add the VM to.
+          image:
+            description:
+              - The image used to build the VM. For custom images, the name of the image. To narrow the search to a specific resource group, a dict with the keys name and resource_group.
+              - For Marketplace images, a dict with the keys publisher, offer, sku, and version.
+              - Set `version=latest` to get the most recent version of a given image.
+          ssh_pw_enabled:
+            description: Enable/disable SSH passwords.
+            choices: ['yes', 'no']
+            default: 'yes'
+          ssh_public_keys:
+            description:
+              - List of SSH keys when `os='Linux'`.
+              - Accepts a list of dicts where each dictionary contains two keys, 'path' and 'key_data'.
+              - Set path to the default location of the authorized_keys files. For example, path=/home//.ssh/authorized_keys. Set key_data to the actual value of the public key.
+            type: raw
+          data_disks:
+            description: List of data disks.
+            type: list
+          lun:
+            description: Logical unit number for data disk. Must be unique for each data disk attached to a VM.
+          caching:
+            description: Type of data disk caching.
+            choices: ['ReadOnly', 'ReadWrite']
+            default: 'ReadOnly'
+          disk_size_gb:
+            description:
+              - Initial disk size in GB for blank data disks. Cannot be larger than 1023 GB.
+              - Can only be modified when VM is deallocated.
+          managed_disk_type:
+            description: Managed data disk type.
+          storage_account_name:
+            description: Name of an existing storage account that supports creation of VHD blobs.
+          storage_blob_name:
+            description: Name of storage blob used to hold the OS disk image of the VM.
+          storage_container_name:
+            description: Name of the container to use within the storage account to store VHD blobs.
+            default: 'vhds'
+      azure_virtual_machine_with_public_ip_availability_set:
+        description: Object used to provide details for an availability set to be used by a VM.
+        type: dict
+        options:
+          name:
+            description: Name of the availability set.
+            required: true
+          platform_fault_domain_count:
+            description:
+              - Fault domains define the group of virtual machines that share a common power source and network switch.
+              - Should be between 1 and 3.
+          platform_update_domain_count:
+            description: Update domains indicate groups of virtual machines and underlying physical hardware that can be rebooted at the same time.

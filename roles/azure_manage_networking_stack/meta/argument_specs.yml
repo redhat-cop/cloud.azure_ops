@@ -1,0 +1,48 @@
+---
+argument_specs:
+  main:
+    version_added: 2.0.0
+    short_description: A role to Create/Delete/Configure an Azure Network Interface.
+    description:
+      - This role create/delete azure networking stack which include virtual network and add/delete a subnet.
+      - It will also create the resource group on which the networking stack should be attached, if not existing.
+      - This role requires an azure user account with valid permission.
+    options:
+      azure_manage_networking_stack_operation:
+        description:
+          - Operation to perform
+        choices: ["create", "delete"]
+        required: true
+      azure_manage_networking_stack_delete_option:
+        description:
+          - When deleting created resources, this is used to specified wether to remove only the subnet, the virtual network or all (including resource group).
+        default: 'all'
+        choices: ['subnet', 'virtual_network', 'all']
+      azure_manage_networking_stack_resource_group:
+        description:
+          - Resource group on which the networking stack should be attached.
+        required: true
+      azure_manage_networking_stack_virtual_network:
+        description:
+          - Name of the virtual network to create/delete.
+      azure_manage_networking_stack_subnet:
+        description:
+          - Name of the subnet to create/delete.
+      azure_manage_networking_stack_security_group:
+        description:
+          - Existing security group with which to associate the subnet.
+      azure_manage_networking_stack_region:
+        description: An Azure location for the virtual network to create.
+      azure_manage_networking_stack_vnet_address_prefixes_cidr:
+        description:
+          - List of IPv4 address ranges for virtual network where each is formatted using CIDR notation.
+          - Required when creating a new virtual network.
+        type: list
+        elements: str
+      azure_manage_networking_stack_subnet_address_prefixes_cidr:
+        description:
+          - CIDR defining the IPv4 and IPv6 address space of the subnet.
+          - Must be valid within the context of the virtual network.
+      azure_manage_networking_stack_tags:
+        description: Dictionary of string:string pairs to assign as metadata to the object.
+        type: dict
