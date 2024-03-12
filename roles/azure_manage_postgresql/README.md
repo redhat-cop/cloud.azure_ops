@@ -59,13 +59,14 @@ Example Playbook
     - hosts: localhost
       roles:
          - role: cloud.azure_ops.azure_manage_postgresql
+           azure_manage_postgresql_postgresql_name: postgresql-server
            azure_manage_postgresql_operation: "create"
            azure_manage_postgresql_region: "eastus"
            azure_manage_postgresql_resource_group: "postgresql-rg"
            azure_manage_postgresql_postgresql_backup_retention_days: 10
            azure_manage_postgresql_postgresql_admin_username: ansible
            azure_manage_postgresql_postgresql_admin_password: ansible-testing-123
-           azure_manage_postgresql_postgresql_storage_mb: 506895
+           azure_manage_postgresql_postgresql_storage_mb: 5120
            azure_manage_postgresql_postgresql_sku:
               name: B_Gen5_1
               tier: Basic
