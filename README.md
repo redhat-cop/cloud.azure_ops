@@ -69,10 +69,10 @@ Once installed, you can reference the cloud.azure_ops collection content by its 
             ansible.builtin.include_role:
                 name: cloud.azure_ops.azure_load_balancer_with_public_ip
             vars:
-                operation: create
-                azure_resource_group: "{{ resource_group }}"
-                azure_load_balancer:
-                name: "{{ resource_group }}-lb"
+                azure_load_balancer_with_public_ip_operation: create
+                azure_load_balancer_with_public_ip_azure_resource_group: "{{ resource_group }}"
+                azure_load_balancer_with_public_ip_load_balancer:
+                    name: "{{ resource_group }}-lb"
 ```
 
 ### See Also

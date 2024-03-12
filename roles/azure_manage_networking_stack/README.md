@@ -43,7 +43,7 @@ Example Playbook
            azure_manage_networking_stack_vnet_address_prefixes_cidr:
             - "10.1.0.0/16"
             - "172.100.0.0/16"
-           azure_manage_networking_stack_subnet_address_prefixes_cidr
+           azure_manage_networking_stack_subnet_address_prefixes_cidr:
             - "172.100.0.0/8"
            azure_manage_networking_stack_tags:
              tag0: "tag0"
