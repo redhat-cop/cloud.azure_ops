@@ -1,0 +1,3 @@
+---
+trivial:
+  - "Add argument_specs.yaml to validate the role variables."
