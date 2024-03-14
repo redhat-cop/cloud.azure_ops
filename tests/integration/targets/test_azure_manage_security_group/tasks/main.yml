@@ -27,7 +27,7 @@
   ansible.builtin.assert:
     that:
       - sg_info.securitygroups | length == 1
-      - sg_info.securitygroups.0.properties.securityRules | map(attribute='name') | list | sort == security_group_rules | map(attribute='name') | list | sort
+      - sg_info.securitygroups.0.rules | map(attribute='name') | list | sort == security_group_rules | map(attribute='name') | list | sort
 
 # Test: Remove Security Group rule
 - name: Remove some Rules from Security Group
@@ -51,7 +51,7 @@
   ansible.builtin.assert:
     that:
       - sg_info.securitygroups | length == 1
-      - sg_info.securitygroups.0.properties.securityRules | map(attribute='name') | list | sort == security_group_rules | map(attribute='name') | difference([security_group_rules.0.name]) | list | sort
+      - sg_info.securitygroups.0.rules | map(attribute='name') | list | sort == security_group_rules | map(attribute='name') | difference([security_group_rules.0.name]) | list | sort
 
 # Test: Purge Rules
 - name: Purge Security Group rules

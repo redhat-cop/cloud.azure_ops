@@ -13,21 +13,21 @@
 
 - name: Detach any NICs from security group prior to deletion
   ansible.builtin.include_tasks: detach_from_nic.yml
-  with_items: "{{ sg_info.securitygroups[0].properties.networkInterfaces }}"
+  with_items: "{{ sg_info.securitygroups[0].network_interfaces }}"
   loop_control:
     loop_var: nic_id
   when:
     - sg_info.securitygroups | length > 0
-    - sg_info.securitygroups[0].properties.networkInterfaces is defined
+    - sg_info.securitygroups[0].network_interfaces is defined
 
 - name: Detach any subnets from security group prior to deletion
   ansible.builtin.include_tasks: detach_from_subnet.yml
-  with_items: "{{ sg_info.securitygroups[0].properties.subnets }}"
+  with_items: "{{ sg_info.securitygroups[0].subnets }}"
   loop_control:
     loop_var: subnet_id
   when:
     - sg_info.securitygroups | length > 0
-    - sg_info.securitygroups[0].properties.subnets is defined
+    - sg_info.securitygroups[0].subnets is defined
 
 - name: Delete security group
   azure.azcollection.azure_rm_securitygroup:
