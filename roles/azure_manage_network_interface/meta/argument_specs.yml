@@ -27,15 +27,15 @@ argument_specs:
           vnet_name:
             description:
               - Name of the existing azure virtual network where the network interface will reside.
-              - Required when `azure_manage_network_interface_operation`=create.
+              - Required when O(azure_manage_network_interface_operation=create).
           subnet_name:
             description:
               - Name of the existing azure subnet where the network interface will reside.
-              - Required when `azure_manage_network_interface_operation`=create.
+              - Required when O(azure_manage_network_interface_operation=create).
           security_group_name:
             description:
               - Name of the existing security group with which to associate the network interface.
-              - If not provided, a default security group will be created when create_with_security_group=true.
+              - If not provided, a default security group will be created when O(create_with_security_group=true).
           create_with_security_group:
             description: Whether or not a default security group should be created with the network interface.
             type: bool
@@ -43,13 +43,13 @@ argument_specs:
           os_type:
             description:
               - Determines any rules to be added to a network interface's default security group.
-              - If `os_type=Windows`, a rule allowing RDP access will be added.
-              - If `os_type=Linux`, a rule allowing SSH access will be added.
+              - If O(os_type=Windows), a rule allowing RDP access will be added.
+              - If O(os_type=Linux), a rule allowing SSH access will be added.
           enable_accelerated_networking:
-            description: Set to 'yes' to enable accelerated networking.
+            description: Set to V(yes) to enable accelerated networking.
             type: bool
           ip_forwarding:
-            description: Set to 'yes' to enable ip forwarding.
+            description: Set to V(yes) to enable ip forwarding.
             type: bool
           dns_servers:
             description: List of IP addresses representing which DNS servers the network interface should look up.
@@ -64,8 +64,8 @@ argument_specs:
                 required: true
               primary:
                 description:
-                  - Set to 'yes' to make IP configuration the primary one.
-                  - The first IP configuration is by default set to primary=yes.
+                  - Set to V(yes) to make IP configuration the primary one.
+                  - The first IP configuration is by default set to O(primary=yes).
               application_security_groups:
                 description: List of application security groups in which the IP configuration is included.
                 type: list

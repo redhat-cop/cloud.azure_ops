@@ -17,7 +17,7 @@ argument_specs:
       azure_manage_resource_group_region:
         description: An Azure location for the resource group to create.
       azure_manage_resource_group_lock_resource_group:
-        description: If set to 'true', will lock the resource group created.
+        description: If set to V(true), will lock the resource group created.
         type: bool
       azure_manage_resource_group_tags:
         description: Dictionary of string:string pairs to assign as metadata to the object.

@@ -13,7 +13,7 @@ argument_specs:
         choices: ["create", "delete"]
       azure_manage_postgresql_delete_option:
         description:
-          - used with `azure_manage_postgresql_operation` set to delete.
+          - used with O(azure_manage_postgresql_operation=delete).
           - This option specifies wether to delete all resources including resource group and PostgreSQL server, or only the postgresql server.
           - If not specified only the firewall rules and/or the configuration settings and/or the database instances defined using dedicated variables will be removed from the PostgreSQL Server.
         choices: ['all', 'server']
@@ -77,7 +77,7 @@ argument_specs:
       azure_manage_postgresql_postgresql_create_mode:
         description:
           - Create mode of SQL Server.
-          - restore from geo redundant (geo_restore), or restore from point in time (point_in_time_restore).
+          - restore from geo redundant V(geo_restore), or restore from point in time V(point_in_time_restore).
         choices: ['default, geo_restore', 'point_in_time_restore']
         default: 'default'
       azure_manage_postgresql_postgresql_source_server_id:
@@ -130,6 +130,6 @@ argument_specs:
               - Check PostgreSQL documentation. This is only set on creation, use force to recreate a database if the values don't match.
           force:
             description:
-              - When set to `True`, will delete and recreate the existing PostgreSQL database if any of the properties don't match what is set.
-              - Ignore when operation is set to `delete`.
+              - When set to V(True), will delete and recreate the existing PostgreSQL database if any of the properties don't match what is set.
+              - Ignore when operation is set to V(delete).
             type: bool

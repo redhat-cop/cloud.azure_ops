@@ -15,7 +15,7 @@ argument_specs:
       azure_load_balancer_with_public_ip_resource_group:
         description:
           - Resource group on/from which the load balancer will reside.
-          - When `azure_load_balancer_with_public_ip_operation` is set to create, this resource group will be created if it does not exist.
+          - When O(azure_load_balancer_with_public_ip_operation) is set to create, this resource group will be created if it does not exist.
         required: true
       azure_load_balancer_with_public_ip_region:
         description:

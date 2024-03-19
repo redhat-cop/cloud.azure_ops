@@ -46,10 +46,10 @@ argument_specs:
               destination_address_prefix:
                 description:
                   - The destination address prefix. CIDR or destination IP range.
-                  - Asterisk '*' can be used to match all source IPs.
-                  - Default tags such as 'VirtualNetwork', 'AzureLoadBalancer' and 'Internet' can also be used.
+                  - Asterisk V(*) can be used to match all source IPs.
+                  - Default tags such as V(VirtualNetwork), V(AzureLoadBalancer) and V(Internet) can also be used.
                   - Accepts string or a list of strings.
-                  - Asterisk '*' and default tags can only be specified as single string, not as a list of strings.
+                  - Asterisk V(*) and default tags can only be specified as single string, not as a list of strings.
                 type: raw
               destination_application_security_groups:
                 description:
@@ -60,7 +60,7 @@ argument_specs:
               destination_port_range:
                 description:
                   - Port or range of ports to which traffic is headed.
-                  - Can be a string or list of strings. Default is '*'.
+                  - Can be a string or list of strings. Default is V(*).
                 type: raw
               direction:
                 description: Indicates direction of traffic flow.
@@ -72,18 +72,18 @@ argument_specs:
                 default: '*'
               source_address_prefix:
                 description:
-                  - The CIDR or source IP range. Asterisk '*' can be used to match all source IPs.
-                  - Default tags such as 'VirtualNetwork', 'AzureLoadBalancer' and 'Internet' can also be used.
+                  - The CIDR or source IP range. Asterisk V(*) can be used to match all source IPs.
+                  - Default tags such as V(VirtualNetwork), V(AzureLoadBalancer) and V(Internet) can also be used.
                   - If this is an ingress rule, specifies where network traffic originates from.
                   - Accepts string or a list of strings.
-                  - Asterisk '*' and default tags can only be specified as a single string, not as a list of strings.
+                  - Asterisk V(*) and default tags can only be specified as a single string, not as a list of strings.
                 type: raw
               source_port_range:
                 description: Port or range of ports from which traffic originates. Can be a string or list of strings.
                 default: '*'
                 type: raw
               purge_rules:
-                description: If set to 'yes', removes any existing, non-default, rules that are not specified in rules above.
+                description: If set to V(yes), removes any existing, non-default, rules that are not specified in rules above.
                 type: bool
               rules_to_remove:
                 description: List of strings representing the names of security group rules to be removed from the security group.
