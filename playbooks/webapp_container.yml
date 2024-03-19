@@ -97,16 +97,16 @@
             name: cloud.azure_ops.azure_load_balancer_with_public_ip
           vars:
             azure_load_balancer_with_public_ip_operation: delete
-            azure_load_balancer_with_public_ip_lb_name: "{{ lb_info.ansible_info.azure_loadbalancers[0].name }}"
+            azure_load_balancer_with_public_ip_lb_name: "{{ lb_info.loadbalancers[0].name }}"
           when:
-            - lb_info.ansible_info.azure_loadbalancers[0].name is defined
+            - lb_info.loadbalancers[0].name is defined
 
         - name: Get lb ip
           azure.azcollection.azure_rm_resource_info:
-            url: "{{ lb_info.ansible_info.azure_loadbalancers[0].properties.frontendIPConfigurations[0].properties.publicIPAddress.id }}"
+            url: "{{ lb_info.loadbalancers[0].properties.frontendIPConfigurations[0].properties.publicIPAddress.id }}"
           register: lb_pip_info
           when:
-            - lb_info.ansible_info.azure_loadbalancers[0].properties.frontendIPConfigurations[0].properties.publicIPAddress.id is defined
+            - lb_info.loadbalancers[0].properties.frontendIPConfigurations[0].properties.publicIPAddress.id is defined
 
         - name: Remove load balancer's public ip
           azure.azcollection.azure_rm_publicipaddress:

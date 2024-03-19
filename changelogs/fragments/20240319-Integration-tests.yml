@@ -1,0 +1,7 @@
+trivial:
+  - Added Integration tests for load_balancer_with_public_ip, manage_network_interface, manage_security_group
+bugfixes:
+  - playbooks/webapp_container.yml
+  - fix variable names in roles/azure_load_balancer_with_public_ip/tasks/delete.yml
+  - fix variable names in roles/azure_manage_security_group/tasks/delete.yml
+  - fix variable names in roles/azure_manage_security_group/tasks/remove_rules.yml

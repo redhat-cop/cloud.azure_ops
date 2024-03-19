@@ -7,7 +7,7 @@
 
 - name: Get lb's public ip info
   azure.azcollection.azure_rm_resource_info:
-    url: "{{ lb_info.ansible_info.azure_loadbalancers[0].properties.frontendIPConfigurations[0].properties.publicIPAddress.id }}"
+    url: "{{ lb_info.loadbalancers[0].frontend_ip_configurations[0].public_ip_address.id }}"
   register: pip
 
 - name: Delete load balancer
