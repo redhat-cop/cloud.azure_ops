@@ -17,22 +17,22 @@ Click on the name of a plugin or module to view that content's documentation:
 ### Roles
 Name | Description
 --- | ---
-[cloud.azure_ops.azure_load_balancer_with_public_ip](https://github.com/redhat-cop/cloud.azure_ops/blob/main/roles/azure_load_balancer_with_public_ip/README.md)|A role to manage Azure Load Balancer.
-[cloud.azure_ops.azure_manage_postgresql](https://github.com/redhat-cop/cloud.azure_ops/blob/main/roles/azure_manage_postgresql/README.md)|A role to manage Azure PostGreSQL Database.
-[cloud.azure_ops.azure_manage_network_interface](https://github.com/redhat-cop/cloud.azure_ops/blob/main/roles/azure_manage_network_interface/README.md)|A role to manage Azure Network Interface.
-[cloud.azure_ops.azure_manage_networking_stack](https://github.com/redhat-cop/cloud.azure_ops/blob/main/roles/azure_manage_networking_stack/README.md)|A role to manage Azure Networking Stack.
-[cloud.azure_ops.azure_manage_resource_group](https://github.com/redhat-cop/cloud.azure_ops/blob/main/roles/azure_manage_resource_group/README.md)|A role to manage Azure Resource Group.
-[cloud.azure_ops.azure_manage_security_group](https://github.com/redhat-cop/cloud.azure_ops/blob/main/roles/azure_manage_security_group/README.md)|A role to manage Azure Security Group.
-[cloud.azure_ops.azure_virtual_machine_with_public_ip](https://github.com/redhat-cop/cloud.azure_ops/blob/main/roles/azure_virtual_machine_with_public_ip/README.md)|A role to manage Azure Virtual Machine.
+[cloud.azure_ops.azure_load_balancer_with_public_ip](roles/azure_load_balancer_with_public_ip/README.md)|A role to manage Azure Load Balancer.
+[cloud.azure_ops.azure_manage_postgresql](roles/azure_manage_postgresql/README.md)|A role to manage Azure PostGreSQL Database.
+[cloud.azure_ops.azure_manage_network_interface](roles/azure_manage_network_interface/README.md)|A role to manage Azure Network Interface.
+[cloud.azure_ops.azure_manage_networking_stack](roles/azure_manage_networking_stack/README.md)|A role to manage Azure Networking Stack.
+[cloud.azure_ops.azure_manage_resource_group](roles/azure_manage_resource_group/README.md)|A role to manage Azure Resource Group.
+[cloud.azure_ops.azure_manage_security_group](roles/azure_manage_security_group/README.md)|A role to manage Azure Security Group.
+[cloud.azure_ops.azure_virtual_machine_with_public_ip](roles/azure_virtual_machine_with_public_ip/README.md)|A role to manage Azure Virtual Machine.
 
 
 ### Playbooks
 Name | Description
 --- | ---
-[cloud.azure_ops.webapp](https://github.com/redhat-cop/cloud.azure_ops/blob/main/playbooks/WEBAPP.md)|A playbook to deploy a web application on azure using virtual machines.
-[cloud.azure_ops.webapp_container](https://github.com/redhat-cop/cloud.azure_ops/blob/main/playbooks/WEBAPP_CONTAINER.md)|A playbook to deploy a web application on azure using containers.
-[cloud.azure_ops.vmss_migrate](https://github.com/redhat-cop/cloud.azure_ops/blob/main/playbooks/VMSS_MIGRATE.md)|A playbook to migrate virtual machines of a web application from one azure region to another region.
-[cloud.azure_ops.validate_deployment](https://github.com/redhat-cop/cloud.azure_ops/blob/main/playbooks/VALIDATE_DEPLOYMENT.md)|A playbook to validate successful deployment of web application URL.
+[cloud.azure_ops.webapp](playbooks/WEBAPP.md)|A playbook to deploy a web application on azure using virtual machines.
+[cloud.azure_ops.webapp_container](playbooks/WEBAPP_CONTAINER.md)|A playbook to deploy a web application on azure using containers.
+[cloud.azure_ops.vmss_migrate](playbooks/VMSS_MIGRATE.md)|A playbook to migrate virtual machines of a web application from one azure region to another region.
+[cloud.azure_ops.validate_deployment](playbooks/VALIDATE_DEPLOYMENT.md)|A playbook to validate successful deployment of web application URL.
 <!--end collection content-->
 
 ## Installation and Usage
@@ -107,10 +107,10 @@ There are also integration tests in the `molecule` directory which are meant to 
     molecule test
 ```
 
-This collection is tested using GitHub Actions. To know more about CI, refer to [CI.md](https://github.com/redhat-cop/cloud.azure_ops/blob/main/CI.md).
+This collection is tested using GitHub Actions. To know more about CI, refer to [CI.md](CI.md).
 
 ## License
 
 GNU General Public License v3.0 or later
 
-See [LICENCE](https://github.com/redhat-cop/cloud.azure_ops/blob/main/LICENSE) to see the full text.
+See [LICENCE](LICENSE) to see the full text.
