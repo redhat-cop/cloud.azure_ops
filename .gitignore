@@ -2,6 +2,8 @@
 # Edit at https://www.gitignore.io/?templates=git,linux,pydev,python,windows,pycharm+all,jupyternotebook,vim,webstorm,emacs,dotenv
 tests/output
 tests/integration/inventory
+tests/integration/cloud-config-azure.ini
+cloud-azure_ops-*.tar.gz
 ### dotenv ###
 .env
 
