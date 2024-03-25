@@ -1,0 +1,128 @@
+---
+argument_specs:
+  main:
+    version_added: 2.0.0
+    short_description: A role to Create/Delete/Configure an Azure Load Balancer.
+    description:
+      - A role to Create/Delete/Configure an Azure Load Balancer.
+      - This role requires an azure user account with valid permission.
+    options:
+      azure_load_balancer_with_public_ip_operation:
+        description:
+          - Operation to perform
+        default: "create"
+        choices: ["create", "delete"]
+      azure_load_balancer_with_public_ip_resource_group:
+        description:
+          - Resource group on/from which the load balancer will reside.
+          - When O(azure_load_balancer_with_public_ip_operation) is set to create, this resource group will be created if it does not exist.
+        required: true
+      azure_load_balancer_with_public_ip_region:
+        description:
+          - An Azure location for the resources.
+      azure_load_balancer_with_public_ip_tags:
+        description:
+          - metadata to the resource group.
+        type: dict
+      azure_load_balancer_with_public_ip_load_balancer:
+        description:
+          - Object used to provide details for a load balancer.
+        type: dict
+        options:
+          name:
+            description: Name of the load balancer.
+            required: true
+          public_ip_name:
+            description: Name of load balancer's public ip.
+            default: "name-ip"
+          frontend_ip_configurations:
+            description: List of dict of frontend IPs and names to be used.
+            type: list
+            elements: dict
+            options:
+              name:
+                description: Name of the frontend ip configuration.
+                default: "default"
+              public_ip_address:
+                description:
+                  - Name of existing public IP address object in the current resource group to be associated with.
+                default: <load balancers public ip>
+          backend_address_pools:
+            description: List of backend address pools where network interfaces can be attached.
+            type: list
+            elements: dict
+            options:
+              name:
+                description: Name of the backend address pool.
+                default: "default"
+          probes:
+            description: List of probe definitions used to check endpoint health.
+            type: list
+            elements: dict
+            options:
+              name:
+                description: Name of the probe.
+              port:
+                description: Probe port for communicating the probe. Possible values range from 1 to 65535, inclusive.
+              fail_count:
+                description:
+                  - The number of probes which, if there is no response, will result in stopping further traffic from being delivered to the endpoint.
+                  - This value allows endpoints to be taken out of rotation faster or slower than the typical times used in Azure.
+                default: '3'
+              interval:
+                description: Interval (in seconds) for how frequently to probe the endpoint for health status. Minimum value is '5'.
+                default: '15'
+              protocol:
+                description:
+                  - Protocol of the endpoint to be probed. If 'Tcp' is specified, a received ACK is required for the probe to be successful.
+                  - If 'Http' or 'Https' is specified, a 200 OK response from the specified URL is required for the probe to be successful.
+              request_path:
+                description:
+                  - The URI used for requesting health status from the VM.
+                  - Path is required if protocol=Http or protocol=Https. Otherwise, it is not allowed.
+          rules:
+            description: List of load balancing rules.
+            type: list
+            elements: dict
+            options:
+              name:
+                description: Name of the load balancing rule.
+              probe:
+                description: Name of the load balancer probe this rule should use.
+              backend_address_pool:
+                description: Name of backend address pool, where inbound traffic is randomly load balanced across the IPs in the pool.
+              frontend_ip_configuration:
+                description: Name of frontend ip configuration to apply rule to.
+              backend_port:
+                description:
+                  - The port used for internal connections on the endpoint.
+                  - Acceptable values are between 0 and 65535. Note that value 0 enables "Any Port".
+              enable_floating_ip:
+                description:
+                  - Configures a virtual machine's endpoint mapping to the Frontend IP address of the Load Balancer instead of backend instance's IP.
+              frontend_port:
+                description:
+                  - The port for the external endpoint.
+                  - Frontend port numbers must be unique across all rules within the load balancer.
+                  - Acceptable values are between 0 and 65534. Note that value 0 enables "Any Port".
+              idle_timeout:
+                description:
+                  - The timeout for the TCP idle connection.
+                  - The value can be set between 4 and 30 minutes.
+                  - This element is only used when the protocol is set to TCP.
+                default: '4'
+              load_distribution:
+                description: Session persistence policy for this rule.
+                default: 'no persistence'
+                choices: ['SourceIP', 'SourceIPProtocol', 'no persistence']
+              protocol:
+                description: IP protocol for the rule.
+                choices: ['Tcp', 'Udp', 'All']
+          sku:
+            description:
+              - Load balancer SKU.
+              - Will also be applied to the public ip generated for the load balancer.
+            choices: ['Basic', 'Standard']
+          tags:
+            description: Metadata to the load balancer.
+            type: dict

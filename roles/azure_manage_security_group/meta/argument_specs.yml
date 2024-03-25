@@ -1,0 +1,93 @@
+---
+argument_specs:
+  main:
+    version_added: 2.0.0
+    short_description: A role to manage an Azure Security Group. User can create or delete a security group, as well as add/remove rules from a security group.
+    description:
+      - A role to Create/Delete/Configure an Azure Security Group.
+      - This role requires an azure user account with valid permission.
+    options:
+      azure_manage_security_group_operation:
+        description: Operation to perform.
+        default: 'create'
+        choices: ['create', 'delete']
+      azure_manage_security_group_resource_group:
+        description: Resource group on/from which the security group will reside.
+        required: true
+      azure_manage_security_group_region:
+        description: Azure region.
+        required: true
+      azure_manage_security_group_security_group:
+        description: Object used to provide details for a security group.
+        type: dict
+        options:
+          name:
+            description: Name of the security group.
+            required: true
+          rules:
+            description: List of security rules to apply to a subnet or NIC.
+            type: list
+            elements: dict
+            options:
+              name:
+                description: Unique name of rule.
+                required: true
+              priority:
+                description: Order in which to apply the rule. Must be a unique integer between 100 and 4096 inclusive.
+                required: true
+              access:
+                description:
+                  - Allow to allow traffic flow.
+                  - Deny to deny traffic flow.
+                default: 'Allow'
+                choices: ['Allow', 'Deny']
+              description:
+                description: description of the rule
+              destination_address_prefix:
+                description:
+                  - The destination address prefix. CIDR or destination IP range.
+                  - Asterisk V(*) can be used to match all source IPs.
+                  - Default tags such as V(VirtualNetwork), V(AzureLoadBalancer) and V(Internet) can also be used.
+                  - Accepts string or a list of strings.
+                  - Asterisk V(*) and default tags can only be specified as single string, not as a list of strings.
+                type: raw
+              destination_application_security_groups:
+                description:
+                  - List of the destination application security groups.
+                  - It could be a list of resource ids, names in same resource group, or dicts containing resource_group and name.
+                  - It is mutually exclusive with destination_address_prefix and destination_address_prefixes.
+                type: list
+              destination_port_range:
+                description:
+                  - Port or range of ports to which traffic is headed.
+                  - Can be a string or list of strings. Default is V(*).
+                type: raw
+              direction:
+                description: Indicates direction of traffic flow.
+                choices: ['Inbound', 'Outbound']
+                default: 'Inbound'
+              protocol:
+                description: Accepted traffic protocol.
+                choices: ['*', 'Udp', 'Tcp', 'Icmp']
+                default: '*'
+              source_address_prefix:
+                description:
+                  - The CIDR or source IP range. Asterisk V(*) can be used to match all source IPs.
+                  - Default tags such as V(VirtualNetwork), V(AzureLoadBalancer) and V(Internet) can also be used.
+                  - If this is an ingress rule, specifies where network traffic originates from.
+                  - Accepts string or a list of strings.
+                  - Asterisk V(*) and default tags can only be specified as a single string, not as a list of strings.
+                type: raw
+              source_port_range:
+                description: Port or range of ports from which traffic originates. Can be a string or list of strings.
+                default: '*'
+                type: raw
+              purge_rules:
+                description: If set to V(yes), removes any existing, non-default, rules that are not specified in rules above.
+                type: bool
+              rules_to_remove:
+                description: List of strings representing the names of security group rules to be removed from the security group.
+                type: list
+          tags:
+            description: Dictionary of string:string pairs to assign as metadata to the security group.
+            type: dict

@@ -1,13 +1,3 @@
 ---
-- name: Check azure_manage_resource_group_operation validation
-  ansible.builtin.fail:
-    msg: Please provide azure_manage_resource_group_operation as 'create' or 'delete'
-  when: azure_manage_resource_group_operation not in ['create', 'delete']
-
-- name: Check Resource group name
-  ansible.builtin.fail:
-    msg: Azure Resource group name must be defined as azure_manage_resource_group_name
-  when: azure_manage_resource_group_name is not defined
-
 - name: Create or delete resource group
   ansible.builtin.include_tasks: "{{ azure_manage_resource_group_operation }}.yml"

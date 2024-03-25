@@ -1,19 +1,4 @@
 ---
-- name: Check operation validation
-  ansible.builtin.fail:
-    msg: Please provide azure_manage_postgresql_operation as 'create' or 'delete'
-  when: azure_manage_postgresql_operation not in ['create', 'delete']
-
-- name: Check Azure resource group
-  ansible.builtin.fail:
-    msg: Azure resource group must be defined as azure_manage_postgresql_resource_group
-  when: azure_manage_postgresql_resource_group is not defined
-
-- name: Check Azure PostgreSQL server name
-  ansible.builtin.fail:
-    msg: Azure Postgresql server name must be defined as azure_manage_postgresql_postgresql_name
-  when: azure_manage_postgresql_postgresql_name is not defined
-
 - name: Get server info
   azure.azcollection.azure_rm_postgresqlserver_info:
     resource_group: "{{ azure_manage_postgresql_resource_group }}"

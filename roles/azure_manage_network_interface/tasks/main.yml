@@ -1,19 +1,4 @@
 ---
-- name: Check operation validation
-  ansible.builtin.fail:
-    msg: Please provide azure_manage_network_interface_operation as 'create' or 'delete'
-  when: azure_manage_network_interface_operation not in ['create', 'delete']
-
-- name: Ensure resource group is defined
-  ansible.builtin.fail:
-    msg: Azure resource group name must be defined as azure_manage_network_interface_resource_group
-  when: azure_manage_network_interface_resource_group is not defined
-
-- name: Ensure network interface name is defined
-  ansible.builtin.fail:
-    msg: "Missing parameter: key 'name' not found in azure_manage_network_interface_interface"
-  when: azure_manage_network_interface_interface.name is not defined
-
 - name: Get resource group info
   azure.azcollection.azure_rm_resourcegroup_info:
     name: "{{ azure_manage_network_interface_resource_group }}"

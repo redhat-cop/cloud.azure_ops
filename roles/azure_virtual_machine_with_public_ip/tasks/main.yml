@@ -1,19 +1,4 @@
 ---
-- name: Check operation validation
-  ansible.builtin.fail:
-    msg: Please provide azure_virtual_machine_with_public_ip_operation as 'create', 'delete', 'power_on', 'power_off', 'deallocate', or 'restart'
-  when: azure_virtual_machine_with_public_ip_operation not in ['create', 'delete', 'power_on', 'power_off', 'deallocate', 'restart']
-
-- name: Ensure resource group is defined
-  ansible.builtin.fail:
-    msg: Azure resource group name must be defined as azure_virtual_machine_with_public_ip_resource_group
-  when: azure_virtual_machine_with_public_ip_resource_group is not defined
-
-- name: Ensure vm name is defined
-  ansible.builtin.fail:
-    msg: "Missing parameter: key 'name' not found in azure_virtual_machine_with_public_ip_vm"
-  when: azure_virtual_machine_with_public_ip_vm.name is not defined
-
 - name: Replace invalid chars in name
   ansible.builtin.set_fact:
     vm_name: "{{ azure_virtual_machine_with_public_ip_vm.name | regex_replace('[^a-zA-Z0-9]', '-') }}"

@@ -1,0 +1,28 @@
+---
+argument_specs:
+  main:
+    version_added: 2.0.0
+    short_description: A role to manage Azure Resource Group. User can create or delete resource group.
+    description:
+      - A role to manage Azure Resource Group. User can create or delete resource group.
+      - This role requires an azure user account with valid permission.
+    options:
+      azure_manage_resource_group_operation:
+        description: Operation to perform.
+        choices: ["create", "delete"]
+        required: true
+      azure_manage_resource_group_name:
+        description: Resource group to create or delete.
+        required: true
+      azure_manage_resource_group_region:
+        description: An Azure location for the resource group to create.
+      azure_manage_resource_group_lock_resource_group:
+        description: If set to V(true), will lock the resource group created.
+        type: bool
+      azure_manage_resource_group_tags:
+        description: Dictionary of string:string pairs to assign as metadata to the object.
+        type: dict
+      azure_manage_resource_group_force_delete_nonempty:
+        description: Remove a resource group and all associated resources.
+      azure_manage_resource_group_force_delete_locked:
+        description: Remove a resource group even if it is locked.
