@@ -1,0 +1,97 @@
+---
+- name: Validate that Security Group does not exist
+  azure.azcollection.azure_rm_securitygroup_info:
+    resource_group: "{{ resource_group }}"
+    name: "{{ security_group_name }}"
+  register: sg_info
+  failed_when: sg_info.securitygroups | length > 0
+
+# Test: Create Security Group
+- name: Create security group with required rules
+  ansible.builtin.include_role:
+    name: cloud.azure_ops.azure_manage_security_group
+  vars:
+    azure_manage_security_group_operation: create
+    azure_manage_security_group_resource_group: "{{ resource_group }}"
+    azure_manage_security_group_security_group:
+      name: "{{ security_group_name }}"
+      rules: "{{ security_group_rules }}"
+
+- name: Get Security Group
+  azure.azcollection.azure_rm_securitygroup_info:
+    resource_group: "{{ resource_group }}"
+    name: "{{ security_group_name }}"
+  register: sg_info
+
+- name: Assert that resource group was created with required rules
+  ansible.builtin.assert:
+    that:
+      - sg_info.securitygroups | length == 1
+      - sg_info.securitygroups.0.rules | map(attribute='name') | list | sort == security_group_rules | map(attribute='name') | list | sort
+
+# Test: Remove Security Group rule
+- name: Remove some Rules from Security Group
+  ansible.builtin.include_role:
+    name: cloud.azure_ops.azure_manage_security_group
+  vars:
+    azure_manage_security_group_operation: create
+    azure_manage_security_group_resource_group: "{{ resource_group }}"
+    azure_manage_security_group_security_group:
+      name: "{{ security_group_name }}"
+      rules_to_remove: 
+        - "{{ security_group_rules.0.name }}"
+
+- name: Get Security Group
+  azure.azcollection.azure_rm_securitygroup_info:
+    resource_group: "{{ resource_group }}"
+    name: "{{ security_group_name }}"
+  register: sg_info
+
+- name: Assert that resource group was created with required rules
+  ansible.builtin.assert:
+    that:
+      - sg_info.securitygroups | length == 1
+      - sg_info.securitygroups.0.rules | map(attribute='name') | list | sort == security_group_rules | map(attribute='name') | difference([security_group_rules.0.name]) | list | sort
+
+# Test: Purge Rules
+- name: Purge Security Group rules
+  ansible.builtin.include_role:
+    name: cloud.azure_ops.azure_manage_security_group
+  vars:
+    azure_manage_security_group_operation: create
+    azure_manage_security_group_resource_group: "{{ resource_group }}"
+    azure_manage_security_group_security_group:
+      name: "{{ security_group_name }}"
+      purge_rules: true
+
+- name: Get Security Group
+  azure.azcollection.azure_rm_securitygroup_info:
+    resource_group: "{{ resource_group }}"
+    name: "{{ security_group_name }}"
+  register: sg_info
+
+- name: Assert that resource group was created with required rules
+  ansible.builtin.assert:
+    that:
+      - sg_info.securitygroups | length > 0
+
+# Test: Delete Security Group Rules
+- name: Delete Security Group
+  ansible.builtin.include_role:
+    name: cloud.azure_ops.azure_manage_security_group
+  vars:
+    azure_manage_security_group_operation: delete
+    azure_manage_security_group_resource_group: "{{ resource_group }}"
+    azure_manage_security_group_security_group:
+      name: "{{ security_group_name }}"
+
+- name: Get Security Group
+  azure.azcollection.azure_rm_securitygroup_info:
+    resource_group: "{{ resource_group }}"
+    name: "{{ security_group_name }}"
+  register: sg_info
+
+- name: Assert that resource group was created with required rules
+  ansible.builtin.assert:
+    that:
+      - sg_info.securitygroups | length == 0

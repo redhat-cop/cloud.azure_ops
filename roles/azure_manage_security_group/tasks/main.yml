@@ -4,5 +4,12 @@
     name: "{{ azure_manage_security_group_resource_group }}"
   register: rg_info
 
+- name: Check azure region
+  ansible.builtin.fail:
+    msg: Azure region must be defined as azure_manage_security_group_region
+  when:
+    - azure_manage_security_group_region is not defined
+    - rg_info.resourcegroups | length == 0
+
 - name: Create or delete security group
   ansible.builtin.include_tasks: "{{ azure_manage_security_group_operation }}.yml"

@@ -1,0 +1,8 @@
+---
+network_interface_name: "{{ resource_prefix }}-nic"
+network_interface_ip_config:
+  - name: "{{ resource_prefix }}-nic"
+    primary: true
+    public_ip_allocation_method: 'Dynamic'
+network_interface_virtual_network: "{{ resource_prefix }}-nic-vnet"
+network_interface_subnet: "{{ resource_prefix }}-nic-subnet"
