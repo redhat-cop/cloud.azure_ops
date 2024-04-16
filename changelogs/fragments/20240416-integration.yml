@@ -1,0 +1,7 @@
+trivial:
+  - "Added CONTRIBUTING.md file to share development and testing guide with the community"
+  - "Added requirements.txt file under integration directory to allow testing within container"
+
+bugfixes:
+  - "roles/azure_manage_security_group: Change azure_manage_security_group_region to be optional, as it not required when the Resource Group is already exists."
+  - "roles/azure_manage_security_group: Fix purge_rules and rules_to_remove indentation in the arguments spec"
