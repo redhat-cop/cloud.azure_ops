@@ -16,7 +16,6 @@ argument_specs:
         required: true
       azure_manage_security_group_region:
         description: Azure region.
-        required: true
       azure_manage_security_group_security_group:
         description: Object used to provide details for a security group.
         type: dict
@@ -82,12 +81,12 @@ argument_specs:
                 description: Port or range of ports from which traffic originates. Can be a string or list of strings.
                 default: '*'
                 type: raw
-              purge_rules:
-                description: If set to V(yes), removes any existing, non-default, rules that are not specified in rules above.
-                type: bool
-              rules_to_remove:
-                description: List of strings representing the names of security group rules to be removed from the security group.
-                type: list
+          purge_rules:
+            description: If set to V(yes), removes any existing, non-default, rules that are not specified in rules above.
+            type: bool
+          rules_to_remove:
+            description: List of strings representing the names of security group rules to be removed from the security group.
+            type: list
           tags:
             description: Dictionary of string:string pairs to assign as metadata to the security group.
             type: dict

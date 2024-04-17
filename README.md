@@ -80,34 +80,11 @@ Once installed, you can reference the cloud.azure_ops collection content by its 
 * [Ansible Using collections](https://docs.ansible.com/ansible/latest/user_guide/collections_using.html) for more details.
 
 
-## Contributing to this collection
+## Testing and Development
 
-We welcome community contributions to this collection. If you find problems, please open an issue or create a PR against this collection repository.
+* This collection is tested using GitHub Actions. To know more about CI, refer to [CI.md](CI.md).
+* For more information about testing and development, refer to [CONTRIBUTING.md](./CONTRIBUTING.md)
 
-### Testing and Development
-
-The project uses `ansible-lint` and `black`.
-Assuming this repository is checked out in the proper structure,
-e.g. `collections_root/ansible_collections/cloud/azure_ops/`, run:
-
-```shell
-  tox -e linters
-```
-
-Sanity and unit tests are run as normal:
-
-```shell
-  ansible-test sanity
-```
-
-There are also integration tests in the `molecule` directory which are meant to be run against an azure subscription.
-
-```shell
-    az login
-    molecule test
-```
-
-This collection is tested using GitHub Actions. To know more about CI, refer to [CI.md](CI.md).
 
 ## License
 
