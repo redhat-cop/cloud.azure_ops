@@ -1,4 +1,0 @@
-trivial:
-  - "Update playbooks that include credentials to be able to be used with Automation Controller (not just the command line)"
-bugfixes:
-  - Update playbooks that include credentials to be able to be used with Automation Controller (not just the command line).  https://github.com/redhat-cop/cloud.azure_ops/pull/47

@@ -1,3 +1,0 @@
----
-trivial:
-  - Add milestone/python 3.9 to the sanity test exclude matrix since 3.9 is no longer supported in milestone (https://github.com/redhat-cop/cloud.azure_ops/pull/51).
