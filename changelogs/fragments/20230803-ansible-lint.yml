@@ -1,3 +1,0 @@
----
-breaking_changes:
-  - Rename roles variables using ``role_name_`` as prefix (https://github.com/redhat-cop/cloud.azure_ops/pull/48).
