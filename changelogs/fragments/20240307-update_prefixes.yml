@@ -1,7 +1,0 @@
-bugfixes:
-  - Update README.md with proper variable names in example
-  - Update playbooks/roles/scale_virtual_machine/tasks/main.yml to use correct operation variable
-  - Fix syntax in roles/azure_manage_networking_stack/README.md
-  - Use correct variables in roles/azure_manage_networking_stack/tasks/create.yml
-  - Update roles/azure_manage_security_group/tasks/main.yml to use correct operation variable
-  - Update roles/azure_virtual_machine_with_public_ip/tasks/main.yml to use correct prefix vars
