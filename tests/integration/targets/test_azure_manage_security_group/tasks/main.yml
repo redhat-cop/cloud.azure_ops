@@ -7,7 +7,7 @@
   failed_when: sg_info.securitygroups | length > 0
 
 # Test: Create Security Group
-- name: Create security group with required rules
+- name: Create Security Group with required rules
   ansible.builtin.include_role:
     name: cloud.azure_ops.azure_manage_security_group
   vars:
@@ -23,7 +23,7 @@
     name: "{{ security_group_name }}"
   register: sg_info
 
-- name: Assert that resource group was created with required rules
+- name: Assert that Security Group was created with required rules
   ansible.builtin.assert:
     that:
       - sg_info.securitygroups | length == 1
@@ -47,7 +47,7 @@
     name: "{{ security_group_name }}"
   register: sg_info
 
-- name: Assert that resource group was created with required rules
+- name: Assert that relevant rules were deleted from Security Group
   ansible.builtin.assert:
     that:
       - sg_info.securitygroups | length == 1
@@ -70,12 +70,12 @@
     name: "{{ security_group_name }}"
   register: sg_info
 
-- name: Assert that resource group was created with required rules
+- name: Assert that Security Group rules were purge
   ansible.builtin.assert:
     that:
       - sg_info.securitygroups | length > 0
 
-# Test: Delete Security Group Rules
+# Test: Delete Security Group
 - name: Delete Security Group
   ansible.builtin.include_role:
     name: cloud.azure_ops.azure_manage_security_group
@@ -91,7 +91,14 @@
     name: "{{ security_group_name }}"
   register: sg_info
 
-- name: Assert that resource group was created with required rules
+- name: Assert that Security Group was deleted
   ansible.builtin.assert:
     that:
       - sg_info.securitygroups | length == 0
+
+always:
+  - name: Delete Security Group
+    azure.azcollection.azure_rm_securitygroup:
+      resource_group: "{{ resource_group }}"
+      name: "{{ security_group_name }}"
+      state: absent
