@@ -45,7 +45,7 @@
           - _publicip.publicipaddresses | length == 1
 
     # Test: Delete Load Balancer
-    - name: Create Load Balancer with Public IP
+    - name: Delete Load Balancer with Public IP
       ansible.builtin.include_role:
         name: cloud.azure_ops.azure_load_balancer_with_public_ip
       vars:
