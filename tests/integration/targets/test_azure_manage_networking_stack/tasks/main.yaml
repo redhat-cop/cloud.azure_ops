@@ -1,0 +1,157 @@
+---
+- name: Test azure_manage_networking_stack role with existing Resource group
+  block:
+    # Set vars for azure_manage_networking_stack Role
+    - name: Gather Resource group info
+      azure.azcollection.azure_rm_resourcegroup_info:
+        name: "{{ resource_group }}"
+      register: rg_info
+
+    - name: Set vars for azure_manage_networking_stack Role
+      ansible.builtin.set_fact:
+        azure_manage_networking_stack_region: "{{ rg_info.resourcegroups.0.location }}"
+        azure_manage_networking_stack_resource_group: "{{ resource_group }}"
+
+    # Create Networking stack
+    - name: Create Networking stack
+      ansible.builtin.include_role:
+        name: cloud.azure_ops.azure_manage_networking_stack
+      vars:
+        azure_manage_networking_stack_operation: create
+   
+    # Verify Networking stack created
+    - name: Verify Networking stack created
+      ansible.builtin.include_tasks: "verify_ns_created_deleted.yaml"
+      vars:
+        azure_manage_networking_stack_operation: create
+
+    # Delete Subnet from Networking stack
+    - name: Delete Subnet from Networking stack
+      ansible.builtin.include_role:
+        name: cloud.azure_ops.azure_manage_networking_stack
+      vars:
+        azure_manage_networking_stack_operation: delete
+        azure_manage_networking_stack_delete_option: subnet
+
+    # Verify Subnet deleted from Networking stack
+    - name: Get Subnet info
+      azure.azcollection.azure_rm_subnet_info:
+        resource_group: "{{ azure_manage_networking_stack_resource_group }}"
+        name: "{{ azure_manage_networking_stack_subnet }}"
+        virtual_network_name: "{{ azure_manage_networking_stack_virtual_network }}"
+      register: subnet_info
+      ignore_errors: true
+
+    - name: Ensure Subnet deleted
+      ansible.builtin.assert:
+        that:
+          - subnet_info.failed
+
+    # Delete Virtual network from Networking stack
+    - name: Delete Virtual network from Networking stack
+      ansible.builtin.include_role:
+        name: cloud.azure_ops.azure_manage_networking_stack
+      vars:
+        azure_manage_networking_stack_operation: delete
+        azure_manage_networking_stack_delete_option: virtual_network
+
+    # Verify Virtual network deleted
+    - name: Get Virtual network info
+      azure.azcollection.azure_rm_virtualnetwork_info:
+        resource_group: "{{ azure_manage_networking_stack_resource_group }}"
+        name: "{{ azure_manage_networking_stack_virtual_network }}"
+      register: vnet_info
+
+    - name: Ensure Virtual network deleted
+      ansible.builtin.assert:
+        that:
+          - vnet_info.virtualnetworks | length == 0
+
+    # Test all delete option for empty Networking stack
+    - name: Delete Networking stack
+      ansible.builtin.include_role:
+        name: cloud.azure_ops.azure_manage_networking_stack
+      vars:
+        azure_manage_networking_stack_operation: delete
+        azure_manage_networking_stack_delete_option: all
+
+  always:
+    - name: Delete Subnet
+      azure.azcollection.azure_rm_subnet:
+        state: absent
+        resource_group: "{{ azure_manage_networking_stack_resource_group }}"
+        virtual_network: "{{ azure_manage_networking_stack_virtual_network }}"
+        name: "{{ azure_manage_networking_stack_subnet }}"
+
+    - name: Delete Virtual network
+      azure.azcollection.azure_rm_virtualnetwork:
+        state: absent
+        resource_group: "{{ azure_manage_networking_stack_resource_group }}"
+        name: "{{ azure_manage_networking_stack_virtual_network }}"
+
+- name: Test azure_manage_networking_stack role with create/delete Resource group option
+  block:
+    # Set vars for azure_manage_networking_stack Role
+    - name: Gather Resource group info
+      azure.azcollection.azure_rm_resourcegroup_info:
+        name: "{{ resource_group }}"
+      register: rg_info
+
+    - name: Set vars for azure_manage_networking_stack Role
+      ansible.builtin.set_fact:
+        azure_manage_networking_stack_region: "{{ rg_info.resourcegroups.0.location }}"
+        azure_manage_networking_stack_resource_group: "{{ resource_prefix }}-{{ resource_group }}"
+        azure_manage_networking_stack_tags:
+          resource_prefix: "{{ resource_prefix }}"
+
+    # Create Networking stack
+    - name: Create Networking stack
+      ansible.builtin.include_role:
+        name: cloud.azure_ops.azure_manage_networking_stack
+      vars:
+        azure_manage_networking_stack_operation: create
+
+    # Verify Networking stack created
+    - name: Verify Networking stack created
+      ansible.builtin.include_tasks: "verify_ns_created_deleted.yaml"
+      vars:
+        azure_manage_networking_stack_operation: create
+
+    # Delete Networking stack
+    - name: Delete Networking stack
+      ansible.builtin.include_role:
+        name: cloud.azure_ops.azure_manage_networking_stack
+      vars:
+        azure_manage_networking_stack_operation: delete
+
+    # Verify Networking stack deleted
+    - name: Verify Networking stack deleted
+      ansible.builtin.include_tasks: "verify_ns_created_deleted.yaml"
+      vars:
+        azure_manage_networking_stack_operation: delete
+
+    # Delete Resource group
+    - name: Delete Resource group by the azure_manage_networking_stack role
+      ansible.builtin.include_role:
+        name: cloud.azure_ops.azure_manage_networking_stack
+      vars:
+        azure_manage_networking_stack_operation: delete
+        azure_manage_networking_stack_delete_resource_group: true
+
+    # Verify Resource group deleted
+    - name: Get Resource group
+      azure.azcollection.azure_rm_resourcegroup_info:
+        name: "{{ azure_manage_networking_stack_resource_group }}"
+      register: rg_info
+
+    - name: Ensure Resource group deleted
+      ansible.builtin.assert:
+        that:
+          - rg_info.resourcegroups | length == 0
+
+  always:
+    - name: Delete a Resource group including resources it contains
+      azure.azcollection.azure_rm_resourcegroup:
+        name: "{{ azure_manage_networking_stack_resource_group }}"
+        force_delete_nonempty: true
+        state: absent

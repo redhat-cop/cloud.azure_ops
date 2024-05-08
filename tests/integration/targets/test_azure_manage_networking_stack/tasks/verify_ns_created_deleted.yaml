@@ -1,0 +1,31 @@
+---
+# Gather Networking stack info
+- name: Get Virtual network info
+  azure.azcollection.azure_rm_virtualnetwork_info:
+    resource_group: "{{ azure_manage_networking_stack_resource_group }}"
+    name: "{{ azure_manage_networking_stack_virtual_network }}"
+  register: vnet_info
+
+- name: Get subnet info
+  azure.azcollection.azure_rm_subnet_info:
+    resource_group: "{{ azure_manage_networking_stack_resource_group }}"
+    name: "{{ azure_manage_networking_stack_subnet }}"
+    virtual_network_name: "{{ azure_manage_networking_stack_virtual_network }}"
+  register: subnet_info
+  ignore_errors: true
+
+# Verify Networking stack created
+- name: Ensure Networking stack created
+  ansible.builtin.assert:
+    that:
+      - vnet_info.virtualnetworks | length == 1
+      - subnet_info.subnets | length == 1
+  when: azure_manage_networking_stack_operation == 'create'
+
+# Verify Networking stack deleted
+- name: Ensure Networking stack deleted
+  ansible.builtin.assert:
+    that:
+      - subnet_info.failed
+      - vnet_info.virtualnetworks | length == 0
+  when: azure_manage_networking_stack_operation == 'delete'
