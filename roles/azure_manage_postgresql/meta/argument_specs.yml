@@ -78,7 +78,7 @@ argument_specs:
         description:
           - Create mode of SQL Server.
           - restore from geo redundant V(geo_restore), or restore from point in time V(point_in_time_restore).
-        choices: ['default, geo_restore', 'point_in_time_restore']
+        choices: ['default', 'geo_restore', 'point_in_time_restore']
         default: 'default'
       azure_manage_postgresql_postgresql_source_server_id:
         description:
