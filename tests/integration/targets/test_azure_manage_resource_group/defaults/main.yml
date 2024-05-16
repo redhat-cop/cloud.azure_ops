@@ -2,6 +2,6 @@
 # defaults file for azure_manage_resource_group
 
 # Default values for role variables
-azure_manage_resource_group_name_test: "{{ resource_prefix }}-test-resource-group"
-azure_manage_resource_group_tags_test: 
+azure_manage_resource_group_name: "{{ resource_prefix }}-test-resource-group"
+azure_manage_resource_group_tags: 
   resource_prefix: "{{ resource_prefix }}"
