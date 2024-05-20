@@ -1,0 +1,63 @@
+---
+# Determine Azure Region
+- name: Gather Resource Group info
+  azure.azcollection.azure_rm_resourcegroup_info:
+    name: "{{ resource_group }}"
+  register: __rg_info
+
+- name: Set Azure Region for azure_manage_resource_group Role
+  ansible.builtin.set_fact:
+    azure_manage_resource_group_region: "{{ __rg_info.resourcegroups.0.location }}"
+
+- name: Test role cloud.azure_ops.azure_manage_resource_group without locking var
+  block:
+    # Test: Create Resource Group without locking
+    - name: Create Resource Group without locking
+      ansible.builtin.include_role:
+        name: cloud.azure_ops.azure_manage_resource_group
+      vars:
+        azure_manage_resource_group_operation: create
+
+    - name: Get Resource Group info
+      azure.azcollection.azure_rm_resourcegroup_info:
+        name: "{{ azure_manage_resource_group_name }}"
+      register: rg_info
+
+    - name: Assert that Resource Group was created without locking
+      ansible.builtin.assert:
+        that:
+          - rg_info.resourcegroups | length == 1
+          - rg_info.resourcegroups[0].name == azure_manage_resource_group_name
+          - rg_info.resourcegroups[0].location == azure_manage_resource_group_region
+          - rg_info.resourcegroups[0].tags == azure_manage_resource_group_tags
+
+    # Test: Delete Resource Group without locking
+    - name: Delete Resource Group without locking
+      ansible.builtin.include_role:
+        name: cloud.azure_ops.azure_manage_resource_group
+      vars:
+        azure_manage_resource_group_operation: delete
+
+    - name: Get Resource Group
+      azure.azcollection.azure_rm_resourcegroup_info:
+        name: "{{ azure_manage_resource_group_name }}"
+      register: rg_info
+
+    - name: Assert that Resource Group was deleted without locking
+      ansible.builtin.assert:
+        that:
+          - rg_info.resourcegroups | length == 0
+
+  always:
+    - name: Get Resource Group info
+      azure.azcollection.azure_rm_resourcegroup_info:
+        name: "{{ azure_manage_resource_group_name }}"
+      register: rg_info
+    
+    # Only delete if resource group exists
+    - name: Delete Resource Group 
+      azure.azcollection.azure_rm_resourcegroup:
+        name: "{{ azure_manage_resource_group_name }}"
+        force_delete_nonempty: true
+        state: absent
+      when: rg_info.resourcegroups | length > 0  
