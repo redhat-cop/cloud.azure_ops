@@ -1,0 +1,72 @@
+- name: Test Create and Delete Load Balancer
+  block:
+    - name: Print test step details
+      ansible.builtin.debug:
+        msg: "Run test with resource_group={{ test_resource_group }}"
+
+    # Test: Create Load Balancer
+    - name: Create Load Balancer with Public IP
+      ansible.builtin.include_role:
+        name: cloud.azure_ops.azure_load_balancer_with_public_ip
+      vars:
+        azure_load_balancer_with_public_ip_resource_group: "{{ test_resource_group }}"
+        azure_load_balancer_with_public_ip_operation: create
+        azure_load_balancer_with_public_ip_load_balancer:
+          name: "{{ load_balancer_name }}"
+          public_ip_name: "{{ load_balancer_public_ip_name }}"
+          sku: "{{ load_balancer_sku }}"
+
+    - name: Gather Load Balancer info
+      azure.azcollection.azure_rm_loadbalancer_info:
+        name: "{{ load_balancer_name }}"
+        resource_group: "{{ test_resource_group }}"
+      register: _loadbalancer
+
+    - name: Ensure Load Balancer was created as expected
+      ansible.builtin.assert:
+        that:
+          - _loadbalancer.loadbalancers | length == 1
+
+    - name: Gather Public IP info
+      azure.azcollection.azure_rm_publicipaddress_info:
+        name: "{{ load_balancer_public_ip_name }}"
+        resource_group: "{{ test_resource_group }}"
+      register: _publicip
+
+    - name: Ensure Public IP was created
+      ansible.builtin.assert:
+        that:
+          - _publicip.publicipaddresses | length == 1
+
+    # Test: Delete Load Balancer
+    - name: Delete Load Balancer with Public IP
+      ansible.builtin.include_role:
+        name: cloud.azure_ops.azure_load_balancer_with_public_ip
+      vars:
+        azure_load_balancer_with_public_ip_resource_group: "{{ test_resource_group }}"
+        azure_load_balancer_with_public_ip_operation: delete
+        azure_load_balancer_with_public_ip_load_balancer:
+          name: "{{ load_balancer_name }}"
+          public_ip_name: "{{ load_balancer_public_ip_name }}"
+          sku: "{{ load_balancer_sku }}"
+
+    - name: Ensure Load Balancer was deleted
+      azure.azcollection.azure_rm_loadbalancer_info:
+        name: "{{ load_balancer_name }}"
+        resource_group: "{{ test_resource_group }}"
+      register: _loadbalancer
+      failed_when: _loadbalancer.loadbalancers | length > 0
+
+    - name: Ensure Public IP was deleted
+      azure.azcollection.azure_rm_publicipaddress_info:
+        name: "{{ load_balancer_public_ip_name }}"
+        resource_group: "{{ test_resource_group }}"
+      register: _publicip
+      failed_when: _publicip.publicipaddresses | length > 0
+
+    - name: Ensure Resource Group was deleted - {{ test_resource_group }}
+      azure.azcollection.azure_rm_resourcegroup_info:
+        name: "{{ test_resource_group }}"
+      when: azure_load_balancer_with_public_ip_delete_resource_group is defined and azure_load_balancer_with_public_ip_delete_resource_group
+      register: _resourcegroup
+      failed_when: _resourcegroup.resourcegroups | length > 0

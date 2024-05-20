@@ -1,2 +1,3 @@
 ---
 azure_load_balancer_with_public_ip_operation: create
+azure_load_balancer_with_public_ip_delete_resource_group: false

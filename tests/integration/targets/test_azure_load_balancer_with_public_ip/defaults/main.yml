@@ -1,5 +1,4 @@
 ---
-azure_load_balancer_with_public_ip_resource_group: "{{ resource_group }}"
 azure_load_balancer_with_public_ip_tags:
   resource_prefix: "{{ resource_prefix }}"
 load_balancer_name: "{{ resource_prefix }}-load-balancer"
