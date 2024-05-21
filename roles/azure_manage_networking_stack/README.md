@@ -13,7 +13,7 @@ Role Variables
 --------------
 
 * **azure_manage_networking_stack_operation** - operation to perform on the networking stack. Valid values are 'create', 'delete'
-* **azure_manage_networking_stack_delete_option** - When deleting created resources, this is used to specified wether to remove only the subnet, the virtual network or all (including resource group). Valid values are 'subnet', 'virtual_network', 'all'. Default value is 'all'.
+* **azure_manage_networking_stack_delete_option** - When deleting created resources, this is used to specified wether to remove only the subnet, the virtual network or all. Valid values are 'subnet', 'virtual_network', 'all'. Default value is 'all'.
 * **azure_manage_networking_stack_resource_group** - Resource group on which the networking stack should be attached. If not existing, it will be created.
 * **azure_manage_networking_stack_virtual_network** - Name of the virtual network to create/delete.
 * **azure_manage_networking_stack_subnet** - Name of the subnet to create/delete.
@@ -23,6 +23,7 @@ Role Variables
   Required when creating a new virtual network.
 * **azure_manage_networking_stack_subnet_address_prefixes_cidr** - CIDR defining the IPv4 and IPv6 address space of the subnet. Must be valid within the context of the virtual network.
 * **azure_manage_networking_stack_tags** - Dictionary of string:string pairs to assign as metadata to the object.
+* **azure_manage_networking_stack_delete_resource_group**: Relevant for **delete** operation. Change to true in case Resource Group deletion should be done as part of this role deletion (default: false)
 
 Dependencies
 ------------

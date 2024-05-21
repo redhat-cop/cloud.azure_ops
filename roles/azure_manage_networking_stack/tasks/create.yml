@@ -1,22 +1,44 @@
 ---
-- name: Check that resource group exists
-  azure.azcollection.azure_rm_resourcegroup_info:
-    name: "{{ azure_manage_networking_stack_resource_group }}"
-  register: result
+- name: Check virtual network
+  ansible.builtin.fail:
+    msg: Azure virtual network must be defined as azure_manage_networking_stack_virtual_network
+  when: azure_manage_networking_stack_virtual_network is not defined
 
-- name: Create resource group when it does not exists
+- name: Check subnet
+  ansible.builtin.fail:
+    msg: Azure subnet must be defined as azure_manage_networking_stack_subnet
+  when: azure_manage_networking_stack_subnet is not defined
+
+- name: Check virtual network CIDR address prefixes
+  ansible.builtin.fail:
+    msg: Azure virtual network CIDR address prefixes must be defined as azure_manage_networking_stack_vnet_address_prefixes_cidr
+  when: azure_manage_networking_stack_vnet_address_prefixes_cidr is not defined
+
+- name: Check subnet CIDR address prefixes
+  ansible.builtin.fail:
+    msg: Azure subnet CIDR address prefixes must be defined as azure_manage_networking_stack_subnet_address_prefixes_cidr
+  when: azure_manage_networking_stack_subnet_address_prefixes_cidr is not defined
+
+- name: Check that Azure Region is known
+  ansible.builtin.fail:
+    msg: Azure region must be defined as azure_manage_networking_stack_region
+  when:
+    - azure_manage_networking_stack_region is not defined
+    - rg_info.resourcegroups | length == 0
+
+- name: Create resource group if it doesn't already exists
   ansible.builtin.include_role:
     name: cloud.azure_ops.azure_manage_resource_group
   vars:
     azure_manage_resource_group_operation: create
     azure_manage_resource_group_name: "{{ azure_manage_networking_stack_resource_group }}"
     azure_manage_resource_group_region: "{{ azure_manage_networking_stack_region }}"
-    azure_manage_resource_group_tags: "{{ azure_manage_networking_stack_tags }}"
-  when: result.resourcegroups | length == 0
+    azure_manage_resource_group_tags: "{{ azure_manage_networking_stack_tags | default(omit) }}"
+  when: rg_info.resourcegroups | length == 0
 
 - name: Create azure virtual network
   azure.azcollection.azure_rm_virtualnetwork:
-    location: "{{ azure_manage_networking_stack_region }}"
+    location: "{{ azure_manage_networking_stack_region | default(omit) }}"
     name: "{{ azure_manage_networking_stack_virtual_network }}"
     address_prefixes_cidr: "{{ azure_manage_networking_stack_vnet_address_prefixes_cidr }}"
     resource_group: "{{ azure_manage_networking_stack_resource_group }}"
