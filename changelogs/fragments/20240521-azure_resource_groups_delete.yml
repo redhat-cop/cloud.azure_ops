@@ -1,0 +1,2 @@
+bugfixes:
+  - Added retries to Resource Group deletion (retries=40, delay=5)
