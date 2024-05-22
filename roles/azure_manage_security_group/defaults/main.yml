@@ -1,3 +1,4 @@
 ---
 # defaults file for security_group
 azure_manage_security_group_operation: create
+azure_manage_security_group_delete_resource_group: false

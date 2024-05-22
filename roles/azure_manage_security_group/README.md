@@ -31,6 +31,7 @@ Role Variables
   - **purge_rules**: (boolean) If set to 'yes', removes any existing, non-default, rules that are not specified in `rules` above.
   - **rules_to_remove**: List of strings representing the names of security group rules to be removed from the security group.
   - **tags**: Dictionary of string:string pairs to assign as metadata to the security group.
+* **azure_manage_security_group_delete_resource_group**: Relevant for **delete** operation. Change to true in case Resource Group deletion should be done as part of this role deletion (default: false) 
 
 Dependencies
 ------------
