@@ -1,9 +1,8 @@
 ---
-- name: Check Azure location
+- name: Check that Azure Region is known
   ansible.builtin.fail:
     msg: Azure location must be defined as azure_manage_postgresql_region
   when:
-    - server_info.servers | length == 0
     - rg_info.resourcegroups | length == 0
     - azure_manage_postgresql_region is not defined
 
@@ -21,14 +20,15 @@
     - server_info.servers | length == 0
     - azure_manage_postgresql_postgresql_admin_password is not defined
 
-- name: Create resource group
+- name: Create resource group if it doesn't already exists
   ansible.builtin.include_role:
     name: cloud.azure_ops.azure_manage_resource_group
   vars:
     azure_manage_resource_group_operation: create
     azure_manage_resource_group_name: "{{ azure_manage_postgresql_resource_group }}"
     azure_manage_resource_group_region: "{{ azure_manage_postgresql_region }}"
-    azure_manage_resource_group_tags: "{{ azure_manage_postgresql_tags }}"
+    azure_manage_resource_group_tags: "{{ azure_manage_postgresql_tags | default(omit) }}"
+  when: rg_info.resourcegroups | length == 0
 
 - name: Check Azure PostgreSQL server restore point
   ansible.builtin.fail:

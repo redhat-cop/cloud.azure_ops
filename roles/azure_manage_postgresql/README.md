@@ -12,7 +12,7 @@ Role Variables
 --------------
 
 * **azure_manage_postgresql_operation**: Operation to perform. Valid values are 'create', 'delete'. Default is **create**
-* **azure_manage_postgresql_delete_option**: used with **operation** set to **delete**. This option specifies wether to delete all resources including resource group and PostgreSQL server, or only the postgresql server. If not specified only the firewall rules and/or the configuration settings and/or the database instances defined using dedicated variables will be removed from the PostgreSQL Server. Valid values are: 'all', 'server'
+* **azure_manage_postgresql_delete_server**: Relevant for **delete** operation. Change to true in case PostgreSQL Server deletion should be done as part of this role deletion (default: false)
 * **azure_manage_postgresql_resource_group**: Resource group on/from which the Database server will be created/deleted. When **operation** is set to create, this resource group will be created if not existing.
 * **azure_manage_postgresql_region**: An Azure location for the resources.
 * **azure_manage_postgresql_tags**: Dictionary of string:string pairs to assign as metadata to the object.
@@ -46,6 +46,7 @@ Role Variables
   - **charset**: The charset of the database. Check [PostgreSQL documentation](https://www.postgresql.org/docs/9.3/multibyte.html) for possible values. This is only set on creation, use **force** to recreate a database if the values don't match.
   - **collation**: The collation of the database. Check [PostgreSQL documentation](https://www.postgresql.org/docs/9.1/collation.html). This is only set on creation, use **force** to recreate a database if the values don't match.
   - **force**:  When set to **True**, will delete and recreate the existing PostgreSQL database if any of the properties don't match what is set. Ignore when **operation** is set to **delete**.
+* **azure_manage_postgresql_delete_resource_group**: Relevant for **delete** operation. Change to true in case Resource Group deletion should be done as part of this role deletion (default: false) 
 
 
 Dependencies
