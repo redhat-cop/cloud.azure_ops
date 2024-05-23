@@ -15,10 +15,21 @@
     msg: "Missing parameter: key 'image' not found in azure_virtual_machine_with_public_ip_vm"
   when: azure_virtual_machine_with_public_ip_vm.image is not defined
 
-# Create resource group if not existing
-- name: Resource Group Does Not Exist -> Create Resource Group
+- name: Check that Azure Region is known
+  ansible.builtin.fail:
+    msg: Azure location must be defined as azure_virtual_machine_with_public_ip_region
+  when:
+    - rg_info.resourcegroups | length == 0
+    - azure_virtual_machine_with_public_ip_region is not defined
+
+- name: Create resource group if it doesn't already exists
   ansible.builtin.include_role:
-    name: resource_group
+    name: cloud.azure_ops.azure_manage_resource_group
+  vars:
+    azure_manage_resource_group_operation: create
+    azure_manage_resource_group_name: "{{ azure_virtual_machine_with_public_ip_resource_group }}"
+    azure_manage_resource_group_region: "{{ azure_virtual_machine_with_public_ip_region }}"
+    azure_manage_resource_group_tags: "{{ azure_virtual_machine_with_public_ip_tags | default(omit) }}"
   when: rg_info.resourcegroups | length == 0
 
 # If nic is not specified, assert virtual network exists and create default public ip & nic
@@ -64,7 +75,7 @@
 # Create/update availability set
 - name: Create availability set
   azure.azcollection.azure_rm_availabilityset:
-    resource_group: "{{ azure_resource_group }}"
+    resource_group: "{{ azure_virtual_machine_with_public_ip_resource_group }}"
     name: "{{ azure_availability_set.name }}"
     platform_update_domain_count: "{{ azure_availability_set.platform_update_domain_count | default(omit) }}"
     platform_fault_domain_count: "{{ azure_availability_set.platform_fault_domain_count | default(omit) }}"
