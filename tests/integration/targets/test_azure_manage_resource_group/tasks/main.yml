@@ -61,3 +61,99 @@
         force_delete_nonempty: true
         state: absent
       when: rg_info.resourcegroups | length > 0  
+
+- name: Test role cloud.azure_ops.azure_manage_resource_group with locking var
+  block:
+    # Test: Create Resource Group with locking
+    - name: Create Resource Group with locking
+      ansible.builtin.include_role:
+        name: cloud.azure_ops.azure_manage_resource_group
+      vars:
+        azure_manage_resource_group_operation: create
+        azure_manage_resource_group_lock_resource_group: true
+
+    - name: Get Resource Group
+      azure.azcollection.azure_rm_resourcegroup_info:
+        name: "{{ azure_manage_resource_group_name }}"
+      register: rg_info
+
+    - name: Assert that Resource Group was created 
+      ansible.builtin.assert:
+        that:
+          - rg_info.resourcegroups | length == 1
+          - rg_info.resourcegroups[0].name == azure_manage_resource_group_name
+          - rg_info.resourcegroups[0].location == azure_manage_resource_group_region
+          - rg_info.resourcegroups[0].tags == azure_manage_resource_group_tags
+
+    # [Negative] Test: Try to delete Locked Resource Group without force delete var
+    - name: Negative test - Try to delete Locked Resource Group without force delete var
+      block:
+        - name: Try to delete Locked Resource Group without force delete (negative)
+          ansible.builtin.include_role:
+            name: cloud.azure_ops.azure_manage_resource_group
+          vars:
+            azure_manage_resource_group_operation: delete
+            azure_manage_resource_group_force_delete_locked: false
+          register: azure_manage_resource_group_delete_result
+          ignore_errors: true 
+  
+      rescue:
+        - name: Handle error during delete (negative test)
+          ansible.builtin.debug:
+            msg: "Expected failure occurred during delete operation: {{ azure_manage_resource_group_delete_result }}"
+
+    # Verify resource group wasn't deleted without force delete
+    - name: Get Resource Group info 
+      azure.azcollection.azure_rm_resourcegroup_info:
+        name: "{{ azure_manage_resource_group_name }}"
+      register: rg_info_after_failed_delete
+
+    - name: Verify that resource group still exists (as expected) 
+      ansible.builtin.assert:
+        that:
+          - rg_info_after_failed_delete.resourcegroups | length == 1
+
+    # Test: Delete Locked Resource Group with force delete 
+    - name: Delete Locked Resource Group with force delete
+      ansible.builtin.include_role:
+        name: cloud.azure_ops.azure_manage_resource_group
+      vars:
+        azure_manage_resource_group_operation: delete
+        azure_manage_resource_group_force_delete_locked: true
+
+    # Verify resource group was deleted with force delete
+    - name: Get Resource Group
+      azure.azcollection.azure_rm_resourcegroup_info:
+        name: "{{ azure_manage_resource_group_name }}"
+      register: rg_info
+
+    - name: Assert that Resource Group was deleted with force delete when locked
+      ansible.builtin.assert:
+        that:
+          - rg_info.resourcegroups | length == 0
+
+  always:
+    - name: Get Resource Group info
+      azure.azcollection.azure_rm_resourcegroup_info:
+        name: "{{ azure_manage_resource_group_name }}"
+      register: rg_info
+    
+    - name: Get lock info for the resource group
+      azure.azcollection.azure_rm_lock_info:
+        resource_group: "{{ azure_manage_resource_group_name }}"
+      register: result
+    
+    - name: Delete locks for the resource group
+      azure.azcollection.azure_rm_lock:
+        state: absent
+        name: "{{ item.name }}"
+        resource_group: "{{ azure_manage_resource_group_name }}"
+      with_items: "{{ result.locks }}"
+
+    # Only delete if resource group exists
+    - name: Delete Resource Group
+      azure.azcollection.azure_rm_resourcegroup:
+        name: "{{ azure_manage_resource_group_name }}"
+        force_delete_nonempty: true
+        state: absent
+      when: rg_info.resourcegroups | length > 0  
