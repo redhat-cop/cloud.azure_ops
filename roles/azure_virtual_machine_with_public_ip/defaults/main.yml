@@ -3,3 +3,4 @@
 azure_virtual_machine_with_public_ip_operation: create
 azure_virtual_machine_with_public_ip_vm: {}
 azure_virtual_machine_with_public_ip_remove_on_absent: all
+azure_virtual_machine_with_public_ip_delete_resource_group: false

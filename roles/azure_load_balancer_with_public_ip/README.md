@@ -43,6 +43,8 @@ Role Variables
     - **protocol**: IP protocol for the rule. Valid choices are: 'Tcp', 'Udp', 'All'.
   - **sku**: Load balancer SKU. Valid choices are: 'Basic', 'Standard'. Will also be applied to the public ip generated for the load balancer.
   - **tags**: Dictionary of string:string pairs to assign as metadata to the load balancer.
+* **azure_load_balancer_with_public_ip_delete_resource_group**: Relevant for **delete** operation. Change to true in case Resource Group deletion should be done as part of this role deletion (default: false)
+
 
 Limitations
 ------------

@@ -34,3 +34,11 @@
     resource_group: "{{ azure_manage_security_group_resource_group }}"
     name: "{{ azure_manage_security_group_security_group.name }}"
     state: absent
+
+- name: Delete Resource group if requested
+  ansible.builtin.include_role:
+    name: cloud.azure_ops.azure_manage_resource_group
+  vars:
+    azure_manage_resource_group_operation: delete
+    azure_manage_resource_group_name: "{{ azure_manage_security_group_resource_group }}"
+  when: azure_manage_security_group_delete_resource_group

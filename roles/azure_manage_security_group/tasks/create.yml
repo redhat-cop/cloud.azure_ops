@@ -1,4 +1,11 @@
 ---
+- name: Check azure region
+  ansible.builtin.fail:
+    msg: Azure region must be defined as azure_manage_security_group_region
+  when:
+    - azure_manage_security_group_region is not defined
+    - rg_info.resourcegroups | length == 0
+
 - name: Create Resource Group
   azure.azcollection.azure_rm_resourcegroup:
     name: "{{ azure_manage_security_group_resource_group }}"

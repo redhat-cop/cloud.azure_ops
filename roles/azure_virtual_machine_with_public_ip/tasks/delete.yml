@@ -4,14 +4,17 @@
     msg: Invalid value for azure_virtual_machine_with_public_ip_remove_on_absent. Valid values include 'all', 'all_autocreated', 'network_interfaces', 'virtual_storage', or 'public_ips'
   when: azure_virtual_machine_with_public_ip_remove_on_absent not in ['all', 'all_autocreated', 'network_interfaces', 'virtual_storage', 'public_ips']
 
-- name: Fail when resource group doesn't exist
-  ansible.builtin.fail:
-    msg: Resource group {{ azure_resource_group }} does not exist
-  when: rg_info.resourcegroups | length == 0
-
 - name: Delete Virtual Machine and specified associated resources
   azure.azcollection.azure_rm_virtualmachine:
-    resource_group: "{{ azure_resource_group }}"
+    resource_group: "{{ azure_virtual_machine_with_public_ip_resource_group }}"
     name: "{{ vm_name }}"
     remove_on_absent: "{{ azure_virtual_machine_with_public_ip_remove_on_absent | default(omit) }}"
     state: absent
+
+- name: Delete Resource group if requested
+  ansible.builtin.include_role:
+    name: cloud.azure_ops.azure_manage_resource_group
+  vars:
+    azure_manage_resource_group_operation: delete
+    azure_manage_resource_group_name: "{{ azure_virtual_machine_with_public_ip_resource_group }}"
+  when: azure_virtual_machine_with_public_ip_delete_resource_group

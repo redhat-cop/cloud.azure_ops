@@ -39,6 +39,7 @@ Role Variables
   - **name**: (Required) Name of the availability set.
   - **platform_fault_domain_count**: Fault domains define the group of virtual machines that share a common power source and network switch. Should be between 1 and 3.
   - **platform_update_domain_count**: Update domains indicate groups of virtual machines and underlying physical hardware that can be rebooted at the same time.
+* **azure_virtual_machine_with_public_ip_delete_resource_group**: Relevant for **delete** operation. Change to true in case Resource Group deletion should be done as part of this role deletion (default: false) 
 
 Limitations
 ------------

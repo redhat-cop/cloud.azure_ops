@@ -1,0 +1,4 @@
+bugfixes:
+  - Refactor the management of the Resource Group by other roles
+    Deleting the Resource Group should not be forced by default
+    and should only occur if explicitly requested by the user.

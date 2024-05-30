@@ -1,11 +1,4 @@
 ---
-- name: Check azure_manage_postgresql_delete_option validation
-  ansible.builtin.fail:
-    msg: Please provide azure_manage_postgresql_delete_option as 'all' or 'server'
-  when:
-    - azure_manage_postgresql_delete_option is defined
-    - azure_manage_postgresql_delete_option not in ['all', 'server']
-
 - name: Delete PostgreSQL Server configuration settings
   azure.azcollection.azure_rm_postgresqlconfiguration:
     resource_group: "{{ azure_manage_postgresql_resource_group }}"
@@ -14,8 +7,6 @@
     value: "{{ item.value }}"
     state: absent
   with_items: "{{ azure_manage_postgresql_postgresql_settings }}"
-  when:
-    - azure_manage_postgresql_delete_option is not defined
 
 - name: Delete PostgreSQL Server Firewall rules
   azure.azcollection.azure_rm_postgresqlfirewallrule:
@@ -24,8 +15,6 @@
     name: "{{ item.name }}"
     state: absent
   with_items: "{{ azure_manage_postgresql_postgresql_firewall_rules }}"
-  when:
-    - azure_manage_postgresql_delete_option is not defined
 
 - name: Delete PostgreSQL Database instances
   azure.azcollection.azure_rm_postgresqldatabase:
@@ -35,26 +24,18 @@
     force_update: "{{ item.force | default(omit) }}"
     state: absent
   with_items: "{{ azure_manage_postgresql_postgresql_database_instances }}"
-  when:
-    - azure_manage_postgresql_delete_option is not defined
 
-- name: Delete PostgreSQL Server
+- name: Delete PostgreSQL Server if requested
   azure.azcollection.azure_rm_postgresqlserver:
     resource_group: "{{ azure_manage_postgresql_resource_group }}"
     name: "{{ azure_manage_postgresql_postgresql_name }}"
     state: absent
-  when:
-    - azure_manage_postgresql_delete_option is defined
-    - azure_manage_postgresql_delete_option == 'server'
+  when: azure_manage_postgresql_delete_server
 
-- name: Delete Resource group
+- name: Delete Resource group if requested
   ansible.builtin.include_role:
     name: cloud.azure_ops.azure_manage_resource_group
   vars:
     azure_manage_resource_group_operation: delete
     azure_manage_resource_group_name: "{{ azure_manage_postgresql_resource_group }}"
-    azure_manage_resource_group_force_delete_nonempty: true
-    azure_manage_resource_group_force_delete_locked: true
-  when:
-    - azure_manage_postgresql_delete_option is defined
-    - azure_manage_postgresql_delete_option == 'all'
+  when: azure_manage_postgresql_delete_resource_group

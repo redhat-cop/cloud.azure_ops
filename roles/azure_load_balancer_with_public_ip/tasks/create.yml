@@ -1,12 +1,19 @@
 ---
-- name: Create resource group
+- name: Check that Azure Region is known
+  ansible.builtin.fail:
+    msg: Azure region must be defined as azure_load_balancer_with_public_ip_region
+  when:
+    - azure_load_balancer_with_public_ip_region is not defined
+    - rg_info.resourcegroups | length == 0
+
+- name: Create resource group if it doesn't already exists
   ansible.builtin.include_role:
     name: cloud.azure_ops.azure_manage_resource_group
   vars:
     azure_manage_resource_group_operation: create
     azure_manage_resource_group_name: "{{ azure_load_balancer_with_public_ip_resource_group }}"
     azure_manage_resource_group_region: "{{ azure_load_balancer_with_public_ip_region }}"
-    azure_manage_resource_group_tags: "{{ azure_load_balancer_with_public_ip_region }}"
+    azure_manage_resource_group_tags: "{{ azure_load_balancer_with_public_ip_tags | default(omit) }}"
   when: rg_info.resourcegroups | length == 0
 
 - name: Ensure public ip exists

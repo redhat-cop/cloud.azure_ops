@@ -1,20 +1,21 @@
 ---
-- name: Delete resource group
-  ansible.builtin.import_role:
-    name: cloud.azure_ops.azure_manage_resource_group
-  vars:
-    azure_manage_resource_group_operation: delete
-    azure_manage_resource_group_name: "{{ azure_manage_networking_stack_resource_group }}"
-    azure_manage_resource_group_force_delete_nonempty: true
-    azure_manage_resource_group_force_delete_locked: true
-  when: azure_manage_networking_stack_delete_option == 'all'
+- name: Check delete option
+  ansible.builtin.fail:
+    msg: Please provide delete_option as one of 'all', 'virtual_network', 'subnet'
+  when: azure_manage_networking_stack_delete_option not in ['all', 'virtual_network', 'subnet']
 
-- name: Delete virtual network
-  azure.azcollection.azure_rm_virtualnetwork:
-    state: absent
-    resource_group: "{{ azure_manage_networking_stack_resource_group }}"
-    name: "{{ azure_manage_networking_stack_virtual_network }}"
-  when: azure_manage_networking_stack_delete_option == 'virtual_network'
+- name: Check virtual network
+  ansible.builtin.fail:
+    msg: Azure virtual network must be defined as azure_manage_networking_stack_virtual_network
+  when:
+    - azure_manage_networking_stack_virtual_network is not defined
+
+- name: Check subnet
+  ansible.builtin.fail:
+    msg: Azure subnet must be defined as azure_manage_networking_stack_subnet
+  when:
+    - azure_manage_networking_stack_delete_option in ['all', 'subnet']
+    - azure_manage_networking_stack_subnet is not defined
 
 - name: Delete subnet
   azure.azcollection.azure_rm_subnet:
@@ -22,4 +23,19 @@
     resource_group: "{{ azure_manage_networking_stack_resource_group }}"
     virtual_network: "{{ azure_manage_networking_stack_virtual_network }}"
     name: "{{ azure_manage_networking_stack_subnet }}"
-  when: azure_manage_networking_stack_delete_option == 'subnet'
+  when: azure_manage_networking_stack_delete_option in ['all', 'subnet']
+
+- name: Delete virtual network
+  azure.azcollection.azure_rm_virtualnetwork:
+    state: absent
+    resource_group: "{{ azure_manage_networking_stack_resource_group }}"
+    name: "{{ azure_manage_networking_stack_virtual_network }}"
+  when: azure_manage_networking_stack_delete_option in ['all', 'virtual_network']
+
+- name: Delete resource group if requested
+  ansible.builtin.import_role:
+    name: cloud.azure_ops.azure_manage_resource_group
+  vars:
+    azure_manage_resource_group_operation: delete
+    azure_manage_resource_group_name: "{{ azure_manage_networking_stack_resource_group }}"
+  when: azure_manage_networking_stack_delete_resource_group
