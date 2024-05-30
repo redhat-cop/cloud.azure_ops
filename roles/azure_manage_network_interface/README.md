@@ -49,29 +49,33 @@ Example Playbook
 ----------------
 
     - hosts: localhost
-      roles:
+      tasks:
         - name: Create a Network Interface with Default Security Group
-          role: cloud.azure_ops.azure_manage_network_interface
-          azure_manage_network_interface_operation: 'create'
-          azure_manage_network_interface_resource_group: 'nic-example'
-          azure_manage_network_interface_interface:
-            name: 'nic'
-            vnet_name: 'vnet'
-            subnet_name: 'subnet'
-            ip_configurations:
-              - name: ipconf1
-                public_ip_address_name: 'pip'
-                primary: True
-            tags:
-              tag0: 'test0'
-              tag1: 'test1'
+          ansible.builtin.include_role:
+            name: cloud.azure_ops.azure_manage_network_interface
+          vars:
+            azure_manage_network_interface_operation: create
+            azure_manage_network_interface_resource_group: 'resource-group'
+            azure_manage_network_interface_interface:
+              name: 'nic'
+              vnet_name: 'vnet'
+              subnet_name: 'subnet'
+              ip_configurations:
+                - name: ipconf1
+                  primary: true
+                  public_ip_address_name: 'pip'
+              tags:
+                tag0: "test0"
+                tag1: "test1"
 
         - name: Cleanup Network Interface and Default Security Group
-          role: cloud.azure_ops.azure_manage_network_interface
-          azure_manage_network_interface_operation: 'delete'
-          azure_manage_network_interface_resource_group: 'nic-example'
-          azure_manage_network_interface_interface:
-            name: 'nic'
+          ansible.builtin.include_role:
+            name: cloud.azure_ops.azure_manage_network_interface
+          vars:
+            azure_manage_network_interface_operation: delete
+            azure_manage_network_interface_resource_group: 'resource-group'
+            azure_manage_network_interface_interface:
+              name: 'nic'
 
 License
 -------

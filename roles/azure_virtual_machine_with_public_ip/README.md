@@ -55,32 +55,36 @@ Example Playbook
 ----------------
 
     - hosts: localhost
-      roles:
+      tasks:
         - name: Create a load balanced virtual machine with a default network interface
-          role: cloud.azure_ops.azure_virtual_machine_with_public_ip
-          azure_virtual_machine_with_public_ip_operation: 'create'
-          azure_virtual_machine_with_public_ip_region: eastus
-          azure_virtual_machine_with_public_ip_resource_group: 'my_resource_group'
-          azure_virtual_machine_with_public_ip_vm:
-            name: "example-vm"
-            admin_username: 'azureuser'
-            admin_password: 'adminpass'
-            image:
-              offer: RHEL
-              publisher: RedHat
-              sku: 7-LVM
-              version: latest
-            size: Standard_DS1_v2
-            load_balancer_backend_address_pools:
-              - name: 'default'
-                load_balancer: 'existing-lb'
+          ansible.builtin.include_role:
+            name: cloud.azure_ops.azure_virtual_machine_with_public_ip
+          vars:
+            azure_virtual_machine_with_public_ip_operation: create
+            azure_virtual_machine_with_public_ip_region: 'eastus'
+            azure_virtual_machine_with_public_ip_resource_group: 'resource-group'
+            azure_virtual_machine_with_public_ip_vm:
+              name: 'example-vm'
+              admin_username: 'azureuser'
+              admin_password: 'Password123!'
+              image:
+                offer: RHEL
+                publisher: RedHat
+                sku: 8-LVM
+                version: latest
+              size: Standard_B1ms
+              load_balancer_backend_address_pools:
+                - name: 'default'
+                  load_balancer: 'existing-lb'
 
         - name: Delete virtual machine and all autocreated resources
-          role: cloud.azure_ops.azure_virtual_machine_with_public_ip
-          azure_virtual_machine_with_public_ip_operation: 'delete'
-          azure_virtual_machine_with_public_ip_remove_on_absent: 'all_autocreated'
-          azure_virtual_machine_with_public_ip_vm:
-            name: "example-vm"
+          ansible.builtin.include_role:
+            cloud.azure_ops.azure_virtual_machine_with_public_ip
+          vars:
+            azure_virtual_machine_with_public_ip_operation: delete
+            azure_virtual_machine_with_public_ip_remove_on_absent: 'all_autocreated'
+            azure_virtual_machine_with_public_ip_vm:
+              name: 'example-vm'
 
 License
 -------

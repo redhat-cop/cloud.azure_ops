@@ -62,27 +62,30 @@ Example Playbook
 ----------------
 
     - hosts: localhost
-      roles:
-        - role: cloud.azure_ops.azure_load_balancer_with_public_ip
-          azure_load_balancer_with_public_ip_operation: "create"
-          azure_load_balancer_with_public_ip_region: "canadacentral"
-          azure_load_balancer_with_public_ip_resource_group: "rg"
-          azure_load_balancer_with_public_ip_load_balancer:
-            name: "example-lb"
-            probes:
-              - name: lb-probe
-                port: 5000
-            rules:
-              - name: lb-rule
-                probe: lb-probe
-                backend_address_pool: 'default'
-                frontend_ip_configuration: 'default'
-                frontend_port: 5000
-                backend_port: 5000
-            sku: 'Standard'
-            tags:
-              tag0: 'test0'
-              tag1: 'test1'
+      tasks:
+        - name: Create Load Balancer with Public IP
+          ansible.builtin.include_role:
+            name: cloud.azure_ops.azure_load_balancer_with_public_ip
+          vars:
+            azure_load_balancer_with_public_ip_operation: create
+            azure_load_balancer_with_public_ip_region: 'eastus'
+            azure_load_balancer_with_public_ip_resource_group: 'resource-group'
+            azure_load_balancer_with_public_ip_load_balancer:
+              name: 'example-lb'
+              probes:
+                - name: lb-probe
+                  port: 5000
+              rules:
+                - name: lb-rule
+                  probe: lb-probe
+                  backend_address_pool: 'default'
+                  frontend_ip_configuration: 'default'
+                  frontend_port: 5000
+                  backend_port: 5000
+              sku: 'Standard'
+              tags:
+                tag0: 'test0'
+                tag1: 'test1'
 
 License
 -------

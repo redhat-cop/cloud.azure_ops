@@ -34,21 +34,24 @@ Example Playbook
 ----------------
 
     - hosts: localhost
-      roles:
-         - role: cloud.azure_ops.azure_manage_networking_stack
-           azure_manage_networking_stack_operation: "create"
-           azure_manage_networking_stack_region: "eastus"
-           azure_manage_networking_stack_resource_group: "testing-resource-group"
-           azure_manage_networking_stack_virtual_network: "my-vnet"
-           azure_manage_networking_stack_subnet: "my-subnet-00"
-           azure_manage_networking_stack_vnet_address_prefixes_cidr:
-            - "10.1.0.0/16"
-            - "172.100.0.0/16"
-           azure_manage_networking_stack_subnet_address_prefixes_cidr:
-            - "172.100.0.0/8"
-           azure_manage_networking_stack_tags:
-             tag0: "tag0"
-             tag1: "tag1"
+      tasks:
+        - name: Create Networking stack
+          ansible.builtin.include_role:
+            name: cloud.azure_ops.azure_manage_networking_stack
+          vars:
+            azure_manage_networking_stack_operation: create
+            azure_manage_networking_stack_region: 'eastus'
+            azure_manage_networking_stack_resource_group: 'resource-group'
+            azure_manage_networking_stack_virtual_network: 'vnet'
+            azure_manage_networking_stack_subnet: 'subnet'
+            azure_manage_networking_stack_vnet_address_prefixes_cidr:
+              - "10.1.0.0/16"
+              - "172.100.0.0/16"
+            azure_manage_networking_stack_subnet_address_prefixes_cidr:
+              - "172.100.0.0/8"
+            azure_manage_networking_stack_tags:
+              tag0: "tag0"
+              tag1: "tag1"
 
 License
 -------

@@ -42,39 +42,43 @@ Example Playbook
 ----------------
 
     - hosts: localhost
-      roles:
-        - name: Create a security group with custom rules
-          role: cloud.azure_ops.azure_manage_security_group
-          azure_manage_security_group_resource_group: 'my_resource_group'
-          azure_manage_security_group_region: eastus
-          azure_manage_security_group_operation: 'create'
-          azure_manage_security_group_security_group:
-            name: "{{ azure_resource_group }}-sg"
-            rules:
-              - name: 'allow_ssh'
-                protocol: Tcp
-                destination_port_range:
-                  - 22
-                access: Allow
-                priority: 100
-                direction: Inbound
-              - name: 'allow_web_traffic'
-                protocol: Tcp
-                destination_port_range:
-                  - 80
-                  - 443
-                access: Allow
-                priority: 101
-                direction: Inbound
+      tasks:
+        - name: Create Security Group with custom rules
+          ansible.builtin.include_role:
+            name: cloud.azure_ops.azure_manage_security_group
+          vars:
+            azure_manage_security_group_resource_group: 'resource-group'
+            azure_manage_security_group_region: 'eastus'
+            azure_manage_security_group_operation: create
+            azure_manage_security_group_security_group:
+              name: 'security-group'
+              rules:
+                - name: 'allow_ssh'
+                  protocol: Tcp
+                  destination_port_range:
+                    - 22
+                  access: Allow
+                  priority: 100
+                  direction: Inbound
+                - name: 'allow_web_traffic'
+                  protocol: Tcp
+                  destination_port_range:
+                    - 80
+                    - 443
+                  access: Allow
+                  priority: 101
+                  direction: Inbound
 
-        - name: Remove rules from security group
-          role: cloud.azure_ops.azure_manage_security_group
-          azure_manage_security_group_resource_group: 'my_resource_group'
-          azure_manage_security_group_security_group:
-            name: "{{ azure_resource_group }}-sg"
-            rules_to_remove:
-              - 'allow_ssh'
-              - 'allow_web_traffic'
+        - name: Remove rules from Security Group
+          ansible.builtin.include_role:
+            name: cloud.azure_ops.azure_manage_security_group
+          vars:
+            azure_manage_security_group_resource_group: 'resource-group'
+            azure_manage_security_group_security_group:
+              name: 'security-group'
+              rules_to_remove:
+                - 'allow_ssh'
+                - 'allow_web_traffic'
 
 License
 -------
