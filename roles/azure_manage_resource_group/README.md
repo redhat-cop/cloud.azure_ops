@@ -29,15 +29,18 @@ Example Playbook
 ----------------
 
     - hosts: localhost
-      roles:
-         - role: cloud.azure_ops.azure_manage_resource_group
-           azure_manage_resource_group_operation: "create"
-           azure_manage_resource_group_region: "eastus"
-           azure_manage_resource_group_name: "testing-resource-group"
-           azure_manage_resource_group_tags:
-             tag0: "tag0"
-             tag1: "tag1"
-           azure_manage_resource_group_lock_resource_group: true
+      tasks:
+        - name: Create Resource Group
+          ansible.builtin.include_role:
+            name: cloud.azure_ops.azure_manage_resource_group
+          vars:
+            azure_manage_resource_group_operation: create
+            azure_manage_resource_group_region: 'eastus'
+            azure_manage_resource_group_name: 'resource-group'
+            azure_manage_resource_group_tags:
+              tag0: "tag0"
+              tag1: "tag1"
+            azure_manage_resource_group_lock_resource_group: true
 
 License
 -------

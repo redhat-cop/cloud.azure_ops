@@ -58,26 +58,29 @@ Example Playbook
 ----------------
 
     - hosts: localhost
-      roles:
-         - role: cloud.azure_ops.azure_manage_postgresql
-           azure_manage_postgresql_postgresql_name: postgresql-server
-           azure_manage_postgresql_operation: "create"
-           azure_manage_postgresql_region: "eastus"
-           azure_manage_postgresql_resource_group: "postgresql-rg"
-           azure_manage_postgresql_postgresql_backup_retention_days: 10
-           azure_manage_postgresql_postgresql_admin_username: ansible
-           azure_manage_postgresql_postgresql_admin_password: ansible-testing-123
-           azure_manage_postgresql_postgresql_storage_mb: 5120
-           azure_manage_postgresql_postgresql_sku:
+      tasks:
+        - name: Create PostgreSQL server
+          ansible.builtin.include_role:
+            name: cloud.azure_ops.azure_manage_postgresql
+          vars:
+            azure_manage_postgresql_postgresql_name: postgresql-server
+            azure_manage_postgresql_operation: create
+            azure_manage_postgresql_region: 'eastus'
+            azure_manage_postgresql_resource_group: 'resource-group'
+            azure_manage_postgresql_postgresql_backup_retention_days: 10
+            azure_manage_postgresql_postgresql_admin_username: 'azureuser'
+            azure_manage_postgresql_postgresql_admin_password: 'Password123!'
+            azure_manage_postgresql_postgresql_storage_mb: 5120
+            azure_manage_postgresql_postgresql_sku:
               name: B_Gen5_1
               tier: Basic
-           azure_manage_postgresql_resource_group_tags:
+            azure_manage_postgresql_resource_group_tags:
               tag0: "tag0"
               tag1: "tag1"
-           azure_manage_postgresql_postgresql_settings:
+            azure_manage_postgresql_postgresql_settings:
               - name: deadlock_timeout
                 value: 2000
-           azure_manage_postgresql_postgresql_firewall_rule:
+            azure_manage_postgresql_postgresql_firewall_rule:
               - name: rule_0
                 start_ip_address: 172.10.1.0
                 end_ip_address: 172.10.128.0
