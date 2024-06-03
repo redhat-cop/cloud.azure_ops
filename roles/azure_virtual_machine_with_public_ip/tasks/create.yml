@@ -32,7 +32,7 @@
     azure_manage_resource_group_tags: "{{ azure_virtual_machine_with_public_ip_tags | default(omit) }}"
   when: rg_info.resourcegroups | length == 0
 
-# If nic is not specified, assert virtual network exists and create default public ip & nic
+# If nic is not specified, create virtual network if needed and create default public ip & nic
 - name: Ensure default nic and default public ip
   when: azure_virtual_machine_with_public_ip_vm.network_interfaces is undefined
   block:
@@ -41,10 +41,36 @@
         resource_group: "{{ azure_virtual_machine_with_public_ip_resource_group }}"
       register: vnet_info
 
-    - name: Ensure vnet exists
-      ansible.builtin.fail:
-        msg: When no network interfaces are specified, a virtual network must exist
+    - name: Create virtual network if not already exist
       when: vnet_info.virtualnetworks | length == 0
+      block:
+        - name: Check virtual network CIDR address prefixes
+          ansible.builtin.fail:
+            msg: Azure virtual network CIDR address prefixes must be defined as azure_virtual_machine_with_public_ip_vm.vnet_address_prefixes_cidr
+          when: azure_virtual_machine_with_public_ip_vm.vnet_address_prefixes_cidr is not defined
+
+        - name: Check subnet CIDR address prefixes
+          ansible.builtin.fail:
+            msg: Azure subnet CIDR address prefixes must be defined as azure_virtual_machine_with_public_ip_vm.subnet_address_prefixes_cidr
+          when: azure_virtual_machine_with_public_ip_vm.subnet_address_prefixes_cidr is not defined
+
+        - name: Create virtual network and subnet
+          ansible.builtin.include_role:
+            name: cloud.azure_ops.azure_manage_networking_stack
+          vars:
+            azure_manage_networking_stack_operation: create
+            azure_manage_networking_stack_resource_group: "{{ azure_virtual_machine_with_public_ip_resource_group }}"
+            azure_manage_networking_stack_virtual_network: "{{ vm_name }}"
+            azure_manage_networking_stack_subnet: "{{ vm_name }}"
+            azure_manage_networking_stack_vnet_address_prefixes_cidr: "{{ azure_virtual_machine_with_public_ip_vm.vnet_address_prefixes_cidr }}"
+            azure_manage_networking_stack_subnet_address_prefixes_cidr: "{{ azure_virtual_machine_with_public_ip_vm.subnet_address_prefixes_cidr }}"
+            azure_manage_networking_stack_tags:
+              _own_vnet_: "{{ vm_name }}"
+
+    - name: Refresh virtual network info
+      azure.azcollection.azure_rm_virtualnetwork_info:
+        resource_group: "{{ azure_virtual_machine_with_public_ip_resource_group }}"
+      register: vnet_info
 
     - name: Create default public ip for default nic
       azure.azcollection.azure_rm_publicipaddress:

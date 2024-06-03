@@ -48,6 +48,18 @@ argument_specs:
               - Can be a string of name or resource ID of the network interface, can also be a dict containing 'resource_group' and 'name' of the network interface.
               - A default network interface will be created if not provided.
             type: raw
+          vnet_address_prefixes_cidr:
+            description:
+              - List of IPv4 address ranges for virtual network where each is formatted using CIDR notation.
+              - Required when creating a new virtual network, otherways should be omitted.
+            type: list
+            elements: str
+          subnet_address_prefixes_cidr:
+            description:
+              - CIDR defining the IPv4 and IPv6 address space of the subnet.
+              - Required when creating a new virtual network, otherways should be omitted.
+            type: list
+            elements: str
           os:
             description: Type of Operating System.
             default: 'Linux'

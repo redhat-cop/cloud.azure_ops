@@ -22,6 +22,10 @@ Role Variables
   - **admin_password**: Password of the administrator login. Not required when `os='Linux'` and `ssh_pw_enabled='false'`.
   - **size**: Valid Azure VM size. Choices vary depending on the subscription and location.
   - **network_interfaces**: List of network interfaces to add to the VM. Can be a string of name or resource ID of the network interface, can also be a dict containing 'resource_group' and 'name' of the network interface. A default network interface will be created if not provided.
+  - **vnet_address_prefixes_cidr**: List of IPv4 address ranges for virtual network where each is formatted using CIDR notation.
+  Required when creating a new virtual network, otherways should be omitted
+  - **subnet_address_prefixes_cidr**: CIDR defining the IPv4 and IPv6 address space of the subnet.
+  Required when creating a new virtual network, otherways should be omitted
   - **os**: Type of Operating System. Default is 'Linux'
   - **availability_set**: Name or ID of existing availability set to add the VM to.
   - **image**: The image used to build the VM. For custom images, the name of the image. To narrow the search to a specific resource group, a dict with the keys name and resource_group. For Marketplace images, a dict with the keys publisher, offer, sku, and version. Set version=latest to get the most recent version of a given image.

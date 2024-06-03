@@ -11,6 +11,24 @@
     remove_on_absent: "{{ azure_virtual_machine_with_public_ip_remove_on_absent | default(omit) }}"
     state: absent
 
+# Delete Virtual network if created by role
+- name: Get virtual network info
+  azure.azcollection.azure_rm_virtualnetwork_info:
+    resource_group: "{{ azure_virtual_machine_with_public_ip_resource_group }}"
+    name: "{{ vm_name }}"
+    tags:
+      _own_vnet_
+  register: _vnet_info
+
+- name: Delete Virtual network if created by role
+  azure.azcollection.azure_rm_virtualnetwork:
+    resource_group: "{{ azure_virtual_machine_with_public_ip_resource_group }}"
+    name: "{{ vm_name }}"
+    state: absent
+  when:
+    - _vnet_info.virtualnetworks | length == 1
+    - azure_virtual_machine_with_public_ip_remove_on_absent in ['all', 'all_autocreated']
+
 - name: Delete Resource group if requested
   ansible.builtin.include_role:
     name: cloud.azure_ops.azure_manage_resource_group
