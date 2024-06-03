@@ -1,0 +1,18 @@
+---
+- name: Ensure VM doesn't exist
+  block:
+    - name: Get VM by name
+      azure.azcollection.azure_rm_virtualmachine_info:
+        resource_group: "{{ vm_resource_group }}"
+        name: "{{ vm_name }}"
+      register: no_vm_info
+  rescue:
+    - name: VM doesn't exist as expected
+      when: ansible_failed_task.name == 'Get VM by name'
+      ansible.builtin.debug:
+        msg: VM doesn't exist as expected
+
+    - name: Force failure if VM was found or unexpected failure occurred
+      ansible.builtin.fail:
+        msg: "'{{ vm_name }}' exists and/or collected info is '{{ no_vm_info }}'"
+      when:  no_vm_info.msg is not contains 'ResourceNotFound'
