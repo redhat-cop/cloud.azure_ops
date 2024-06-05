@@ -1,0 +1,9 @@
+---
+azure_virtual_machine_with_public_ip_vm_name: "{{ resource_prefix }}-vm"
+azure_virtual_machine_with_public_ip_vm_image:
+  offer: RHEL
+  publisher: RedHat
+  sku: 8-LVM
+  version: latest
+azure_virtual_machine_with_public_ip_vm_username: 'azureuser'
+azure_virtual_machine_with_public_ip_vm_size: Standard_B1s

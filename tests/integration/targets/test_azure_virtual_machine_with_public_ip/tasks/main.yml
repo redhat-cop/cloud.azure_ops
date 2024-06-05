@@ -1,0 +1,98 @@
+---
+- name: Test azure_virtual_machine_with_public_ip role with default create/delete options
+  block:
+    - name: Ensure VM doesn't exist
+      ansible.builtin.include_tasks: "ensure_no_vm_found.yml"
+      vars:
+        vm_resource_group: "{{ resource_group }}"
+        vm_name: "{{ azure_virtual_machine_with_public_ip_vm_name }}"
+
+    - name: Set vars for test
+      ansible.builtin.set_fact:
+        azure_virtual_machine_with_public_ip_resource_group: "{{ resource_group }}"
+        azure_virtual_machine_with_public_ip_vm:
+          name: "{{ azure_virtual_machine_with_public_ip_vm_name }}"
+          admin_username: "{{ azure_virtual_machine_with_public_ip_vm_username }}"
+          admin_password: 'Password123!'
+          image: "{{ azure_virtual_machine_with_public_ip_vm_image }}"
+          size: "{{ azure_virtual_machine_with_public_ip_vm_size }}"
+          vnet_address_prefixes_cidr:
+          - "10.1.0.0/16"
+          subnet_address_prefixes_cidr:
+          - "10.1.0.0/24"
+
+    # Test: Create Virtual machine with default options
+    - name: Create Virtual machine with default network interface
+      ansible.builtin.include_role:
+        name: cloud.azure_ops.azure_virtual_machine_with_public_ip
+      vars:
+        azure_virtual_machine_with_public_ip_operation: create
+
+    # Verify Virtual machine has been created
+    - name: Ensure Virtual machine has been created
+      azure.azcollection.azure_rm_virtualmachine_info:
+        resource_group: "{{ azure_virtual_machine_with_public_ip_resource_group }}"
+        name: "{{ azure_virtual_machine_with_public_ip_vm.name }}"
+      register: vm_info
+
+    - name: Verify Virtual machine parameters
+      ansible.builtin.assert:
+        that:
+          - vm_info.vms[0].name == azure_virtual_machine_with_public_ip_vm.name
+          - vm_info.vms[0].network_interface_names[0] == azure_virtual_machine_with_public_ip_vm.name
+          - vm_info.vms[0].vm_size == azure_virtual_machine_with_public_ip_vm.size
+          - vm_info.vms[0].image.offer == azure_virtual_machine_with_public_ip_vm.image.offer
+          - vm_info.vms[0].power_state == "running"
+          - vm_info.vms[0].provisioning_state == "Succeeded"
+
+    # Test: Delete Virtual machine with default options
+    - name: Delete Virtual machine and all attached resources
+      ansible.builtin.include_role:
+        name: cloud.azure_ops.azure_virtual_machine_with_public_ip
+      vars:
+        azure_virtual_machine_with_public_ip_operation: delete
+
+    - name: Ensure Virtual machine doesn't exist
+      ansible.builtin.include_tasks: "ensure_no_vm_found.yml"
+      vars:
+        vm_resource_group: "{{ resource_group }}"
+        vm_name: "{{ azure_virtual_machine_with_public_ip_vm.name }}"
+
+    # Ensure all aurocreted resources have been deleted
+    - name: Get auto created NIC
+      azure_rm_networkinterface_info:
+        resource_group: "{{ azure_virtual_machine_with_public_ip_resource_group }}"
+        name: "{{ azure_virtual_machine_with_public_ip_vm.name }}"
+      register: nic_info
+
+    - name: Get auto created public IP
+      azure_rm_publicipaddress_info:
+        resource_group: "{{ azure_virtual_machine_with_public_ip_resource_group }}"
+        name: "{{ azure_virtual_machine_with_public_ip_vm.name }}"
+      register: pip_info
+
+    - name: Get auto created Virtual network
+      azure.azcollection.azure_rm_virtualnetwork_info:
+        resource_group: "{{ azure_virtual_machine_with_public_ip_resource_group }}"
+        name: "{{ azure_virtual_machine_with_public_ip_vm.name }}"
+      register: vnet_info
+
+    - name: Assert that auto created resources have been deleted
+      ansible.builtin.assert:
+        that:
+          - nic_info.networkinterfaces | length == 0
+          - pip_info.publicipaddresses | length == 0
+          - vnet_info.virtualnetworks | length == 0
+
+  always:
+    - name: Delete Virtual machine and all attached resources
+      azure.azcollection.azure_rm_virtualmachine:
+        resource_group: "{{ resource_group }}"
+        name: "{{ azure_virtual_machine_with_public_ip_vm_name }}"
+        state: absent
+
+    - name: Delete auto created Virtual network
+      azure.azcollection.azure_rm_virtualnetwork:
+        resource_group: "{{ resource_group }}"
+        name: "{{ azure_virtual_machine_with_public_ip_vm_name }}"
+        state: absent
