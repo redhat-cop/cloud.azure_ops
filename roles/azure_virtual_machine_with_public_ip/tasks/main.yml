@@ -33,6 +33,7 @@
   azure.azcollection.azure_rm_virtualmachine:
     resource_group: "{{ azure_virtual_machine_with_public_ip_resource_group }}"
     name: "{{ vm_name }}"
+    started: true
   when: azure_virtual_machine_with_public_ip_operation == 'power_on'
 
 - name: Restart VM
