@@ -32,6 +32,11 @@
     azure_manage_resource_group_tags: "{{ azure_virtual_machine_with_public_ip_tags | default(omit) }}"
   when: rg_info.resourcegroups | length == 0
 
+# Set tags for VM
+- name: Set tags for VM
+  ansible.builtin.set_fact:
+    vm_tags: "{{ azure_virtual_machine_with_public_ip_tags | default({}) }}"
+
 # If nic is not specified, create virtual network if needed and create default public ip & nic
 - name: Ensure default nic and default public ip
   when: azure_virtual_machine_with_public_ip_vm.network_interfaces is undefined
@@ -96,16 +101,27 @@
 
     - name: Tag all autocreated resources for cleanup
       ansible.builtin.set_fact:
-        vm_tags: "{{ azure_virtual_machine_with_public_ip_tags | default({}) | combine({'_own_pip_': vm_name}, {'_own_nic_': vm_name}, {'_own_nsg_': vm_name}) }}"
+        vm_tags: "{{ vm_tags | combine({'_own_pip_': vm_name}, {'_own_nic_': vm_name}, {'_own_nsg_': vm_name}) }}"
 
-# Create/update availability set
+# Create availability set if doesn't exist
+- name: Get availability set info
+  azure.azcollection.azure_rm_availabilityset_info:
+    resource_group: "{{ azure_virtual_machine_with_public_ip_resource_group }}"
+    name: "{{ azure_virtual_machine_with_public_ip_availability_set.name }}"
+  register: aset_info
+  when: azure_virtual_machine_with_public_ip_availability_set is defined
+
 - name: Create availability set
   azure.azcollection.azure_rm_availabilityset:
     resource_group: "{{ azure_virtual_machine_with_public_ip_resource_group }}"
-    name: "{{ azure_availability_set.name }}"
-    platform_update_domain_count: "{{ azure_availability_set.platform_update_domain_count | default(omit) }}"
-    platform_fault_domain_count: "{{ azure_availability_set.platform_fault_domain_count | default(omit) }}"
-  when: azure_availability_set is defined
+    name: "{{ azure_virtual_machine_with_public_ip_availability_set.name }}"
+    platform_update_domain_count: "{{ azure_virtual_machine_with_public_ip_availability_set.platform_update_domain_count | default(omit) }}"
+    platform_fault_domain_count: "{{ azure_virtual_machine_with_public_ip_availability_set.platform_fault_domain_count | default(omit) }}"
+    tags:
+      _own_availability_set_: "{{ azure_virtual_machine_with_public_ip_availability_set.name }}"
+  when:
+    - azure_virtual_machine_with_public_ip_availability_set is defined
+    - aset_info.ansible_info.azure_availabilitysets | length == 0
 
 # Create/update VM
 - name: Create/Update VM
@@ -115,7 +131,7 @@
     vm_size: "{{ azure_virtual_machine_with_public_ip_vm.size | default(omit) }}"
     network_interfaces: "{{ azure_virtual_machine_with_public_ip_vm.network_interfaces | default(vm_name) }}"
     os_type: "{{ azure_virtual_machine_with_public_ip_vm.os | default(omit) }}"
-    availability_set: "{{ azure_virtual_machine_with_public_ip_vm.availability_set | default(omit) }}"
+    availability_set: "{{ azure_virtual_machine_with_public_ip_availability_set.name | default(omit) }}"
     image: "{{ azure_virtual_machine_with_public_ip_vm.image | default(omit) }}"
     admin_username: "{{ azure_virtual_machine_with_public_ip_vm.admin_username | default(omit) }}"
     admin_password: "{{ azure_virtual_machine_with_public_ip_vm.admin_password | default(omit) }}"
