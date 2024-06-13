@@ -27,7 +27,7 @@
     azure_manage_resource_group_operation: create
     azure_manage_resource_group_name: "{{ azure_manage_postgresql_resource_group }}"
     azure_manage_resource_group_region: "{{ azure_manage_postgresql_region }}"
-    azure_manage_resource_group_tags: "{{ azure_manage_postgresql_tags | default(omit) }}"
+    azure_manage_resource_group_tags: "{{ azure_manage_postgresql_tags | default({}) }}"
   when: rg_info.resourcegroups | length == 0
 
 - name: Check Azure PostgreSQL server restore point

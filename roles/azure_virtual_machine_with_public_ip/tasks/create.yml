@@ -29,7 +29,7 @@
     azure_manage_resource_group_operation: create
     azure_manage_resource_group_name: "{{ azure_virtual_machine_with_public_ip_resource_group }}"
     azure_manage_resource_group_region: "{{ azure_virtual_machine_with_public_ip_region }}"
-    azure_manage_resource_group_tags: "{{ azure_virtual_machine_with_public_ip_tags | default(omit) }}"
+    azure_manage_resource_group_tags: "{{ azure_virtual_machine_with_public_ip_tags | default({}) }}"
   when: rg_info.resourcegroups | length == 0
 
 # Set tags for VM

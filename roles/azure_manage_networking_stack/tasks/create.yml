@@ -33,7 +33,7 @@
     azure_manage_resource_group_operation: create
     azure_manage_resource_group_name: "{{ azure_manage_networking_stack_resource_group }}"
     azure_manage_resource_group_region: "{{ azure_manage_networking_stack_region }}"
-    azure_manage_resource_group_tags: "{{ azure_manage_networking_stack_tags | default(omit) }}"
+    azure_manage_resource_group_tags: "{{ azure_manage_networking_stack_tags | default({}) }}"
   when: rg_info.resourcegroups | length == 0
 
 - name: Create azure virtual network
