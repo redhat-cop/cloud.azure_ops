@@ -1,0 +1,5 @@
+bugfixes:
+  - Added missed argument to the 'Power On VM' task in azure_virtual_machine_with_public_ip role
+  - Updated README with proper role's variables description for azure_virtual_machine_with_public_ip role
+  - Fixed undefined variables issue for azure_virtual_machine_with_public_ip role
+  - Fixed azure_manage_resource_group_tags value for new resource group creation by role
