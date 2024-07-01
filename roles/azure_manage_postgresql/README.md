@@ -33,7 +33,6 @@ Role Variables
 * **azure_manage_postgresql_postgresql_create_mode**: Create mode of SQL Server. Blank (default), restore from geo redundant (geo_restore), or restore from point in time (point_in_time_restore). Valid values are: **default**, **geo_restore**, **point_in_time_restore**. Default value is 'default'.
 * **azure_manage_postgresql_postgresql_source_server_id**: Id of the source server if **azure_manage_postgresql_postgresql_create_mode** is set to **default**.
 * **azure_manage_postgresql_postgresql_restore_point_in_time**: Restore point creation time (ISO8601 format), specifying the time to restore from. Required if **azure_manage_postgresql_postgresql_create_mode** is set to **point_in_time_restore**.
-* **azure_manage_postgresql_tags** - Dictionary of string:string pairs to assign as metadata to the object.
 * **azure_manage_postgresql_postgresql_settings**: list of configuration settings for PostgreSQL Server. 
   - **name**: setting name.
   - **value**: value of the setting.
