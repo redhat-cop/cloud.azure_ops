@@ -1,0 +1,34 @@
+---
+- name: Test Create the VM
+  ansible.builtin.include_tasks: "azure_vm_operations.yml"
+  vars:
+    operation: create
+    asserts_list: "{{ create_asserts_list }}"
+
+- name: Test Stop the VM
+  ansible.builtin.include_tasks: "azure_vm_operations.yml"
+  vars:
+    operation: power_off
+    asserts_list:
+      - vm_info.vms[0].power_state == 'stopped'
+
+- name: Test Deallocate the VM
+  ansible.builtin.include_tasks: "azure_vm_operations.yml"
+  vars:
+    operation: deallocate
+    asserts_list:
+      - vm_info.vms[0].power_state == 'deallocated'
+
+- name: Test Start the VM
+  ansible.builtin.include_tasks: "azure_vm_operations.yml"
+  vars:
+    operation: power_on
+    asserts_list:
+      - vm_info.vms[0].power_state in ['starting', 'running']
+
+- name: Test Restart the VM
+  ansible.builtin.include_tasks: "azure_vm_operations.yml"
+  vars:
+    operation: restart
+    asserts_list:
+      - vm_info.vms[0].power_state == 'running'

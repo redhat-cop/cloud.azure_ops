@@ -1,15 +1,19 @@
 ---
-- name: Test azure_virtual_machine_with_public_ip role with default create/delete options
+- name: Test azure_virtual_machine_with_public_ip role with default create/delete options and new resource group
   block:
-    - name: Ensure VM doesn't exist
-      ansible.builtin.include_tasks: "ensure_no_vm_found.yml"
-      vars:
-        vm_resource_group: "{{ resource_group }}"
-        vm_name: "{{ azure_virtual_machine_with_public_ip_vm_name }}"
+    - name: Gather Resource group info
+      azure.azcollection.azure_rm_resourcegroup_info:
+        name: "{{ resource_group }}"
+      register: rg_info
 
-    - name: Set vars for test
+    - name: Set vars for the test
       ansible.builtin.set_fact:
-        azure_virtual_machine_with_public_ip_resource_group: "{{ resource_group }}"
+        azure_virtual_machine_with_public_ip_resource_group: "{{ resource_prefix }}-{{ resource_group }}"
+        azure_virtual_machine_with_public_ip_region: "{{ rg_info.resourcegroups.0.location }}"
+        azure_virtual_machine_with_public_ip_availability_set:
+          name: "{{ resource_prefix }}-avs"
+          platform_fault_domain_count: 2
+          platform_update_domain_count: 5
         azure_virtual_machine_with_public_ip_vm:
           name: "{{ azure_virtual_machine_with_public_ip_vm_name }}"
           admin_username: "{{ azure_virtual_machine_with_public_ip_vm_username }}"
@@ -21,23 +25,12 @@
           subnet_address_prefixes_cidr:
           - "10.1.0.0/24"
 
-    # Test: Create Virtual machine with default options
-    - name: Create Virtual machine with default network interface
-      ansible.builtin.include_role:
-        name: cloud.azure_ops.azure_virtual_machine_with_public_ip
+    # Create VM with auto-created resorces within a new resource group.
+    # Stop, deallocate, start and restart VM
+    - name: Perform valid operations with VM within a new resource group
+      ansible.builtin.include_tasks: "azure_vm_tests.yml"
       vars:
-        azure_virtual_machine_with_public_ip_operation: create
-
-    # Verify Virtual machine has been created
-    - name: Ensure Virtual machine has been created
-      azure.azcollection.azure_rm_virtualmachine_info:
-        resource_group: "{{ azure_virtual_machine_with_public_ip_resource_group }}"
-        name: "{{ azure_virtual_machine_with_public_ip_vm.name }}"
-      register: vm_info
-
-    - name: Verify Virtual machine parameters
-      ansible.builtin.assert:
-        that:
+        create_asserts_list:
           - vm_info.vms[0].name == azure_virtual_machine_with_public_ip_vm.name
           - vm_info.vms[0].network_interface_names[0] == azure_virtual_machine_with_public_ip_vm.name
           - vm_info.vms[0].vm_size == azure_virtual_machine_with_public_ip_vm.size
@@ -45,54 +38,155 @@
           - vm_info.vms[0].power_state == "running"
           - vm_info.vms[0].provisioning_state == "Succeeded"
 
-    # Test: Delete Virtual machine with default options
     - name: Delete Virtual machine and all attached resources
       ansible.builtin.include_role:
         name: cloud.azure_ops.azure_virtual_machine_with_public_ip
       vars:
         azure_virtual_machine_with_public_ip_operation: delete
+        azure_virtual_machine_with_public_ip_delete_resource_group: true
+
+    # Verify Resource group deleted
+    - name: Get Resource group
+      azure.azcollection.azure_rm_resourcegroup_info:
+        name: "{{ azure_virtual_machine_with_public_ip_resource_group }}"
+      register: rg_info
+
+    - name: Ensure Resource group deleted
+      ansible.builtin.assert:
+        that:
+          - rg_info.resourcegroups | length == 0
+
+  always:
+    - name: Delete a Resource group including resources it contains
+      azure.azcollection.azure_rm_resourcegroup:
+        name: "{{ azure_virtual_machine_with_public_ip_resource_group }}"
+        force_delete_nonempty: true
+        state: absent
+
+- name: Test azure_virtual_machine_with_public_ip role with pre-created NIC and availability set in existent resource group
+  block:
+    - name: Set vars for resource creation
+      ansible.builtin.set_fact:
+        vnet_name: 'vnet-vm'
+        subnet_name: 'subnet-vm'
+        nic_name: 'NIC-vm'
+        availability_set_name: 'availability-set-vm'
+        public_ip_name: 'public-ip-vm'
+
+    - name: Create Networking stack
+      ansible.builtin.include_role:
+        name: cloud.azure_ops.azure_manage_networking_stack
+      vars:
+        azure_manage_networking_stack_operation: create
+        azure_manage_networking_stack_resource_group: "{{ resource_group }}"
+        azure_manage_networking_stack_virtual_network: "{{ vnet_name }}"
+        azure_manage_networking_stack_subnet: "{{ subnet_name }}"
+        azure_manage_networking_stack_vnet_address_prefixes_cidr:
+          - "10.1.0.0/16"
+        azure_manage_networking_stack_subnet_address_prefixes_cidr:
+          - "10.1.0.0/24"
+  
+    - name: Create Public ip
+      azure.azcollection.azure_rm_publicipaddress:
+        resource_group: "{{ resource_group }}"
+        name: "{{ public_ip_name }}"
+        allocation_method: static
+
+    - name: Create Network interface
+      ansible.builtin.include_role:
+        name: cloud.azure_ops.azure_manage_network_interface
+      vars:
+        azure_manage_network_interface_operation: create
+        azure_manage_network_interface_resource_group: "{{ resource_group }}"
+        azure_manage_network_interface_interface:
+          name: "{{ nic_name }}"
+          vnet_name: "{{ vnet_name }}"
+          subnet_name: "{{ subnet_name }}"
+          ip_configurations:
+            - name: "{{ public_ip_name }}"
+              primary: true
+
+    - name: Create availability set
+      azure.azcollection.azure_rm_availabilityset:
+        resource_group: "{{ resource_group }}"
+        name: "{{ availability_set_name }}"
+        platform_update_domain_count: 5
+        platform_fault_domain_count: 2
+
+    - name: Set vars for the test
+      ansible.builtin.set_fact:
+        azure_virtual_machine_with_public_ip_resource_group: "{{ resource_group }}"
+        azure_virtual_machine_with_public_ip_vm:
+          name: "{{ azure_virtual_machine_with_public_ip_vm_name }}"
+          admin_username: "{{ azure_virtual_machine_with_public_ip_vm_username }}"
+          admin_password: 'Password123!'
+          network_interfaces: "{{ nic_name }}"
+          image: "{{ azure_virtual_machine_with_public_ip_vm_image }}"
+          size: "{{ azure_virtual_machine_with_public_ip_vm_size }}"
+        azure_virtual_machine_with_public_ip_tags:
+          testing: "testing"
+        azure_virtual_machine_with_public_ip_availability_set:
+          name: "{{ availability_set_name }}"
+
+    # Create VM with pre-created resorces.
+    # Stop, deallocate, start and restart VM
+    - name: Perform valid operations with VM within an existing resource group
+      ansible.builtin.include_tasks: "azure_vm_tests.yml"
+      vars:
+        create_asserts_list:
+          - vm_info.vms[0].name == azure_virtual_machine_with_public_ip_vm.name
+          - vm_info.vms[0].network_interface_names[0] == azure_virtual_machine_with_public_ip_vm.network_interfaces
+          - vm_info.vms[0].vm_size == azure_virtual_machine_with_public_ip_vm.size
+          - vm_info.vms[0].image.offer == azure_virtual_machine_with_public_ip_vm.image.offer
+          - vm_info.vms[0].power_state == "running"
+          - vm_info.vms[0].provisioning_state == "Succeeded"
+          - vm_info.vms[0].tags.values()|list is contains 'testing'
+
+    - name: Delete Virtual machine and NIC attached
+      ansible.builtin.include_role:
+        name: cloud.azure_ops.azure_virtual_machine_with_public_ip
+      vars:
+        azure_virtual_machine_with_public_ip_operation: delete
+        azure_virtual_machine_with_public_ip_remove_on_absent: 'network_interfaces'
 
     - name: Ensure Virtual machine doesn't exist
       ansible.builtin.include_tasks: "ensure_no_vm_found.yml"
       vars:
-        vm_resource_group: "{{ resource_group }}"
-        vm_name: "{{ azure_virtual_machine_with_public_ip_vm.name }}"
+        vm_resource_group: "{{ azure_virtual_machine_with_public_ip_resource_group }}"
+        vm_name: "{{ azure_virtual_machine_with_public_ip_vm_name }}"
 
-    # Ensure all aurocreted resources have been deleted
-    - name: Get auto created NIC
+    # Ensure NIC has been deleted
+    - name: Get NIC info
       azure_rm_networkinterface_info:
         resource_group: "{{ azure_virtual_machine_with_public_ip_resource_group }}"
-        name: "{{ azure_virtual_machine_with_public_ip_vm.name }}"
+        name: "{{ nic_name }}"
       register: nic_info
 
-    - name: Get auto created public IP
-      azure_rm_publicipaddress_info:
-        resource_group: "{{ azure_virtual_machine_with_public_ip_resource_group }}"
-        name: "{{ azure_virtual_machine_with_public_ip_vm.name }}"
-      register: pip_info
-
-    - name: Get auto created Virtual network
-      azure.azcollection.azure_rm_virtualnetwork_info:
-        resource_group: "{{ azure_virtual_machine_with_public_ip_resource_group }}"
-        name: "{{ azure_virtual_machine_with_public_ip_vm.name }}"
-      register: vnet_info
-
-    - name: Assert that auto created resources have been deleted
+    - name: Assert that NIC has been deleted
       ansible.builtin.assert:
         that:
           - nic_info.networkinterfaces | length == 0
-          - pip_info.publicipaddresses | length == 0
-          - vnet_info.virtualnetworks | length == 0
 
+    # Ensure availability set exists
+    - name: Get availability set info
+      azure.azcollection.azure_rm_availabilityset_info:
+        resource_group: "{{ azure_virtual_machine_with_public_ip_resource_group }}"
+        name: "{{ azure_virtual_machine_with_public_ip_availability_set.name }}"
+      register: aset_info
+
+    - name: Assert that availability set exists
+      ansible.builtin.assert:
+        that:
+          - aset_info.ansible_info.azure_availabilitysets | length == 1
+        
   always:
-    - name: Delete Virtual machine and all attached resources
-      azure.azcollection.azure_rm_virtualmachine:
-        resource_group: "{{ resource_group }}"
-        name: "{{ azure_virtual_machine_with_public_ip_vm_name }}"
-        state: absent
-
-    - name: Delete auto created Virtual network
-      azure.azcollection.azure_rm_virtualnetwork:
-        resource_group: "{{ resource_group }}"
-        name: "{{ azure_virtual_machine_with_public_ip_vm_name }}"
-        state: absent
+    - name: Clean up all resources
+      ansible.builtin.include_tasks: "delete_all_resources.yml"
+      vars:
+        vm_resource_group: "{{ resource_group }}"
+        vm_name: "{{ azure_virtual_machine_with_public_ip_vm_name }}"
+        availability_set: "{{ availability_set_name }}"
+        networking_interface: "{{ nic_name }}"
+        public_ip: "{{ public_ip_name }}"
+        virtual_network: "{{ vnet_name }}"
+        subnet: "{{ subnet_name }}" 

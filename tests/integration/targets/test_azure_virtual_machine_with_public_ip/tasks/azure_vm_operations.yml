@@ -1,0 +1,17 @@
+---
+- name: Perform VM "{{ operation }}"
+  ansible.builtin.include_role:
+    name: cloud.azure_ops.azure_virtual_machine_with_public_ip
+  vars:
+    azure_virtual_machine_with_public_ip_operation: "{{ operation }}"
+  when: azure_virtual_machine_with_public_ip_operation in azure_valid_vm_operations
+
+- name: Get VM info
+  azure.azcollection.azure_rm_virtualmachine_info:
+    resource_group: "{{ azure_virtual_machine_with_public_ip_resource_group }}"
+    name: "{{ azure_virtual_machine_with_public_ip_vm.name }}"
+  register: vm_info
+
+- name: Verify VM parameters
+  ansible.builtin.assert:
+    that: "{{ asserts_list }}"

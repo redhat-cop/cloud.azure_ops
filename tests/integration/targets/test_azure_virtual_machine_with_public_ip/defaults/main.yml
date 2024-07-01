@@ -7,3 +7,4 @@ azure_virtual_machine_with_public_ip_vm_image:
   version: latest
 azure_virtual_machine_with_public_ip_vm_username: 'azureuser'
 azure_virtual_machine_with_public_ip_vm_size: Standard_B1s
+azure_valid_vm_operations: ['create', 'power_off', 'deallocate', 'power_on', 'restart']
