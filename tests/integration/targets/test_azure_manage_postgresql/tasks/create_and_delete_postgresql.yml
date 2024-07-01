@@ -1,0 +1,118 @@
+---
+- name: Test Create and Delete PostgreSQL Server
+  block:
+    - name: Print test step details
+      ansible.builtin.debug:
+        msg: "Run test with resource_group={{ test_resource_group }}"
+
+    - name: Set vars for test
+      ansible.builtin.set_fact:
+        azure_manage_postgresql_postgresql_version: "9.6"
+        azure_manage_postgresql_postgresql_firewall_rules:
+          - name: "rule_0"
+            start_ip_address: "172.10.1.0"
+            end_ip_address: "172.10.128.0"
+        azure_manage_postgresql_postgresql_database_instances:
+          - name: "database-test"
+
+    # Test: Create PostgreSQL Server
+    - name: Create PostgreSQL Server
+      ansible.builtin.include_role:
+        name: cloud.azure_ops.azure_manage_postgresql
+      vars:
+        azure_manage_postgresql_operation: create
+        azure_manage_postgresql_resource_group: "{{ test_resource_group }}"
+    
+    # Verify that PostgreSQL Server was created as expected
+    - name: Gather PostgreSQL Server info
+      azure.azcollection.azure_rm_postgresqlserver_info:
+        resource_group: "{{ test_resource_group }}"
+        name: "{{ azure_manage_postgresql_postgresql_name }}"
+      register: _postgresql
+
+    - name: Assert that PostgreSQL Server was created as expected
+      ansible.builtin.assert:
+        that:
+          - _postgresql.servers | length == 1
+          - _postgresql.servers[0].name == azure_manage_postgresql_postgresql_name
+          - _postgresql.servers[0].location == azure_manage_postgresql_region
+          - _postgresql.servers[0].sku.name == azure_manage_postgresql_postgresql_sku.name
+          - _postgresql.servers[0].sku.tier == azure_manage_postgresql_postgresql_sku.tier
+          - _postgresql.servers[0].storage_mb == azure_manage_postgresql_postgresql_storage_mb
+          - _postgresql.servers[0].admin_username == azure_manage_postgresql_postgresql_admin_username
+          - _postgresql.servers[0].version == azure_manage_postgresql_postgresql_version
+
+    # Verify that PostgreSQL Server firewall rule was created as expected
+    - name: Gather PostgreSQL Server firewall rule info  
+      azure.azcollection.azure_rm_postgresqlfirewallrule_info:
+        resource_group: "{{ test_resource_group }}"
+        server_name: "{{ azure_manage_postgresql_postgresql_name }}"
+        name: "{{ azure_manage_postgresql_postgresql_firewall_rules[0].name }}"
+      register: _postgresql_firewall_rule
+
+    - name: Assert that PostgreSQL Server firewall rules were created as expected
+      ansible.builtin.assert:
+        that:
+          - _postgresql_firewall_rule.rules | length == 1
+          - _postgresql_firewall_rule.rules[0].server_name == azure_manage_postgresql_postgresql_name
+          - _postgresql_firewall_rule.rules[0].name == azure_manage_postgresql_postgresql_firewall_rules[0].name
+          - _postgresql_firewall_rule.rules[0].start_ip_address == azure_manage_postgresql_postgresql_firewall_rules[0].start_ip_address
+          - _postgresql_firewall_rule.rules[0].end_ip_address == azure_manage_postgresql_postgresql_firewall_rules[0].end_ip_address
+
+    # Verify that PostgreSQL Database Instance was created as expected
+    - name: Gather PostgreSQL Database Instance info  
+      azure.azcollection.azure_rm_postgresqldatabase_info:
+        resource_group: "{{ test_resource_group }}"
+        server_name: "{{ azure_manage_postgresql_postgresql_name }}"
+        name: "{{ azure_manage_postgresql_postgresql_database_instances[0].name }}"
+      register: _postgresql_database
+
+    - name: Assert that PostgreSQL Database Instance was created as expected
+      ansible.builtin.assert:
+        that:
+          - _postgresql_database.databases | length == 1
+          - _postgresql_database.databases[0].server_name == azure_manage_postgresql_postgresql_name
+          - _postgresql_database.databases[0].name == azure_manage_postgresql_postgresql_database_instances[0].name
+
+    # Test: Delete PostgreSQL Server
+    - name: Delete PostgreSQL Server
+      ansible.builtin.include_role:
+        name: cloud.azure_ops.azure_manage_postgresql
+      vars:
+        azure_manage_postgresql_operation: delete
+        azure_manage_postgresql_resource_group: "{{ test_resource_group }}"
+        azure_manage_postgresql_delete_server: true
+
+    # Verify that PostgreSQL Server was deleted
+    - name: Ensure PostgreSQL Server was deleted
+      azure.azcollection.azure_rm_postgresqlserver_info:
+        resource_group: "{{ test_resource_group }}"
+        name: "{{ azure_manage_postgresql_postgresql_name }}"
+      register: _postgresql
+      failed_when: _postgresql.servers | length > 0
+
+    # Verify that PostgreSQL Firewall rules were deleted
+    - name: Ensure PostgreSQL Firewall rules were deleted
+      azure.azcollection.azure_rm_postgresqlfirewallrule_info:
+        resource_group: "{{ test_resource_group }}"
+        server_name: "{{ azure_manage_postgresql_postgresql_name }}"
+        name: "{{ azure_manage_postgresql_postgresql_firewall_rules[0].name }}"
+      register: _postgresql_firewall_rule
+      failed_when: _postgresql_firewall_rule.rules | length > 0
+
+    # Verify that PostgreSQL database instance was deleted
+    - name: Ensure PostgreSQL database instance was deleted
+      azure.azcollection.azure_rm_postgresqldatabase_info:
+        resource_group: "{{ test_resource_group }}"
+        server_name: "{{ azure_manage_postgresql_postgresql_name }}"
+        name: "{{ azure_manage_postgresql_postgresql_database_instances[0].name }}"
+      register: _postgresql_database
+      failed_when: _postgresql_database.databases | length > 0
+
+    # Verify that Resource Group was deleted, if requiered
+    - name: Ensure Resource Group was deleted - {{ test_resource_group }}
+      azure.azcollection.azure_rm_resourcegroup_info:
+        name: "{{ test_resource_group }}"
+      when: azure_manage_postgresql_resource_group is defined and azure_manage_postgresql_delete_resource_group
+      register: _resourcegroup
+      failed_when: _resourcegroup.resourcegroups | length > 0

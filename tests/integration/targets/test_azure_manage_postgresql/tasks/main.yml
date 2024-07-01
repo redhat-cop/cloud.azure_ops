@@ -1,0 +1,56 @@
+---
+# Determine Azure Region
+- name: Gather Resource Group info
+  azure.azcollection.azure_rm_resourcegroup_info:
+    name: "{{ resource_group }}"
+  register: __rg_info
+
+# Test: Create and Delete postgresql server with pre-created Resource Group
+- name: Test with pre-created Resource Group
+  block:
+    - name: Run tests with pre-created Resource Group
+      ansible.builtin.include_tasks: create_and_delete_postgresql.yml
+      vars:
+        test_resource_group: "{{ resource_group }}"
+        azure_manage_postgresql_region: "{{ __rg_info.resourcegroups.0.location }}"
+
+  always:
+    - name: Always - Gather PostgreSQL Server info
+      azure.azcollection.azure_rm_postgresqlserver_info:
+        resource_group: "{{ resource_group }}"
+        name: "{{ azure_manage_postgresql_postgresql_name }}"
+      register: _postgresql
+
+    - name: Cleanup - Delete a PostgreSQL Server, resource_group={{ resource_group }}
+      azure.azcollection.azure_rm_postgresqlserver:
+        resource_group: "{{ resource_group }}"
+        name: "{{ azure_manage_postgresql_postgresql_name }}"
+        state: absent
+      when: _postgresql.servers | length > 0  
+        
+# Test: Create and Delete postgresql server with new Resource Group
+- name: Test with create and delete Resource Group
+  block:
+    - name: Generate new resource group name
+      ansible.builtin.set_fact:
+        new_resource_group: "{{ resource_prefix }}-{{ resource_group }}"
+
+    - name: Validate resource group doesn't exist before test - {{ new_resource_group }}
+      azure.azcollection.azure_rm_resourcegroup_info:
+        name: "{{ new_resource_group }}"
+      register: _resourcegroup
+      failed_when: _resourcegroup.resourcegroups | length > 0
+
+    - name: Test with create and delete Resource Group
+      ansible.builtin.include_tasks: create_and_delete_postgresql.yml
+      vars:
+        test_resource_group: "{{ new_resource_group }}"
+        azure_manage_postgresql_region: "{{ __rg_info.resourcegroups.0.location }}"
+        azure_manage_postgresql_delete_resource_group: true
+
+  always:
+    - name: Always - Cleanup - Delete a Resource group including resources it contains - {{ new_resource_group }}
+      azure.azcollection.azure_rm_resourcegroup:
+        name: "{{ new_resource_group }}"
+        force_delete_nonempty: true
+        state: absent

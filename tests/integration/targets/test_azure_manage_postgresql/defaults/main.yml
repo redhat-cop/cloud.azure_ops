@@ -1,0 +1,9 @@
+---
+azure_manage_postgresql_postgresql_name: "{{ resource_prefix }}-postgresql-server"
+azure_manage_postgresql_postgresql_admin_username: "ansible"
+azure_manage_postgresql_postgresql_admin_password: "A!1b#2C$d%3E&4f*5G-6h+7I_8j(9K)0l"
+azure_manage_postgresql_postgresql_sku:
+  name: "B_Gen5_1"
+  tier: "Basic"
+azure_manage_postgresql_postgresql_storage_mb: 5120
+azure_manage_postgresql_postgresql_backup_retention_days: 10
