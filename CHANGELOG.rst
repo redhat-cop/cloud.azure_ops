@@ -4,6 +4,31 @@ Cloud.Azure\_Ops Release Notes
 
 .. contents:: Topics
 
+v4.0.0
+======
+
+Release Summary
+---------------
+
+This is release 4.0.0 of ``cloud.azure_ops``, released on 2024-07-09.
+
+Bugfixes
+--------
+
+- Added 'vnet_address_prefixes_cidr' and 'subnet_address_prefixes_cidr' role variables. Required when creating a new virtual network
+- Added Virtual network autocreation during Virual machine with public IP creation in case Virtual network doesn't exist for azure_virtual_machine_with_public_ip role
+- Added a timeout (as a temporary solution) in the delete task of the azure_manage_resource_group role
+- Added missed argument to the 'Power On VM' task in azure_virtual_machine_with_public_ip role
+- Added retries to Resource Group deletion (retries=40, delay=5)
+- Fix argument choices for azure_manage_postgrsql
+- Fixed azure_manage_resource_group_tags value for new resource group creation by role
+- Fixed undefined variables issue for azure_virtual_machine_with_public_ip role
+- Refactor the management of the Resource Group by other roles Deleting the Resource Group should not be forced by default and should only occur if explicitly requested by the user.
+- Removed duplicated azure_manage_postgresql_tags var in README file of azure_manage_postgresql role
+- Removed the undefined variables from the create.yml of azure_manage_postgresql role and replaced them with defined ones.
+- Update README.md with proper playbook examples
+- Updated README with proper role's variables description for azure_virtual_machine_with_public_ip role
+
 v3.0.0
 ======
 
