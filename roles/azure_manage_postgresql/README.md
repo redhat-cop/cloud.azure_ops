@@ -29,7 +29,13 @@ Role Variables
 * **azure_manage_postgresql_postgresql_enforce_ssl**: Enable SSL enforcement. Default: False
 * **azure_manage_postgresql_postgresql_storage_autogrow**: Enable storage autogrow. Default: False
 * **azure_manage_postgresql_postgresql_admin_username**: The administrator's login name of a server. Can only be specified when the server is being created (and is required for creation).
-* **azure_manage_postgresql_postgresql_admin_password**: The password of the administrator login. When this is not defined, the role will generated a password that can be read later in the variable name.
+* **azure_manage_postgresql_postgresql_admin_password**: The password of the administrator login.  
+The supplied password must be between 6-72 characters long and must satisfy at least 3 of password complexity requirements from the following:
+	-  Contains an uppercase character
+	-  Contains a lowercase character
+	-  Contains a numeric digit
+	-  Contains a special character
+	-  Control characters are not allowed
 * **azure_manage_postgresql_postgresql_create_mode**: Create mode of SQL Server. Blank (default), restore from geo redundant (geo_restore), or restore from point in time (point_in_time_restore). Valid values are: **default**, **geo_restore**, **point_in_time_restore**. Default value is 'default'.
 * **azure_manage_postgresql_postgresql_source_server_id**: Id of the source server if **azure_manage_postgresql_postgresql_create_mode** is set to **default**.
 * **azure_manage_postgresql_postgresql_restore_point_in_time**: Restore point creation time (ISO8601 format), specifying the time to restore from. Required if **azure_manage_postgresql_postgresql_create_mode** is set to **point_in_time_restore**.
