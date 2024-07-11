@@ -1,0 +1,2 @@
+bugfixes:
+  - AddAdd more variables assertions to loadbalancer integration test to ensure it was created as expected
