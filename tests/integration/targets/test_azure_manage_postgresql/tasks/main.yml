@@ -1,4 +1,9 @@
 ---
+- name: Generate Admin Password
+  ansible.builtin.set_fact:
+    azure_manage_postgresql_postgresql_admin_password: lookup('community.general.random_string', length=6, min_lower=1, min_upper=1, min_numeric=1, min_special=1)
+  when: azure_manage_postgresql_postgresql_admin_password is not defined
+
 # Determine Azure Region
 - name: Gather Resource Group info
   azure.azcollection.azure_rm_resourcegroup_info:
