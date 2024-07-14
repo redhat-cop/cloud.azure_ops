@@ -21,12 +21,19 @@
         name: "{{ load_balancer_name }}"
         resource_group: "{{ test_resource_group }}"
       register: _loadbalancer
+     
+    - name: Create loadbalancer expected ID for the variable assertion
+      ansible.builtin.set_fact:
+        loadbalancer_id: "/subscriptions/{{ azure_subscription_id }}/resourceGroups/{{ test_resource_group }}/providers/Microsoft.Network/loadBalancers/{{ load_balancer_name }}" 
 
     - name: Ensure Load Balancer was created as expected
       ansible.builtin.assert:
         that:
           - _loadbalancer.loadbalancers | length == 1
-
+          - _loadbalancer.loadbalancers[0].name == load_balancer_name
+          - _loadbalancer.loadbalancers[0].id == loadbalancer_id
+          - _loadbalancer.loadbalancers[0].sku.name == load_balancer_sku
+     
     - name: Gather Public IP info
       azure.azcollection.azure_rm_publicipaddress_info:
         name: "{{ load_balancer_public_ip_name }}"
