@@ -1,2 +1,0 @@
-bugfixes:
-  - Removed duplicated azure_manage_postgresql_tags var in README file of azure_manage_postgresql role

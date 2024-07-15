@@ -1,3 +1,0 @@
-bugfixes:
-  - Added a timeout (as a temporary solution) in the delete task of the azure_manage_resource_group role
-  
