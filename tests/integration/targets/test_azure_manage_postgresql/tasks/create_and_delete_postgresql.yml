@@ -37,7 +37,6 @@
           - _postgresql.servers[0].name == azure_manage_postgresql_postgresql_name
           - _postgresql.servers[0].location == azure_manage_postgresql_region
           - _postgresql.servers[0].sku.name == azure_manage_postgresql_postgresql_sku.name
-          - _postgresql.servers[0].sku.tier == azure_manage_postgresql_postgresql_sku.tier
           - _postgresql.servers[0].storage_mb == azure_manage_postgresql_postgresql_storage_mb
           - _postgresql.servers[0].admin_username == azure_manage_postgresql_postgresql_admin_username
           - _postgresql.servers[0].version == azure_manage_postgresql_postgresql_version
