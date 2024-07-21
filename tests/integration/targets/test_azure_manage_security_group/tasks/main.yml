@@ -11,6 +11,13 @@
     ansible.builtin.include_tasks: "create_and_delete_sg.yml"
     vars:
       test_resource_group: "{{ resource_group }}"
+  
+  always:
+    - name: Cleanup - make sure Security Group deleted - {{ security_group_name }}
+      azure.azcollection.azure_rm_securitygroup:
+        resource_group: "{{ resource_group }}"
+        name: "{{ security_group_name }}"
+        state: absent
 
 - name: Test with create and delete Resource Group
   block:
@@ -32,12 +39,6 @@
         azure_manage_security_group_delete_resource_group: true
   
   always:
-    - name: Cleanup - make sure Security Group deleted - {{ security_group_name }}
-      azure.azcollection.azure_rm_securitygroup:
-        resource_group: "{{ resource_group }}"
-        name: "{{ security_group_name }}"
-        state: absent
-  
     - name: Cleanup - make sure Resource Group deleted - {{ new_resource_group }}
       azure.azcollection.azure_rm_resourcegroup:
         name: "{{ new_resource_group }}"
