@@ -3,6 +3,5 @@ azure_manage_postgresql_postgresql_name: "{{ resource_prefix }}-postgresql-serve
 azure_manage_postgresql_postgresql_admin_username: "ansible"
 azure_manage_postgresql_postgresql_sku:
   name: "B_Gen5_1"
-  tier: "Basic"
 azure_manage_postgresql_postgresql_storage_mb: 5120
 azure_manage_postgresql_postgresql_backup_retention_days: 10

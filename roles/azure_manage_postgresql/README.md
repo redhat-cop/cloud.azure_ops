@@ -19,9 +19,6 @@ Role Variables
 * **azure_manage_postgresql_postgresql_name**: The name of the Server.
 * **azure_manage_postgresql_postgresql_sku**: The SKU (pricing tier) of the server.
   - **name**: The name of the SKU, typically, tier + family + cores, for example **B_Gen4_1**, **GP_Gen5_8**.
-  - **tier**: The tier of the particular SKU. Valid values are **Basic**, **Standard**.
-  - **capacity**: The scale up/out capacity, representing the server's compute units.
-  - **size**: The size code, to be interpreted by resource as appropriate.
 * **azure_manage_postgresql_postgresql_storage_mb**: The maximum storage allowed for a server.
 * **azure_manage_postgresql_postgresql_geo_redundant_backup**: Choose between locally redundant(default) or geo-redundant backup. This cannot be updated after first deployment. Default: **False**
 * **azure_manage_postgresql_postgresql_backup_retention_days**: Backup retention period between 7 and 35 days. 7 days by default if not set
@@ -78,7 +75,6 @@ Example Playbook
             azure_manage_postgresql_postgresql_storage_mb: 5120
             azure_manage_postgresql_postgresql_sku:
               name: B_Gen5_1
-              tier: Basic
             azure_manage_postgresql_resource_group_tags:
               tag0: "tag0"
               tag1: "tag1"
