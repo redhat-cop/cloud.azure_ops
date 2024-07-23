@@ -12,6 +12,19 @@
     vars:
       test_resource_group: "{{ resource_group }}"
 
+  always:
+    - name: Cleanup - make sure Load Balancer deleted, resource_group={{ resource_group }}
+      azure.azcollection.azure_rm_loadbalancer:
+        resource_group: "{{ resource_group }}"
+        name: "{{ load_balancer_name }}"
+        state: absent
+
+    - name: Cleanup - make sure Public IP deleted, resource_group={{ resource_group }}
+      azure.azcollection.azure_rm_publicipaddress:
+        resource_group: "{{ resource_group }}"
+        name: "{{ load_balancer_public_ip_name }}"
+        state: absent
+
 - name: Test with create and delete Resource Group
   block:
     - name: Generate new resource group name
@@ -32,18 +45,6 @@
         azure_load_balancer_with_public_ip_delete_resource_group: true
 
   always:
-    - name: Cleanup - make sure Public IP deleted, resource_group={{ resource_group }}
-      azure.azcollection.azure_rm_publicipaddress:
-        resource_group: "{{ resource_group }}"
-        name: "{{ load_balancer_public_ip_name }}"
-        state: absent
-
-    - name: Cleanup - make sure Load Balancer deleted, resource_group={{ resource_group }}
-      azure.azcollection.azure_rm_loadbalancer:
-        resource_group: "{{ resource_group }}"
-        name: "{{ load_balancer_name }}"
-        state: absent
-
     - name: Cleanup - make sure Resource Group deleted - {{ new_resource_group }}
       azure.azcollection.azure_rm_resourcegroup:
         name: "{{ new_resource_group }}"
