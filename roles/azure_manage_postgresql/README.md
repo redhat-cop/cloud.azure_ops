@@ -75,7 +75,7 @@ Example Playbook
             azure_manage_postgresql_postgresql_storage_mb: 5120
             azure_manage_postgresql_postgresql_sku:
               name: B_Gen5_1
-            azure_manage_postgresql_resource_group_tags:
+            azure_manage_postgresql_tags:
               tag0: "tag0"
               tag1: "tag1"
             azure_manage_postgresql_postgresql_settings:
