@@ -1,0 +1,2 @@
+bugfixes:
+  - Removing the "elements:str" statment from azure_manage_postgresql/meta/argument_specs.yml file of azure_manage_postgresql_tags variable.  

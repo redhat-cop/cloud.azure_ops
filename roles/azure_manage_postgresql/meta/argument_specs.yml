@@ -26,7 +26,6 @@ argument_specs:
       azure_manage_postgresql_tags:
         description: Dictionary of string:string pairs to assign as metadata to the object.
         type: dict
-        elements: str
       azure_manage_postgresql_postgresql_name:
         description: The name of the Server.
       azure_manage_postgresql_postgresql_sku:
