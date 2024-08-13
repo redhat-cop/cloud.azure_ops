@@ -1,0 +1,2 @@
+bugfixes:
+  - Removing redundant default variables from the role's default file.

@@ -7,7 +7,6 @@
 
     - name: Set vars for test
       ansible.builtin.set_fact:
-        azure_manage_postgresql_postgresql_version: "9.6"
         azure_manage_postgresql_postgresql_firewall_rules:
           - name: "rule_0"
             start_ip_address: "172.10.1.0"
@@ -39,7 +38,7 @@
           - _postgresql.servers[0].sku.name == azure_manage_postgresql_postgresql_sku.name
           - _postgresql.servers[0].storage_mb == azure_manage_postgresql_postgresql_storage_mb
           - _postgresql.servers[0].admin_username == azure_manage_postgresql_postgresql_admin_username
-          - _postgresql.servers[0].version == azure_manage_postgresql_postgresql_version
+          - _postgresql.servers[0].version == "11"
 
     # Verify that PostgreSQL Server firewall rule was created as expected
     - name: Gather PostgreSQL Server firewall rule info  
