@@ -30,7 +30,9 @@
     resource_group: "{{ azure_manage_postgresql_resource_group }}"
     name: "{{ azure_manage_postgresql_postgresql_name }}"
     state: absent
-  when: azure_manage_postgresql_delete_server
+  when:
+    - azure_manage_postgresql_delete_server is defined
+    - azure_manage_postgresql_delete_server
 
 - name: Delete Resource group if requested
   ansible.builtin.include_role:
@@ -38,4 +40,6 @@
   vars:
     azure_manage_resource_group_operation: delete
     azure_manage_resource_group_name: "{{ azure_manage_postgresql_resource_group }}"
-  when: azure_manage_postgresql_delete_resource_group
+  when:
+    - azure_manage_postgresql_delete_resource_group is defined
+    - azure_manage_postgresql_delete_resource_group
