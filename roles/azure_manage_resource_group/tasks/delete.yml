@@ -21,7 +21,7 @@
     name: "{{ azure_manage_resource_group_name }}"
     state: absent
     force_delete_nonempty: "{{ azure_manage_resource_group_force_delete_nonempty | default(omit) }}"
-  retries: 40
+  retries: 20
   delay: 5
   register: result
   until: result.failed == false
