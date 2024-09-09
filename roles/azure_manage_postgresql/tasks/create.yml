@@ -64,7 +64,7 @@
     value: "{{ item.value }}"
   with_items: "{{ azure_manage_postgresql_postgresql_settings }}"
   when:
-    - azure_manage_postgresql_postgresql_settings | default([])) | length > 0
+    - azure_manage_postgresql_postgresql_settings | default([]) | length > 0
 
 - name: Update PostgreSQL Server Firewall rules
   azure.azcollection.azure_rm_postgresqlfirewallrule:
