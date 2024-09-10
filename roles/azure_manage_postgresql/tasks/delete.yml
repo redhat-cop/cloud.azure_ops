@@ -6,7 +6,7 @@
     name: "{{ item.name }}"
     value: "{{ item.value }}"
     state: absent
-  with_items: "{{ azure_manage_postgresql_postgresql_settings }}"
+  with_items: "{{ azure_manage_postgresql_postgresql_settings | default([]) }}"
 
 - name: Delete PostgreSQL Server Firewall rules
   azure.azcollection.azure_rm_postgresqlfirewallrule:
