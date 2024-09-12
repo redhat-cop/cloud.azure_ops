@@ -4,6 +4,13 @@ We welcome community contributions to this collection.
 This guide provides clear instructions for contributors on how to set up their environment for contributing to the `cloud.azure_ops` Ansible Collection.
 If you find problems, please open an issue or create a Pull Request (PR) against this collection repository.
 
+## Integration Test Naming Convention
+
+In the CI, the test names should follow the convention of starting with the name of the collection. In the AzureOps collection, this is followed by test and the name of the role.
+
+For example:
+`azure_ops_test_azure_manage_resource_group`
+
 ## Prerequisites
 
 Make sure you have the following installed on your Machine:
