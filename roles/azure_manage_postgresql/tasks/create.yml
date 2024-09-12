@@ -64,6 +64,7 @@
     value: "{{ item.value }}"
   with_items: "{{ azure_manage_postgresql_postgresql_settings }}"
   when:
+    - azure_manage_postgresql_postgresql_settings is defined
     - azure_manage_postgresql_postgresql_settings | length > 0
 
 - name: Update PostgreSQL Server Firewall rules
@@ -75,6 +76,7 @@
     end_ip_address: "{{ item.end_ip_address }}"
   with_items: "{{ azure_manage_postgresql_postgresql_firewall_rules }}"
   when:
+    - azure_manage_postgresql_postgresql_firewall_rules is defined
     - azure_manage_postgresql_postgresql_firewall_rules | length > 0
 
 - name: Create/Update PostgreSQL Database instances
@@ -87,4 +89,5 @@
     force_update: "{{ item.force | default(omit) }}"
   with_items: "{{ azure_manage_postgresql_postgresql_database_instances }}"
   when:
+    - azure_manage_postgresql_postgresql_database_instances is defined
     - azure_manage_postgresql_postgresql_database_instances | length > 0

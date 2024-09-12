@@ -7,6 +7,9 @@
     value: "{{ item.value }}"
     state: absent
   with_items: "{{ azure_manage_postgresql_postgresql_settings }}"
+  when:
+    - azure_manage_postgresql_postgresql_settings is defined
+    - azure_manage_postgresql_postgresql_settings | length > 0
 
 - name: Delete PostgreSQL Server Firewall rules
   azure.azcollection.azure_rm_postgresqlfirewallrule:
@@ -15,6 +18,9 @@
     name: "{{ item.name }}"
     state: absent
   with_items: "{{ azure_manage_postgresql_postgresql_firewall_rules }}"
+  when:
+    - azure_manage_postgresql_postgresql_firewall_rules is defined
+    - azure_manage_postgresql_postgresql_firewall_rules | length > 0
 
 - name: Delete PostgreSQL Database instances
   azure.azcollection.azure_rm_postgresqldatabase:
@@ -24,6 +30,9 @@
     force_update: "{{ item.force | default(omit) }}"
     state: absent
   with_items: "{{ azure_manage_postgresql_postgresql_database_instances }}"
+  when:
+    - azure_manage_postgresql_postgresql_database_instances is defined
+    - azure_manage_postgresql_postgresql_database_instances | length > 0
 
 - name: Delete PostgreSQL Server if requested
   azure.azcollection.azure_rm_postgresqlserver:
