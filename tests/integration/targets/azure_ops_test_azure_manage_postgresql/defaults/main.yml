@@ -7,3 +7,6 @@ azure_manage_postgresql_postgresql_storage_mb: 5120
 azure_manage_postgresql_postgresql_backup_retention_days: 10
 azure_manage_postgresql_tags:
   resource_prefix: "{{ resource_prefix }}"
+azure_manage_postgresql_postgresql_settings:
+  - name: deadlock_timeout
+    value: 2000
