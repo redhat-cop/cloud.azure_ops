@@ -18,7 +18,7 @@
     name: "{{ azure_virtual_machine_with_public_ip_availability_set.name }}"
     tags:
       _own_availability_set_
-  register: _aset_info
+  register: azure_virtual_machine_with_public_ip_aset_info
   when: azure_virtual_machine_with_public_ip_availability_set is defined
 
 - name: Delete availability set if created by role
@@ -28,7 +28,7 @@
     state: absent
   when:
     - azure_virtual_machine_with_public_ip_availability_set is defined
-    - _aset_info.ansible_info.azure_availabilitysets | length == 1
+    - azure_virtual_machine_with_public_ip_aset_info.ansible_info.azure_availabilitysets | length == 1
     - azure_virtual_machine_with_public_ip_remove_on_absent in ['all', 'all_autocreated']
 
 # Delete Virtual network if created by role
@@ -38,7 +38,7 @@
     name: "{{ vm_name }}"
     tags:
       _own_vnet_
-  register: _vnet_info
+  register: azure_virtual_machine_with_public_ip_vnet_info
 
 - name: Delete Virtual network if created by role
   azure.azcollection.azure_rm_virtualnetwork:
@@ -46,7 +46,7 @@
     name: "{{ vm_name }}"
     state: absent
   when:
-    - _vnet_info.virtualnetworks | length == 1
+    - azure_virtual_machine_with_public_ip_vnet_info.virtualnetworks | length == 1
     - azure_virtual_machine_with_public_ip_remove_on_absent in ['all', 'all_autocreated']
 
 - name: Delete Resource group if requested

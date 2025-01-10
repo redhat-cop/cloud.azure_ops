@@ -29,6 +29,7 @@ Role Variables
   - **load_balancer_backend_address_pools**: List of existing load balancer backend address pools in which the network interface will be load balanced.
   - **os**: Type of Operating System. Default is 'Linux'
   - **image**: The image used to build the VM. For custom images, the name of the image. To narrow the search to a specific resource group, a dict with the keys name and resource_group. For Marketplace images, a dict with the keys publisher, offer, sku, and version. Set version=latest to get the most recent version of a given image.
+  - **managed_disk_type**: Managed OS disk type.
   - **ssh_pw_enabled**: Enable/disable SSH passwords. Valid values are 'true', 'false'. When `os='Linux'` and  `ssh_pw_enabled='false'` requires the use of SSH keys.
   Default value is 'true'.
   - **ssh_public_keys**: List of SSH keys when `os='Linux'`. Accepts a list of dicts where each dictionary contains two keys, 'path' and 'key_data'. Set path to the default location of the authorized_keys files. For example, path=/home/<admin username>/.ssh/authorized_keys. Set key_data to the actual value of the public key.
@@ -38,13 +39,14 @@ Role Variables
     - **disk_size_gb**: Initial disk size in GB for blank data disks. Cannot be larger than 1023 GB. Can only be modified when VM is deallocated.
     - **managed_disk_type**: Managed data disk type.
     - **storage_account_name**: Name of an existing storage account that supports creation of VHD blobs.
-    - **storage_blob_name**: Name of storage blob used to hold the OS disk image of the VM.
+    - **storage_blob_name**: Name of storage blob used to hold the data disk image of the VM.
     - **storage_container_name**: Name of the container to use within the storage account to store VHD blobs. Default is 'vhds'
 * **azure_virtual_machine_with_public_ip_availability_set**: Object used to provide details for an availability set to be used by a VM. Will be created if availability set doesn't exist. May be omitted.
 Contains the following:
   - **name**: (Required) Name of the availability set.
   - **platform_fault_domain_count**: Fault domains define the group of virtual machines that share a common power source and network switch. Should be between 1 and 3.
   - **platform_update_domain_count**: Update domains indicate groups of virtual machines and underlying physical hardware that can be rebooted at the same time.
+  - **sku**: Define if the availability set supports managed disks. Choices are Classic and Aligned, Default is Classic. Aligned is needed when specifying managed_disk_type for os_disk and data_disks.
 * **azure_virtual_machine_with_public_ip_delete_resource_group**: Relevant for **delete** operation. Change to true in case Resource Group deletion should be done as part of this role deletion (default: false) 
 
 Limitations
