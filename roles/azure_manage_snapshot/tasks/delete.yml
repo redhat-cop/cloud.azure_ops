@@ -1,0 +1,6 @@
+---
+- name: Delete snapshot
+  azure.azcollection.azure_rm_snapshot:
+    resource_group: "{{ azure_manage_snapshot_resource_group }}"
+    name: "{{ azure_manage_snapshot_name }}"
+    state: absent

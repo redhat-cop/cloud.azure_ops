@@ -1,0 +1,23 @@
+---
+- name: Wait 300 seconds, but only start checking after 60 seconds
+  ansible.builtin.wait_for_connection:
+    delay: 60
+    timeout: 300
+
+- name: "Get stats for {{ before_snapshot_file }}"
+  ansible.builtin.stat:
+    path: "{{ before_snapshot_file }}"
+  register: _
+
+- name: "Assert the existence of {{ before_snapshot_file }}"
+  ansible.builtin.assert:
+    that: _.stat.exists
+
+- name: "Get stats for {{ after_snapshot_file }}"
+  ansible.builtin.stat:
+    path: "{{ after_snapshot_file }}"
+  register: _
+
+- name: "Assert the non-existence of {{ after_snapshot_file }}"
+  ansible.builtin.assert:
+    that: _.stat.exists is false

@@ -1,0 +1,3 @@
+- name: Create, delete or restore Snapshot
+  ansible.builtin.include_tasks: "{{ azure_manage_snapshot_operation }}.yml"
+  when: azure_manage_snapshot_operation in ['create', 'delete', 'restore']

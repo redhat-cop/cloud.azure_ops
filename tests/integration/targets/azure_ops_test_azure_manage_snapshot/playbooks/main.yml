@@ -1,0 +1,59 @@
+---
+- name: Setup virtual host
+  hosts: localhost
+  connection: local
+  gather_facts: false
+  tasks:
+    - name: Include default variables
+      ansible.builtin.include_vars:
+        file: ../vars/vars.yml
+    - name: Setup
+      ansible.builtin.include_tasks: ../tasks/setup.yml
+
+- name: Before snapshot
+  hosts: azure
+  gather_facts: false
+  tasks:
+    - name: Include default variables
+      ansible.builtin.include_vars:
+        file: ../vars/vars.yml
+    - name: Before snapshot
+      ansible.builtin.include_tasks: ../tasks/before_snapshot.yml
+
+- name: Create snapshot
+  hosts: localhost
+  connection: local
+  gather_facts: false
+  tasks:
+    - name: Create snapshot
+      ansible.builtin.include_tasks: ../tasks/create_snapshot.yml
+
+- name: After snapshot
+  hosts: azure
+  gather_facts: false
+  tasks:
+    - name: After snapshot
+      ansible.builtin.include_tasks: ../tasks/after_snapshot.yml
+
+- name: Restore snapshot
+  hosts: localhost
+  connection: local
+  gather_facts: false
+  tasks:
+    - name: Restore snapshot
+      ansible.builtin.include_tasks: ../tasks/restore_snapshot.yml
+
+- name: Validate snapshot
+  hosts: azure
+  gather_facts: false
+  tasks:
+    - name: Validate snapshot
+      ansible.builtin.include_tasks: ../tasks/validate_snapshot.yml
+
+- name: Teardown
+  hosts: localhost
+  connection: local
+  gather_facts: false
+  tasks:
+    - name: Teardown
+      ansible.builtin.include_tasks: ../tasks/teardown.yml

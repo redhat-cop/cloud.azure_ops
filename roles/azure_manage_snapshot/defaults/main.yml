@@ -1,0 +1,3 @@
+---
+azure_manage_snapshot_operation: create
+azure_manage_snapshot_disk_name: "{{ azure_manage_snapshot_name }}-disk"

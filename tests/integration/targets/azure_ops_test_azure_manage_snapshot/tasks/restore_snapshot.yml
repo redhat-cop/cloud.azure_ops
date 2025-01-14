@@ -1,0 +1,9 @@
+---
+- name: Restore snapshot
+  ansible.builtin.include_role:
+    name: cloud.azure_ops.azure_manage_snapshot
+  vars:
+    azure_manage_snapshot_operation: restore
+    azure_manage_snapshot_name: "{{ snapshot_name }}"
+    azure_manage_snapshot_vm_name: "{{ vm_name }}"
+    azure_manage_snapshot_resource_group: "{{ resource_group_name }}"
