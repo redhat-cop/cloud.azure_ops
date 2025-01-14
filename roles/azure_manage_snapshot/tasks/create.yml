@@ -1,0 +1,24 @@
+---
+- name: Get virtualmachine info
+  azure.azcollection.azure_rm_virtualmachine_info:
+    resource_group: "{{ azure_manage_snapshot_resource_group }}"
+    name: "{{ azure_manage_snapshot_vm_name }}"
+  register: azure_manage_snapshot_vm_info
+
+- name: Confirm OS is Managed Disk
+  ansible.builtin.fail:
+    msg: "{{ azure_manage_snapshot_vm_name }} OS Disk is not of Managed Type"
+  when: '"managed_disk" not in azure_manage_snapshot_vm_info.vms[0].os_disk'
+
+- name: Set OS Disk ID
+  ansible.builtin.set_fact:
+    azure_manage_snapshot_os_disk_id: "{{ azure_manage_snapshot_vm_info.vms[0].os_disk.managed_disk.id }}"
+
+- name: Create a snapshot
+  azure.azcollection.azure_rm_snapshot:
+    resource_group: "{{ azure_manage_snapshot_resource_group }}"
+    name: "{{ azure_manage_snapshot_name }}"
+    location: "{{ azure_manage_snapshot_location | default(azure_manage_snapshot_vm_info.vms[0].location) }}"
+    creation_data:
+      create_option: Copy
+      source_id: "{{ azure_manage_snapshot_os_disk_id }}"
