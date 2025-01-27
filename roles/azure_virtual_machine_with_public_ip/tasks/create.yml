@@ -19,7 +19,7 @@
   ansible.builtin.fail:
     msg: Azure location must be defined as azure_virtual_machine_with_public_ip_region
   when:
-    - rg_info.resourcegroups | length == 0
+    - azure_virtual_machine_with_public_ip_rg_info.resourcegroups | length == 0
     - azure_virtual_machine_with_public_ip_region is not defined
 
 - name: Create resource group if it doesn't already exists
@@ -30,7 +30,7 @@
     azure_manage_resource_group_name: "{{ azure_virtual_machine_with_public_ip_resource_group }}"
     azure_manage_resource_group_region: "{{ azure_virtual_machine_with_public_ip_region }}"
     azure_manage_resource_group_tags: "{{ azure_virtual_machine_with_public_ip_tags | default({}) }}"
-  when: rg_info.resourcegroups | length == 0
+  when: azure_virtual_machine_with_public_ip_rg_info.resourcegroups | length == 0
 
 # Set tags for VM
 - name: Set tags for VM
@@ -44,10 +44,10 @@
     - name: No network interface specified -> get virtual network info
       azure.azcollection.azure_rm_virtualnetwork_info:
         resource_group: "{{ azure_virtual_machine_with_public_ip_resource_group }}"
-      register: vnet_info
+      register: azure_virtual_machine_with_public_ip_vnet_info
 
     - name: Create virtual network if not already exist
-      when: vnet_info.virtualnetworks | length == 0
+      when: azure_virtual_machine_with_public_ip_vnet_info.virtualnetworks | length == 0
       block:
         - name: Check virtual network CIDR address prefixes
           ansible.builtin.fail:
@@ -75,7 +75,7 @@
     - name: Refresh virtual network info
       azure.azcollection.azure_rm_virtualnetwork_info:
         resource_group: "{{ azure_virtual_machine_with_public_ip_resource_group }}"
-      register: vnet_info
+      register: azure_virtual_machine_with_public_ip_vnet_info
 
     - name: Create default public ip for default nic
       azure.azcollection.azure_rm_publicipaddress:
@@ -91,8 +91,8 @@
         azure_manage_network_interface_resource_group: "{{ azure_virtual_machine_with_public_ip_resource_group }}"
         azure_manage_network_interface_interface:
           name: "{{ vm_name }}"
-          vnet_name: "{{ vnet_info.virtualnetworks[0].name }}" # This is how the azure_rm_virtualmachine module creates its default network interface - using the first vnet
-          subnet_name: "{{ vnet_info.virtualnetworks[0].subnets[0].name }}"
+          vnet_name: "{{ azure_virtual_machine_with_public_ip_vnet_info.virtualnetworks[0].name }}" # This is how the azure_rm_virtualmachine module creates its default network interface - using the first vnet
+          subnet_name: "{{ azure_virtual_machine_with_public_ip_vnet_info.virtualnetworks[0].subnets[0].name }}"
           ip_configurations:
             - name: default
               primary: true
@@ -108,7 +108,7 @@
   azure.azcollection.azure_rm_availabilityset_info:
     resource_group: "{{ azure_virtual_machine_with_public_ip_resource_group }}"
     name: "{{ azure_virtual_machine_with_public_ip_availability_set.name }}"
-  register: aset_info
+  register: azure_virtual_machine_with_public_ip_aset_info
   when: azure_virtual_machine_with_public_ip_availability_set is defined
 
 - name: Create availability set
@@ -117,11 +117,12 @@
     name: "{{ azure_virtual_machine_with_public_ip_availability_set.name }}"
     platform_update_domain_count: "{{ azure_virtual_machine_with_public_ip_availability_set.platform_update_domain_count | default(omit) }}"
     platform_fault_domain_count: "{{ azure_virtual_machine_with_public_ip_availability_set.platform_fault_domain_count | default(omit) }}"
+    sku: "{{ azure_virtual_machine_with_public_ip_availability_set.sku | default(omit) }}"
     tags:
       _own_availability_set_: "{{ azure_virtual_machine_with_public_ip_availability_set.name }}"
   when:
     - azure_virtual_machine_with_public_ip_availability_set is defined
-    - aset_info.ansible_info.azure_availabilitysets | length == 0
+    - azure_virtual_machine_with_public_ip_aset_info.ansible_info.azure_availabilitysets | length == 0
 
 # Create/update VM
 - name: Create/Update VM
@@ -131,6 +132,7 @@
     vm_size: "{{ azure_virtual_machine_with_public_ip_vm.size | default(omit) }}"
     network_interfaces: "{{ azure_virtual_machine_with_public_ip_vm.network_interfaces | default(vm_name) }}"
     os_type: "{{ azure_virtual_machine_with_public_ip_vm.os | default(omit) }}"
+    managed_disk_type: "{{ azure_virtual_machine_with_public_ip_vm.managed_disk_type | default(omit) }}"
     availability_set: "{{ azure_virtual_machine_with_public_ip_availability_set.name | default(omit) }}"
     image: "{{ azure_virtual_machine_with_public_ip_vm.image | default(omit) }}"
     admin_username: "{{ azure_virtual_machine_with_public_ip_vm.admin_username | default(omit) }}"

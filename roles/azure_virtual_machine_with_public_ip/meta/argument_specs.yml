@@ -70,6 +70,20 @@ argument_specs:
               - The image used to build the VM. For custom images, the name of the image. To narrow the search to a specific resource group, a dict with the keys name and resource_group.
               - For Marketplace images, a dict with the keys publisher, offer, sku, and version.
               - Set O(version=latest) to get the most recent version of a given image.
+          managed_disk_type:
+            type: "str"
+            description:
+              - Managed OS disk type.
+              - Create OS disk with managed disk if defined.
+              - If not defined, the OS disk will be created with virtual hard disk (VHD).
+            choices:
+              - "Standard_LRS"
+              - "StandardSSD_LRS"
+              - "StandardSSD_ZRS"
+              - "Premium_LRS"
+              - "Premium_ZRS"
+              - "UltraSSD_LRS"
+            required: false
           ssh_pw_enabled:
             description: Enable/disable SSH passwords.
             choices: ['yes', 'no']
@@ -83,25 +97,36 @@ argument_specs:
           data_disks:
             description: List of data disks.
             type: list
-          lun:
-            description: Logical unit number for data disk. Must be unique for each data disk attached to a VM.
-          caching:
-            description: Type of data disk caching.
-            choices: ['ReadOnly', 'ReadWrite']
-            default: 'ReadOnly'
-          disk_size_gb:
-            description:
-              - Initial disk size in GB for blank data disks. Cannot be larger than 1023 GB.
-              - Can only be modified when VM is deallocated.
-          managed_disk_type:
-            description: Managed data disk type.
-          storage_account_name:
-            description: Name of an existing storage account that supports creation of VHD blobs.
-          storage_blob_name:
-            description: Name of storage blob used to hold the OS disk image of the VM.
-          storage_container_name:
-            description: Name of the container to use within the storage account to store VHD blobs.
-            default: 'vhds'
+            options:
+              lun:
+                description: Logical unit number for data disk. Must be unique for each data disk attached to a VM.
+              caching:
+                description: Type of data disk caching.
+                choices: ['ReadOnly', 'ReadWrite']
+                default: 'ReadOnly'
+              managed_disk_type:
+                type: "str"
+                description:
+                  - Managed disk type.
+                choices:
+                  - "Standard_LRS"
+                  - "StandardSSD_LRS"
+                  - "StandardSSD_ZRS"
+                  - "Premium_LRS"
+                  - "Premium_ZRS"
+                  - "UltraSSD_LRS"
+                required: false
+              disk_size_gb:
+                description:
+                  - Initial disk size in GB for blank data disks. Cannot be larger than 1023 GB.
+                  - Can only be modified when VM is deallocated.
+              storage_account_name:
+                description: Name of an existing storage account that supports creation of VHD blobs.
+              storage_blob_name:
+                description: Name of storage blob used to hold the OS disk image of the VM.
+              storage_container_name:
+                description: Name of the container to use within the storage account to store VHD blobs.
+                default: 'vhds'
       azure_virtual_machine_with_public_ip_availability_set:
         description: Object used to provide details for an availability set to be used by a VM.
         type: dict
@@ -115,3 +140,7 @@ argument_specs:
               - Should be between 1 and 3.
           platform_update_domain_count:
             description: Update domains indicate groups of virtual machines and underlying physical hardware that can be rebooted at the same time.
+          sku:
+            description: Define if the availability set supports managed disks.
+            choices: ['Classic', 'Aligned']
+            default: 'Classic'

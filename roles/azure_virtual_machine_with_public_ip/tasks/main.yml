@@ -6,13 +6,13 @@
 - name: Get resource group info
   azure.azcollection.azure_rm_resourcegroup_info:
     name: "{{ azure_virtual_machine_with_public_ip_resource_group }}"
-  register: rg_info
+  register: azure_virtual_machine_with_public_ip_rg_info
 
 - name: Fail when resource group doesn't exist
   ansible.builtin.fail:
     msg: Resource group {{ azure_virtual_machine_with_public_ip_resource_group }} does not exist
   when: 
-  - rg_info.resourcegroups | length == 0
+  - azure_virtual_machine_with_public_ip_rg_info.resourcegroups | length == 0
   - azure_virtual_machine_with_public_ip_operation != 'create'
 
 - name: Power Off VM
