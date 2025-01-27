@@ -1,0 +1,36 @@
+---
+argument_specs:
+  main:
+    version_added: 3.1.0
+    short_description: A role to manage a snapshot to an Azure Virtual Machine.
+    description:
+      - A role to manage a snapshot to an Azure Virtual Machine.
+      - This role requires an azure user account with valid permission.
+    options:
+      azure_manage_snapshot_operation:
+        description:
+          - Operation to perform
+        default: "create"
+        choices: ["create", "delete", "restore"]
+      azure_manage_snapshot_resource_group:
+        description:
+          - Resource group from which the snapshot resides.
+        required: true
+      azure_manage_snapshot_name:
+        description:
+          - Name of the snapshot volume.
+        required: true
+      azure_manage_snapshot_vm_name:
+        description:
+          - Name of the virtual machine to perform the snapshot operation on.
+        required: false
+      azure_manage_snapshot_disk_name:
+        description:
+          - Optional name of the Managed Disk.
+          - Default value is I(azure_manage_snapshot_name).
+        required: false
+      azure_manage_snapshot_location:
+        description:
+          - Optional location to use.
+          - Default value is the location of the Virtual Machine or Snapshot.
+        required: false

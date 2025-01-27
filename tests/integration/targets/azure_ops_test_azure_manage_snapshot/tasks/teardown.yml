@@ -1,0 +1,20 @@
+---
+- name: Delete Virtual machine and all attached resources
+  ansible.builtin.include_role:
+    name: cloud.azure_ops.azure_virtual_machine_with_public_ip
+  vars:
+    azure_virtual_machine_with_public_ip_operation: delete
+    azure_virtual_machine_with_public_ip_delete_resource_group: false
+    azure_virtual_machine_with_public_ip_vm:
+      name: "{{ vm_name }}"
+    azure_virtual_machine_with_public_ip_resource_group: "{{ resource_group_name }}"
+
+- name: Delete resource group
+  azure.azcollection.azure_rm_resourcegroup:
+    name: "{{ resource_group_name }}"
+    state: absent
+    force_delete_nonempty: true
+  retries: 20
+  delay: 5
+  register: result
+  until: result.failed == false
