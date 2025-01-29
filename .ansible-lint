@@ -1,4 +1,4 @@
-profile: production
+profile: shared
 
 exclude_paths:
   - tests/integration/

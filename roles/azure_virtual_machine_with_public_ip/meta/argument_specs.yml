@@ -70,6 +70,23 @@ argument_specs:
               - The image used to build the VM. For custom images, the name of the image. To narrow the search to a specific resource group, a dict with the keys name and resource_group.
               - For Marketplace images, a dict with the keys publisher, offer, sku, and version.
               - Set O(version=latest) to get the most recent version of a given image.
+          swap_os_disk:
+            description:
+              - The Managed disk to swap in as the OS Disk.
+            type: dict
+            options:
+              os_disk_id:
+                  description:
+                      - The swap OS disk's ID.
+                  type: str
+              os_disk_name:
+                  description:
+                      - The swap OS disk's name.
+                  type: str
+              os_disk_resource_group:
+                  description:
+                      - The swap OS disk's resource group.
+                  type: str
           managed_disk_type:
             type: "str"
             description:

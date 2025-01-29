@@ -1,5 +1,7 @@
 ---
 vm_name: "{{ resource_prefix }}-vm"
+vm_from_snapshot_name: "{{ resource_prefix }}-vm-from-snapshot"
+vm_from_snapshot_disk_name: "{{ resource_prefix }}-disk-from-snapshot"
 vm_image:
   offer: RHEL
   publisher: RedHat

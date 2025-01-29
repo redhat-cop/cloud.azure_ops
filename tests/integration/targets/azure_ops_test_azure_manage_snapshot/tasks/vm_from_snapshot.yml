@@ -1,0 +1,67 @@
+---
+- name: Gather Resource group info
+  azure.azcollection.azure_rm_resourcegroup_info:
+    name: "{{ resource_group_name }}"
+  register: rg_info
+
+- name: Get snapshot info
+  azure.azcollection.azure_rm_snapshot_info:
+    resource_group: "{{ resource_group_name }}"
+    name: "{{ snapshot_name }}"
+  register: snapshot_info
+
+- name: Create Managed disk from Snapshot
+  azure.azcollection.azure_rm_manageddisk:
+    name: "{{ vm_from_snapshot_disk_name }}"
+    location: "{{ snapshot_info.state[0].location }}"
+    resource_group: "{{ resource_group_name }}"
+    create_option: copy
+    source_uri: "{{ snapshot_info.state[0].id }}"
+    storage_account_type: "{{ snapshot_info.state[0].sku.name }}"
+  register: snapshot_disk
+
+- name: Create VM
+  ansible.builtin.include_role:
+    name: cloud.azure_ops.azure_virtual_machine_with_public_ip
+  vars:
+    azure_virtual_machine_with_public_ip_operation: "create"
+    azure_virtual_machine_with_public_ip_resource_group: "{{ resource_group_name }}"
+    azure_virtual_machine_with_public_ip_region: "{{ rg_info.resourcegroups.0.location }}"
+    azure_virtual_machine_with_public_ip_vm:
+      name: "{{ vm_from_snapshot_name }}"
+      managed_disk_type: "{{ vm_managed_disk_type }}"
+      swap_os_disk:
+        os_disk_id: "{{ snapshot_disk.state.id }}"
+      size: "{{ vm_size }}"
+      vnet_address_prefixes_cidr:
+      - "10.1.0.0/16"
+      subnet_address_prefixes_cidr:
+      - "10.1.0.0/24"
+
+- name: Get VM Info
+  azure.azcollection.azure_rm_virtualmachine_info:
+    name: "{{ vm_from_snapshot_name }}"
+    resource_group: "{{ resource_group_name }}"
+  register: vm_info
+
+- name: Get IP address
+  azure.azcollection.azure_rm_publicipaddress_info:
+    name: "{{ vm_info.vms[0].network_interface_names[0] }}"
+    resource_group: "{{ resource_group_name }}"
+  register: public_ip_info
+
+- name: Set VM ip address
+  ansible.builtin.set_fact:
+    ip_address: "{{ public_ip_info.publicipaddresses[0].ip_address }}"
+
+- name: Add hosts to inventory to manage lvm
+  ansible.builtin.add_host:
+    name: "{{ vm_from_snapshot_name }}"
+    hostname: "{{ ip_address }}"
+    ansible_ssh_host: "{{ ip_address }}"
+    ansible_ssh_port: "{{ ssh_port | default(ssh_port_default) }}"
+    ansible_ssh_user: "{{ vm_username }}"
+    ansible_ssh_private_key_file: "{{ (ssh_private_key_path | default(ssh_private_key_path_default)) }}"
+    ansible_python_interpreter: /usr/bin/python3
+    groups:
+      - vm_from_snapshot

@@ -29,6 +29,10 @@ Role Variables
   - **load_balancer_backend_address_pools**: List of existing load balancer backend address pools in which the network interface will be load balanced.
   - **os**: Type of Operating System. Default is 'Linux'
   - **image**: The image used to build the VM. For custom images, the name of the image. To narrow the search to a specific resource group, a dict with the keys name and resource_group. For Marketplace images, a dict with the keys publisher, offer, sku, and version. Set version=latest to get the most recent version of a given image.
+  - **swap_os_disk**: The managed disk to use as the OS disk.
+    - **os_disk_id**: The swap OS disk's ID.
+    - **os_disk_name**: The swap OS disk's name.
+    - **os_disk_resource_group**: The swap OS disk's resource group.
   - **managed_disk_type**: Managed OS disk type.
   - **ssh_pw_enabled**: Enable/disable SSH passwords. Valid values are 'true', 'false'. When `os='Linux'` and  `ssh_pw_enabled='false'` requires the use of SSH keys.
   Default value is 'true'.

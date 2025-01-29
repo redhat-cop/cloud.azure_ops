@@ -1,21 +1,29 @@
 ---
-- name: Setup
-  ansible.builtin.include_tasks: setup.yml
+- name: Wrap test in block
+  block:
+    - name: Setup
+      ansible.builtin.include_tasks: setup.yml
 
-- name: Before snapshot
-  ansible.builtin.include_tasks: before_snapshot.yml
+    - name: Before snapshot
+      ansible.builtin.include_tasks: before_snapshot.yml
 
-- name: Create snapshot
-  ansible.builtin.include_tasks: create_snapshot.yml
+    - name: Create snapshot
+      ansible.builtin.include_tasks: create_snapshot.yml
 
-- name: After snapshot
-  ansible.builtin.include_tasks: after_snapshot.yml
+    - name: After snapshot
+      ansible.builtin.include_tasks: after_snapshot.yml
 
-- name: Restore snapshot
-  ansible.builtin.include_tasks: restore_snapshot.yml
+    - name: Restore snapshot
+      ansible.builtin.include_tasks: restore_snapshot.yml
 
-- name: Validate snapshot
-  ansible.builtin.include_tasks: validate_snapshot.yml
+    - name: Validate snapshot
+      ansible.builtin.include_tasks: validate_snapshot.yml
 
-- name: Teardown
-  ansible.builtin.include_tasks: teardown.yml
+    - name: Create VM from snapshot
+      ansible.builtin.include_tasks: vm_from_snapshot.yml
+
+    - name: Validate vm from snapshot
+      ansible.builtin.include_tasks: validate_vm_from_snapshot.yml
+  always:
+    - name: Teardown
+      ansible.builtin.include_tasks: teardown.yml
