@@ -1,0 +1,24 @@
+---
+- name: Get snapshot info
+  azure.azcollection.azure_rm_snapshot_info:
+    resource_group: "{{ azure_manage_snapshot_resource_group }}"
+    name: "{{ azure_manage_snapshot_name }}"
+  register: azure_manage_snapshot_info
+
+- name: Create Managed disk from Snapshot
+  azure.azcollection.azure_rm_manageddisk:
+    name: "{{ azure_manage_snapshot_disk_name | default(azure_manage_snapshot_name) }}"
+    location: "{{ azure_manage_snapshot_location | default(azure_manage_snapshot_info.state[0].location) }}"
+    resource_group: "{{ azure_manage_snapshot_resource_group }}"
+    create_option: copy
+    source_uri: "{{ azure_manage_snapshot_info.state[0].id }}"
+    storage_account_type: "{{ azure_manage_snapshot_info.state[0].sku.name }}"
+  register: azure_manage_snapshot_disk
+
+- name: Swap OS Disk
+  azure.azcollection.azure_rm_virtualmachine:
+    name: "{{ azure_manage_snapshot_vm_name }}"
+    resource_group: "{{ azure_manage_snapshot_resource_group }}"
+    swap_os_disk:
+      os_disk_id: "{{ azure_manage_snapshot_disk.state.id }}"
+      os_disk_resource_group: "{{ azure_manage_snapshot_resource_group }}"

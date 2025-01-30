@@ -3,17 +3,21 @@
 - name: Ensure admin username is defined
   ansible.builtin.fail:
     msg: "Missing parameter: key 'admin_username' not found in azure_virtual_machine_with_public_ip_vm"
-  when: azure_virtual_machine_with_public_ip_vm.admin_username is not defined
+  when:
+    - azure_virtual_machine_with_public_ip_vm.swap_os_disk is not defined
+    - azure_virtual_machine_with_public_ip_vm.admin_username is not defined
 
 - name: Ensure vm size is defined
   ansible.builtin.fail:
     msg: "Missing parameter: key 'size' not found in azure_virtual_machine_with_public_ip_vm"
   when: azure_virtual_machine_with_public_ip_vm.size is not defined
 
-- name: Ensure vm image is defined
+- name: Ensure vm image or swap_os_disk is defined
   ansible.builtin.fail:
-    msg: "Missing parameter: key 'image' not found in azure_virtual_machine_with_public_ip_vm"
-  when: azure_virtual_machine_with_public_ip_vm.image is not defined
+    msg: "Missing parameter: key 'image' or 'swap_os_disk' not found in azure_virtual_machine_with_public_ip_vm"
+  when:
+    - azure_virtual_machine_with_public_ip_vm.image is not defined
+    - azure_virtual_machine_with_public_ip_vm.swap_os_disk is not defined
 
 - name: Check that Azure Region is known
   ansible.builtin.fail:
@@ -135,6 +139,7 @@
     managed_disk_type: "{{ azure_virtual_machine_with_public_ip_vm.managed_disk_type | default(omit) }}"
     availability_set: "{{ azure_virtual_machine_with_public_ip_availability_set.name | default(omit) }}"
     image: "{{ azure_virtual_machine_with_public_ip_vm.image | default(omit) }}"
+    swap_os_disk: "{{ azure_virtual_machine_with_public_ip_vm.swap_os_disk | default(omit) }}"
     admin_username: "{{ azure_virtual_machine_with_public_ip_vm.admin_username | default(omit) }}"
     admin_password: "{{ azure_virtual_machine_with_public_ip_vm.admin_password | default(omit) }}"
     ssh_password_enabled: "{{ azure_virtual_machine_with_public_ip_vm.ssh_pw_enabled | default(omit) }}"

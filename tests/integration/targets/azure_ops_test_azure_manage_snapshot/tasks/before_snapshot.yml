@@ -1,0 +1,19 @@
+---
+- name: Wait 300 seconds, but only start checking after 10 seconds
+  ansible.builtin.wait_for_connection:
+    delay: 10
+    timeout: 300
+  delegate_to: "{{ groups['azure'][0] }}"
+
+- name: Touch a file
+  ansible.builtin.file:
+    path: "{{ before_snapshot_file }}"
+    state: touch
+    mode: '0755'
+  delegate_to: "{{ groups['azure'][0] }}"
+
+- name: Sync Filesystems
+  ansible.builtin.command: sync
+  register: my_output
+  changed_when: my_output.rc != 0
+  delegate_to: "{{ groups['azure'][0] }}"

@@ -1,0 +1,2 @@
+bugfixes:
+  - Added support for swap_os_disk which allows you to create a VM from a Snapshot

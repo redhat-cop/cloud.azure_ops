@@ -1,0 +1,19 @@
+---
+vm_name: "{{ resource_prefix }}-vm"
+vm_from_snapshot_name: "{{ resource_prefix }}-vm-from-snapshot"
+vm_from_snapshot_disk_name: "{{ resource_prefix }}-disk-from-snapshot"
+vm_image:
+  offer: RHEL
+  publisher: RedHat
+  sku: 8-LVM
+  version: latest
+vm_username: 'azureuser'
+vm_size: Standard_B1s
+vm_managed_disk_type: Premium_LRS
+snapshot_name: "{{ resource_prefix }}-snapshot"
+before_snapshot_file: "/home/{{ vm_username }}/before_snapshot"
+after_snapshot_file: "/home/{{ vm_username }}/after_snapshot"
+ssh_public_key_path_default: "~/.ssh/id_rsa.pub"
+ssh_private_key_path_default: "~/.ssh/id_rsa"
+ssh_port_default: 22
+resource_group_name: "{{ resource_prefix }}-{{ resource_group }}"

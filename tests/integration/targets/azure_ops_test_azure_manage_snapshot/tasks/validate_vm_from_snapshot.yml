@@ -1,0 +1,28 @@
+---
+- name: Wait 300 seconds, but only start checking after 10 seconds
+  ansible.builtin.wait_for_connection:
+    delay: 10
+    timeout: 300
+  delegate_to: "{{ groups['vm_from_snapshot'][0] }}"
+
+- name: "Get stats for {{ before_snapshot_file }}"
+  ansible.builtin.stat:
+    path: "{{ before_snapshot_file }}"
+  register: _
+  delegate_to: "{{ groups['vm_from_snapshot'][0] }}"
+
+- name: "Assert the existence of {{ before_snapshot_file }}"
+  ansible.builtin.assert:
+    that: _.stat.exists
+  delegate_to: "{{ groups['vm_from_snapshot'][0] }}"
+
+- name: "Get stats for {{ after_snapshot_file }}"
+  ansible.builtin.stat:
+    path: "{{ after_snapshot_file }}"
+  register: _
+  delegate_to: "{{ groups['vm_from_snapshot'][0] }}"
+
+- name: "Assert the non-existence of {{ after_snapshot_file }}"
+  ansible.builtin.assert:
+    that: _.stat.exists is false
+  delegate_to: "{{ groups['vm_from_snapshot'][0] }}"
