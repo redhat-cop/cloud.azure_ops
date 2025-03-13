@@ -11,7 +11,7 @@
     location: "{{ azure_manage_snapshot_location | default(azure_manage_snapshot_info.state[0].location) }}"
     resource_group: "{{ azure_manage_snapshot_resource_group }}"
     create_option: copy
-    source_uri: "{{ azure_manage_snapshot_info.state[0].id }}"
+    source_resource_id: "{{ azure_manage_snapshot_info.state[0].id }}"
     storage_account_type: "{{ azure_manage_snapshot_info.state[0].sku.name }}"
   register: azure_manage_snapshot_disk
 

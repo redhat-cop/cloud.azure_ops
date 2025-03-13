@@ -16,7 +16,7 @@
     location: "{{ snapshot_info.state[0].location }}"
     resource_group: "{{ resource_group_name }}"
     create_option: copy
-    source_uri: "{{ snapshot_info.state[0].id }}"
+    source_resource_id: "{{ snapshot_info.state[0].id }}"
     storage_account_type: "{{ snapshot_info.state[0].sku.name }}"
   register: snapshot_disk
 
