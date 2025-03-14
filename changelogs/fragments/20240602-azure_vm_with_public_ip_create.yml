@@ -1,5 +1,0 @@
-bugfixes:
-  - Added Virtual network autocreation during Virual machine with public IP creation
-    in case Virtual network doesn't exist for azure_virtual_machine_with_public_ip role
-  - Added 'vnet_address_prefixes_cidr' and 'subnet_address_prefixes_cidr' role variables.
-    Required when creating a new virtual network 
