@@ -1,7 +1,7 @@
 ---
 galaxy_info:
   author: Bikouo Aubin
-  description: Role to manage networking stack in Azure Cloud.
+  description: Role to manage network interface in Azure Cloud.
   company: Red Hat
 
   license: GPL-3.0-or-later
