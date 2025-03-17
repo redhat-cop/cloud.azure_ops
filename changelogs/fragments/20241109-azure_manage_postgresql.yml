@@ -1,2 +1,0 @@
-bugfixes:
-  - Fixed the undefined variables issue in the create.yml and delete.yml of azure_manage_postgresql role.

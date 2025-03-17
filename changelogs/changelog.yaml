@@ -102,3 +102,49 @@ releases:
     - 20240709-ansible_minimum_required_version.yml
     - 4.0.0.yml
     release_date: '2024-07-09'
+  5.0.0:
+    changes:
+      bugfixes:
+      - Adding more variables assertions to loadbalancer integration test to ensure
+        it was created as expected
+      - Adding support for swap_os_disk which allows you to create a VM from a Snapshot
+      - Adding admin password requirements of azure_manage_postgresql role to README
+        file
+      - Adding alwayes statment to the first block in test_azure_manage_security_group
+        main to ensure security group deleted
+      - Adding always statement to first block in test_azure_load_balancer_with_public_ip
+        test to verify the remove of load balancer and public ip recourses
+      - Adding managed_disk_type as possible option in role azure_virtual_machine_with_public_ip
+      - Fixed the undefined variables issue in the create.yml and delete.yml of azure_manage_postgresql
+        role.
+      - Postgresql Integration test improvement - Add key-value example to postgresql_settings.
+      - Removing redundant default variables from the role's default file.
+      - Removing the "elements:str" statement from azure_manage_postgresql/meta/argument_specs.yml
+        file of azure_manage_postgresql_tags variable.
+      - Removing tier, capacity, and size from SKU parameters from README file, both
+        from Role Variables and Example Playbook
+      - Updated args to managed disk module,
+      - Updating retries count to be 20 from 40 in the Delete resource group task
+        in order to shorten the time the user waits before the task fails
+      release_summary: 'This is the major release of the ``cloud.azure_ops`` collection.
+
+        This changelog contains all changes to the modules and plugins in this collection
+
+        that have been made after the previous release.'
+    fragments:
+    - 20240707-postgresql_admin_manage_password.yml
+    - 20240710-test_azure_load_balancer_with_public_ip.yml
+    - 20240721-azure_manage_postgresql.yml
+    - 20240721-test_azure_manage_security_group.yml
+    - 20240723-test_azure_load_balencer_with_public_ip.yml
+    - 20240805-test_azure_manage_postgresql.yml
+    - 20240814-azure_manage_resurce_group.yml
+    - 20241109-azure_manage_postgresql.yml
+    - 20241308-azure_manage_postgresql.yml
+    - 20241509-azure_manage_postgresql.yml
+    - 20250110-azure_virtual_machine_with_public_ip.yml
+    - 20250129-azure_virtual_machine_with_public_ip.yml
+    - 20250313-update_manageddisk_args.yml
+    - 20250314-azure_meta_main.yml
+    - 5.0.0.yml
+    release_date: '2025-03-17'

@@ -4,6 +4,33 @@ Cloud.Azure\_Ops Release Notes
 
 .. contents:: Topics
 
+v5.0.0
+======
+
+Release Summary
+---------------
+
+This is the major release of the ``cloud.azure_ops`` collection.
+This changelog contains all changes to the modules and plugins in this collection
+that have been made after the previous release.
+
+Bugfixes
+--------
+
+- Adding more variables assertions to loadbalancer integration test to ensure it was created as expected
+- Adding support for swap_os_disk which allows you to create a VM from a Snapshot
+- Adding admin password requirements of azure_manage_postgresql role to README file
+- Adding alwayes statment to the first block in test_azure_manage_security_group main to ensure security group deleted
+- Adding always statement to first block in test_azure_load_balancer_with_public_ip test to verify the remove of load balancer and public ip recourses
+- Adding managed_disk_type as possible option in role azure_virtual_machine_with_public_ip
+- Fixed the undefined variables issue in the create.yml and delete.yml of azure_manage_postgresql role.
+- Postgresql Integration test improvement - Add key-value example to postgresql_settings.
+- Removing redundant default variables from the role's default file.
+- Removing the "elements:str" statement from azure_manage_postgresql/meta/argument_specs.yml file of azure_manage_postgresql_tags variable.
+- Removing tier, capacity, and size from SKU parameters from README file, both from Role Variables and Example Playbook
+- Updated args to managed disk module,
+- Updating retries count to be 20 from 40 in the Delete resource group task in order to shorten the time the user waits before the task fails
+
 v4.0.0
 ======
 

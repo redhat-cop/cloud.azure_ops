@@ -1,2 +1,0 @@
-bugfixes:
-  - Removing tier, capacity, and size from SKU parameters from README file, both from Role Variables and Example Playbook

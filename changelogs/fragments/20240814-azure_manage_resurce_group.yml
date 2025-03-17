@@ -1,2 +1,0 @@
-bugfixes:
-  - Updating retries count to be 20 from 40 in the Delete resource group task in order to shorten the time the user waits before the task fails
