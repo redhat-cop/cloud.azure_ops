@@ -1,6 +1,0 @@
-bugfixes:
-  - Adding managed_disk_type as possible option in role azure_virtual_machine_with_public_ip
-
-trivial:
-  - Renamed register variables in azure_virtual_machine_with_public_ip to include pre-pended
-    role name to prevent variable name collisions.

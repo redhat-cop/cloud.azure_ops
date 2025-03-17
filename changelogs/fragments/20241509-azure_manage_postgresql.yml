@@ -1,2 +1,0 @@
-bugfixes:
-  - Postgresql Integration test improvement - Add key-value example to postgresql_settings.

@@ -1,2 +1,0 @@
-bugfixes:
-  - Adding alwayes statment to the first block in test_azure_manage_security_group main to ensure security group deleted

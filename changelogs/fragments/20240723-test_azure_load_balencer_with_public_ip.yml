@@ -1,2 +1,0 @@
-bugfixes:
-  - Adding always statement to first block in test_azure_load_balancer_with_public_ip test to verify the remove of load balancer and public ip recourses 
