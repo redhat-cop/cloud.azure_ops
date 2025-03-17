@@ -14,6 +14,10 @@ This is the major release of the ``cloud.azure_ops`` collection.
 This changelog contains all changes to the modules and plugins in this collection
 that have been made after the previous release.
 
+New Roles
+---------
+- azure_manage_snapshot, Helps manage OS Disk snapshots of VirtualMachines.
+
 Bugfixes
 --------
 

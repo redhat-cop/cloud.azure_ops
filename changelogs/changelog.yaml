@@ -130,7 +130,12 @@ releases:
 
         This changelog contains all changes to the modules and plugins in this collection
 
-        that have been made after the previous release.'
+        that have been made after the previous release.
+
+        New Roles
+        ---------
+        - azure_manage_snapshot, Helps manage OS Disk snapshots of VirtualMachines.'
+
     fragments:
     - 20240707-postgresql_admin_manage_password.yml
     - 20240710-test_azure_load_balancer_with_public_ip.yml
