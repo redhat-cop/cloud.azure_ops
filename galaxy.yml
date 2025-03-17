@@ -16,7 +16,7 @@ tags:
   - azure
   - infrastructure
 dependencies:
-  azure.azcollection: '*'
+  azure.azcollection: ">=3.3.0"
 build_ignore:
   - '.tox'
   - '.git'
