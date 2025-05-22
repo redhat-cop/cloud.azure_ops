@@ -70,6 +70,36 @@ argument_specs:
               - The image used to build the VM. For custom images, the name of the image. To narrow the search to a specific resource group, a dict with the keys name and resource_group.
               - For Marketplace images, a dict with the keys publisher, offer, sku, and version.
               - Set O(version=latest) to get the most recent version of a given image.
+          plan:
+              description:
+                  - Third-party billing plan for the VM.
+              type: dict
+              options:
+                  name:
+                      description:
+                          - Billing plan name.
+                      required: true
+                      type: str
+                  product:
+                      description:
+                          - Product name.
+                      required: true
+                      type: str
+                  publisher:
+                      description:
+                          - Publisher offering the plan.
+                      required: true
+                      type: str
+                  promotion_code:
+                      description:
+                          - Optional promotion code.
+                      type: str
+          accept_terms:
+            description:
+              - Accept terms for Marketplace images that require it.
+              - Only Azure service admin/account admin users can purchase images from the Marketplace.
+              - Only valid when a plan is specified.
+            type: bool
           swap_os_disk:
             description:
               - The Managed disk to swap in as the OS Disk.

@@ -29,6 +29,8 @@ Role Variables
   - **load_balancer_backend_address_pools**: List of existing load balancer backend address pools in which the network interface will be load balanced.
   - **os**: Type of Operating System. Default is 'Linux'
   - **image**: The image used to build the VM. For custom images, the name of the image. To narrow the search to a specific resource group, a dict with the keys name and resource_group. For Marketplace images, a dict with the keys publisher, offer, sku, and version. Set version=latest to get the most recent version of a given image.
+  - **plan**: Third-party billing plan for the VM.
+  - **accept_terms**: Accept terms for Marketplace images that require it.
   - **swap_os_disk**: The managed disk to use as the OS disk.
     - **os_disk_id**: The swap OS disk's ID.
     - **os_disk_name**: The swap OS disk's name.
