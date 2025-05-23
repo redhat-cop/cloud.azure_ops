@@ -139,6 +139,8 @@
     managed_disk_type: "{{ azure_virtual_machine_with_public_ip_vm.managed_disk_type | default(omit) }}"
     availability_set: "{{ azure_virtual_machine_with_public_ip_availability_set.name | default(omit) }}"
     image: "{{ azure_virtual_machine_with_public_ip_vm.image | default(omit) }}"
+    plan: "{{ azure_virtual_machine_with_public_ip_vm.plan | default(omit) }}"
+    accept_terms: "{{ azure_virtual_machine_with_public_ip_vm.accept_terms | default(omit) }}"
     swap_os_disk: "{{ azure_virtual_machine_with_public_ip_vm.swap_os_disk | default(omit) }}"
     admin_username: "{{ azure_virtual_machine_with_public_ip_vm.admin_username | default(omit) }}"
     admin_password: "{{ azure_virtual_machine_with_public_ip_vm.admin_password | default(omit) }}"
