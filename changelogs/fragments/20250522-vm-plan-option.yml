@@ -1,2 +1,2 @@
--trivial:
+trivial:
   - Support 'plan' and 'accept_terms' in azure_virtual_machine_with_public_ip role
