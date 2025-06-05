@@ -122,7 +122,7 @@ argument_specs:
             description:
               - Load balancer SKU.
               - Will also be applied to the public ip generated for the load balancer.
-            choices: ['Basic', 'Standard']
+            choices: ['Standard']
           tags:
             description: Metadata to the load balancer.
             type: dict

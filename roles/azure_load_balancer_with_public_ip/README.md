@@ -41,7 +41,7 @@ Role Variables
     - **idle_timeout**: The timeout for the TCP idle connection. The value can be set between 4 and 30 minutes. The default value is 4 minutes. This element is only used when the protocol is set to TCP.
     - **load_distribution**: Session persistence policy for this rule. Valid choices are 'Default' (no persistence), 'SourceIP', 'SourceIPProtocol'.
     - **protocol**: IP protocol for the rule. Valid choices are: 'Tcp', 'Udp', 'All'.
-  - **sku**: Load balancer SKU. Valid choices are: 'Basic', 'Standard'. Will also be applied to the public ip generated for the load balancer.
+  - **sku**: Load balancer SKU. Valid choices are: 'Standard'. Will also be applied to the public ip generated for the load balancer.
   - **tags**: Dictionary of string:string pairs to assign as metadata to the load balancer.
 * **azure_load_balancer_with_public_ip_delete_resource_group**: Relevant for **delete** operation. Change to true in case Resource Group deletion should be done as part of this role deletion (default: false)
 
