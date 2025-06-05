@@ -24,6 +24,7 @@ Name | Description
 [cloud.azure_ops.azure_manage_resource_group](https://github.com/redhat-cop/cloud.azure_ops/blob/main/roles/azure_manage_resource_group/README.md)|A role to manage Azure Resource Group.
 [cloud.azure_ops.azure_manage_security_group](https://github.com/redhat-cop/cloud.azure_ops/blob/main/roles/azure_manage_security_group/README.md)|A role to manage Azure Security Group.
 [cloud.azure_ops.azure_virtual_machine_with_public_ip](https://github.com/redhat-cop/cloud.azure_ops/blob/main/roles/azure_virtual_machine_with_public_ip/README.md)|A role to manage Azure Virtual Machine.
+[cloud.azure_ops.azure_manage_snapshot](https://github.com/redhat-cop/cloud.azure_ops/blob/main/roles/azure_manage_snapshot/README.md)|A role to manage Azure Snapshots.
 
 
 ### Playbooks

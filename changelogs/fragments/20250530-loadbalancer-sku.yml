@@ -1,0 +1,4 @@
+bugfixes:
+  - Update to Standard sku for loadbalanacer test case, Basic has been removed since March 2025.
+trivial:
+  - Add missing link to snapshot role in README.
