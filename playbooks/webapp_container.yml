@@ -24,19 +24,19 @@
 
     - name: Create infrastructure
       ansible.builtin.include_role:
-        name: cloud.azure_ops.azure_manage_postgresql
+        name: cloud.azure_ops.azure_manage_postgresqlflex
       vars:
-        azure_manage_postgresql_operation: create
-        azure_manage_postgresql_resource_group: "{{ azure_resource_group }}"
-        azure_manage_postgresql_region: "{{ azure_region }}"
-        azure_manage_postgresql_postgresql_name: "{{ azure_postgresql_name }}"
-        azure_manage_postgresql_postgresql_admin_username: "{{ azure_postgresql_admin_username }}"
-        azure_manage_postgresql_postgresql_admin_password: "{{ azure_postgresql_admin_password }}"
-        azure_manage_postgresql_postgresql_database_instances: "{{ azure_postgresql_database_instances }}"
+        azure_manage_postgresqlflex_operation: create
+        azure_manage_postgresqlflex_resource_group: "{{ azure_resource_group }}"
+        azure_manage_postgresqlflex_region: "{{ azure_region }}"
+        azure_manage_postgresqlflex_name: "{{ azure_postgresql_name }}"
+        azure_manage_postgresqlflex_admin_username: "{{ azure_postgresql_admin_username }}"
+        azure_manage_postgresqlflex_admin_password: "{{ azure_postgresql_admin_password }}"
+        azure_manage_postgresqlflex_database_instances: "{{ azure_postgresql_database_instances }}"
       when: not migrate_app
 
     - name: Get pgsql info
-      azure.azcollection.azure_rm_postgresqlserver_info:
+      azure.azcollection.azure_rm_postgresqlflexibleserver_info:
         resource_group: "{{ azure_resource_group }}"
         name: "{{ azure_postgresql_name }}"
       register: psql_info

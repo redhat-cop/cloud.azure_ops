@@ -1,0 +1,14 @@
+---
+- name: Get server info
+  azure.azcollection.azure_rm_postgresqlflexibleserver_info:
+    resource_group: "{{ azure_manage_postgresqlflex_resource_group }}"
+    name: "{{ azure_manage_postgresqlflex_name }}"
+  register: server_info
+
+- name: Get Resource group info
+  azure.azcollection.azure_rm_resourcegroup_info:
+    name: "{{ azure_manage_postgresqlflex_resource_group }}"
+  register: rg_info
+
+- name: Create or delete Azure PostgreSQL Flex server
+  ansible.builtin.include_tasks: "{{ azure_manage_postgresqlflex_operation }}.yml"

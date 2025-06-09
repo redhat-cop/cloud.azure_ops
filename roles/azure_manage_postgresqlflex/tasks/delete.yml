@@ -1,0 +1,42 @@
+---
+- name: Delete PostgreSQL Flex Server Firewall rules
+  azure.azcollection.azure_rm_postgresqlflexiblefirewallrule:
+    resource_group: "{{ azure_manage_postgresqlflex_resource_group }}"
+    server_name: "{{ azure_manage_postgresqlflex_name }}"
+    name: "{{ item.name }}"
+    state: absent
+  with_items: "{{ azure_manage_postgresqlflex_firewall_rules }}"
+  when:
+    - azure_manage_postgresqlflex_firewall_rules is defined
+    - azure_manage_postgresqlflex_firewall_rules | length > 0
+
+- name: Delete PostgreSQL Flex Database instances
+  azure.azcollection.azure_rm_postgresqlflexibledatabase:
+    resource_group: "{{ azure_manage_postgresqlflex_resource_group }}"
+    server_name: "{{ azure_manage_postgresqlflex_name }}"
+    name: "{{ item.name }}"
+    force_update: "{{ item.force | default(omit) }}"
+    state: absent
+  with_items: "{{ azure_manage_postgresqlflex_database_instances }}"
+  when:
+    - azure_manage_postgresqlflex_database_instances is defined
+    - azure_manage_postgresqlflex_database_instances | length > 0
+
+- name: Delete PostgreSQL Flex Server if requested
+  azure.azcollection.azure_rm_postgresqlflexibleserver:
+    resource_group: "{{ azure_manage_postgresqlflex_resource_group }}"
+    name: "{{ azure_manage_postgresqlflex_name }}"
+    state: absent
+  when:
+    - azure_manage_postgresqlflex_delete_server is defined
+    - azure_manage_postgresqlflex_delete_server
+
+- name: Delete Resource group if requested
+  ansible.builtin.include_role:
+    name: cloud.azure_ops.azure_manage_resource_group
+  vars:
+    azure_manage_resource_group_operation: delete
+    azure_manage_resource_group_name: "{{ azure_manage_postgresqlflex_resource_group }}"
+  when:
+    - azure_manage_postgresqlflex_delete_resource_group is defined
+    - azure_manage_postgresqlflex_delete_resource_group

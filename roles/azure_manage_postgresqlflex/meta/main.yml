@@ -1,7 +1,7 @@
 ---
 galaxy_info:
-  author: Bikouo Aubin
-  description: Role to manage postgresql in Azure Cloud.
+  author: Bill Peck
+  description: Role to manage postgresql flex in Azure Cloud.
   company: Red Hat
 
   license: GPL-3.0-or-later

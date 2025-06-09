@@ -20,14 +20,14 @@
       when: operation | default('create') == 'create'
       block:
         - name: Retrieve PostgreSQL Server info
-          azure.azcollection.azure_rm_postgresqlserver_info:
+          azure.azcollection.azure_rm_postgresqlflexibleserver_info:
             resource_group: "{{ azure_resource_group }}"
             name: "{{ azure_postgresql_name }}"
           register: _server
 
         - name: Create PostgreSQL database instance
           ansible.builtin.import_role:
-            name: cloud.azure_ops.azure_manage_postgresql
+            name: cloud.azure_ops.azure_manage_postgresqlflex
           when: _server.servers | length == 0
 
 - name: Deploy resource from Bastion Host

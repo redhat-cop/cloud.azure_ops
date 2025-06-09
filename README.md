@@ -18,7 +18,7 @@ Click on the name of a plugin or module to view that content's documentation:
 Name | Description
 --- | ---
 [cloud.azure_ops.azure_load_balancer_with_public_ip](https://github.com/redhat-cop/cloud.azure_ops/blob/main/roles/azure_load_balancer_with_public_ip/README.md)|A role to manage Azure Load Balancer.
-[cloud.azure_ops.azure_manage_postgresql](https://github.com/redhat-cop/cloud.azure_ops/blob/main/roles/azure_manage_postgresql/README.md)|A role to manage Azure PostGreSQL Database.
+[cloud.azure_ops.azure_manage_postgresqlflex](https://github.com/redhat-cop/cloud.azure_ops/blob/main/roles/azure_manage_postgresqlflex/README.md)|A role to manage Azure PostGreSQL Flexible Database.
 [cloud.azure_ops.azure_manage_network_interface](https://github.com/redhat-cop/cloud.azure_ops/blob/main/roles/azure_manage_network_interface/README.md)|A role to manage Azure Network Interface.
 [cloud.azure_ops.azure_manage_networking_stack](https://github.com/redhat-cop/cloud.azure_ops/blob/main/roles/azure_manage_networking_stack/README.md)|A role to manage Azure Networking Stack.
 [cloud.azure_ops.azure_manage_resource_group](https://github.com/redhat-cop/cloud.azure_ops/blob/main/roles/azure_manage_resource_group/README.md)|A role to manage Azure Resource Group.

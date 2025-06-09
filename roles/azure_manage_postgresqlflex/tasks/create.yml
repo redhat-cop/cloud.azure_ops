@@ -1,0 +1,83 @@
+---
+- name: Check that Azure Region is known
+  ansible.builtin.fail:
+    msg: Azure location must be defined as azure_manage_postgresqlflex_region
+  when:
+    - rg_info.resourcegroups | length == 0
+    - azure_manage_postgresqlflex_region is not defined
+
+- name: Check Azure PostgreSQL admin user
+  ansible.builtin.fail:
+    msg: Azure PostgreSQL Server admin user must be defined as azure_manage_postgresqlflex_admin_username
+  when:
+    - server_info.servers | length == 0
+    - azure_manage_postgresqlflex_admin_username is not defined
+
+- name: Check Azure PostgreSQL admin password
+  ansible.builtin.fail:
+    msg: Azure PostgreSQL Server admin password must be defined as azure_manage_postgresqlflex_admin_password
+  when:
+    - server_info.servers | length == 0
+    - azure_manage_postgresqlflex_admin_password is not defined
+
+- name: Create resource group if it doesn't already exists
+  ansible.builtin.include_role:
+    name: cloud.azure_ops.azure_manage_resource_group
+  vars:
+    azure_manage_resource_group_operation: create
+    azure_manage_resource_group_name: "{{ azure_manage_postgresqlflex_resource_group }}"
+    azure_manage_resource_group_region: "{{ azure_manage_postgresqlflex_region }}"
+    azure_manage_resource_group_tags: "{{ azure_manage_postgresqlflex_tags | default({}) }}"
+  when: rg_info.resourcegroups | length == 0
+
+- name: Check Azure PostgreSQL server restore point
+  ansible.builtin.fail:
+    msg: Azure PostgreSQL Server restore point in time must be defined (ISO8601 format) as azure_manage_postgresqlflex_create_mode is set to 'PointInTimeRestore'
+  when:
+    - azure_manage_postgresqlflex_create_mode | default('') == 'PointInTimeRestore'
+    - azure_manage_postgresqlflex_restore_point_in_time is not defined
+
+- name: Create/Update PostgreSQL Flex Server
+  azure.azcollection.azure_rm_postgresqlflexibleserver:
+    resource_group: "{{ azure_manage_postgresqlflex_resource_group }}"
+    name: "{{ azure_manage_postgresqlflex_name }}"
+    fully_qualified_domain_name: "{{ azure_manage_postgresqlflex_fqdn | default(omit) }}"
+    sku: "{{ azure_manage_postgresqlflex_sku | default(omit) }}"
+    location: "{{ azure_manage_postgresqlflex_region | default(omit) }}"
+    storage: "{{ azure_manage_postgresqlflex_storage | default(omit) }}"
+    backup: "{{ azure_manage_postgresqlflex_backup | default(omit) }}"
+    maintenance_window: "{{ azure_manage_postgresqlflex_maint_window | default(omit) }}"
+    version: "{{ azure_manage_postgresqlflex_version }}"
+    administrator_login: "{{ azure_manage_postgresqlflex_admin_username | default(omit) }}"
+    administrator_login_password: "{{ azure_manage_postgresqlflex_admin_password | default(omit) }}"
+    create_mode: "{{ azure_manage_postgresqlflex_create_mode | default(omit) }}"
+    source_server_resource_id: "{{ azure_manage_postgresqlflex_source_server_id | default(omit) }}"
+    network: "{{ azure_manage_postgresqlflex_network | default(omit) }}"
+    point_in_time_utc: "{{ azure_manage_postgresqlflex_manage_restore_point_in_time | default(omit) }}"
+    availability_zone: "{{ azure_manage_postgresqlflex_availability_zone | default(omit) }}"
+    tags: "{{ azure_manage_postgresqlflex_tags | default(omit) }}"
+
+- name: Update PostgreSQL Flex Server Firewall rules
+  azure.azcollection.azure_rm_postgresqlflexiblefirewallrule:
+    resource_group: "{{ azure_manage_postgresqlflex_resource_group }}"
+    server_name: "{{ azure_manage_postgresqlflex_name }}"
+    name: "{{ item.name }}"
+    start_ip_address: "{{ item.start_ip_address }}"
+    end_ip_address: "{{ item.end_ip_address }}"
+  with_items: "{{ azure_manage_postgresqlflex_firewall_rules }}"
+  when:
+    - azure_manage_postgresqlflex_firewall_rules is defined
+    - azure_manage_postgresqlflex_firewall_rules | length > 0
+
+- name: Create/Update PostgreSQL Flex Database instances
+  azure.azcollection.azure_rm_postgresqlflexibledatabase:
+    resource_group: "{{ azure_manage_postgresqlflex_resource_group }}"
+    server_name: "{{ azure_manage_postgresqlflex_name }}"
+    name: "{{ item.name }}"
+    charset: "{{ item.charset | default(omit) }}"
+    collation: "{{ item.collation | default(omit) }}"
+    force_update: "{{ item.force | default(omit) }}"
+  with_items: "{{ azure_manage_postgresqlflex_database_instances }}"
+  when:
+    - azure_manage_postgresqlflex_database_instances is defined
+    - azure_manage_postgresqlflex_database_instances | length > 0

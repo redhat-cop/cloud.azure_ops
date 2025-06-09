@@ -1,7 +1,7 @@
 ---
 namespace: cloud
 name: azure_ops
-version: 5.0.0
+version: 6.0.0
 authors:
   - Ansible (https://github.com/ansible)
 description: A collection of content (roles, playbooks, etc) for Ansible Automation Platform on Azure.

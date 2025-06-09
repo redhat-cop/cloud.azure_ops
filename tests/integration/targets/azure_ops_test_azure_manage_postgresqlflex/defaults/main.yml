@@ -1,0 +1,12 @@
+---
+azure_manage_postgresqlflex_name: "{{ resource_prefix }}-postgresqlflex-server"
+azure_manage_postgresqlflex_admin_username: "ansible"
+azure_manage_postgresqlflex_sku:
+  name: "Standard_B2s"
+  tier: "Burstable"
+azure_manage_postgresqlflex_storage:
+  storage_size_gb: 128
+azure_manage_postgresqlflex_backup:
+  backup_retention_days: 10
+azure_manage_postgresqlflex_tags:
+  resource_prefix: "{{ resource_prefix }}"
