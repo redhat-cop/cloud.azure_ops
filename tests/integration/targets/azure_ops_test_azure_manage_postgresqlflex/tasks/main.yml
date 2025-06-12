@@ -1,8 +1,8 @@
 ---
 - name: Generate Admin Password
   ansible.builtin.set_fact:
-    azure_manage_postgresql_postgresql_admin_password: lookup('community.general.random_string', length=6, min_lower=1, min_upper=1, min_numeric=1, min_special=1)
-  when: azure_manage_postgresql_postgresql_admin_password is not defined
+    azure_manage_postgresqlflex_admin_password: lookup('community.general.random_string', length=6, min_lower=1, min_upper=1, min_numeric=1, min_special=1)
+  when: azure_manage_postgresqlflex_admin_password is not defined
 
 # Determine Azure Region
 - name: Gather Resource Group info
@@ -17,19 +17,19 @@
       ansible.builtin.include_tasks: create_and_delete_postgresql.yml
       vars:
         test_resource_group: "{{ resource_group }}"
-        azure_manage_postgresql_region: "{{ __rg_info.resourcegroups.0.location }}"
+        azure_manage_postgresqlflex_region: "{{ __rg_info.resourcegroups.0.location }}"
 
   always:
     - name: Always - Gather PostgreSQL Server info
-      azure.azcollection.azure_rm_postgresqlserver_info:
+      azure.azcollection.azure_rm_postgresqlflexibleserver_info:
         resource_group: "{{ resource_group }}"
-        name: "{{ azure_manage_postgresql_postgresql_name }}"
+        name: "{{ azure_manage_postgresqlflex_name }}"
       register: _postgresql
 
     - name: Cleanup - Delete a PostgreSQL Server, resource_group={{ resource_group }}
-      azure.azcollection.azure_rm_postgresqlserver:
+      azure.azcollection.azure_rm_postgresqlflexibleserver:
         resource_group: "{{ resource_group }}"
-        name: "{{ azure_manage_postgresql_postgresql_name }}"
+        name: "{{ azure_manage_postgresqlflex_name }}"
         state: absent
       when: _postgresql.servers | length > 0  
         
@@ -50,8 +50,8 @@
       ansible.builtin.include_tasks: create_and_delete_postgresql.yml
       vars:
         test_resource_group: "{{ new_resource_group }}"
-        azure_manage_postgresql_region: "{{ __rg_info.resourcegroups.0.location }}"
-        azure_manage_postgresql_delete_resource_group: true
+        azure_manage_postgresqlflex_region: "{{ __rg_info.resourcegroups.0.location }}"
+        azure_manage_postgresqlflex_delete_resource_group: true
 
   always:
     - name: Always - Cleanup - Delete a Resource group including resources it contains - {{ new_resource_group }}

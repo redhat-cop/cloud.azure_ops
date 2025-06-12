@@ -1,0 +1,3 @@
+---
+azure_manage_postgresqlflex_operation: create
+azure_manage_postgresqlflex_version: "11"
