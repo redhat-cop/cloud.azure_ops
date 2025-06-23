@@ -4,6 +4,31 @@ Cloud.Azure\_Ops Release Notes
 
 .. contents:: Topics
 
+v6.0.0
+======
+
+Release Summary
+---------------
+
+This is the major release of the ``cloud.azure_ops`` collection.
+There is a new azure_manage_postgresqlflex role which replaces azure_manage_postgresql
+since azure has dropped support for the latter.
+
+Removed Features (previously deprecated)
+----------------------------------------
+
+- Removal of azure_manage_postgresql role.  Azure no longer supports the azure_rm_postgresqlserver module.
+
+Bugfixes
+--------
+
+- Update to Standard sku for loadbalanacer test case, Basic has been removed since March 2025.
+
+New Roles
+---------
+
+- cloud.azure_ops.azure_manage_postgresqlflex - A role to Create/Delete/Configure an Azure Database for PostgreSQL Flexible server.
+
 v5.0.0
 ======
 
@@ -13,20 +38,17 @@ Release Summary
 This is the major release of the ``cloud.azure_ops`` collection.
 This changelog contains all changes to the modules and plugins in this collection
 that have been made after the previous release.
-
-New Roles
----------
-- azure_manage_snapshot, Helps manage OS Disk snapshots of VirtualMachines.
+New Roles --------- - azure_manage_snapshot, Helps manage OS Disk snapshots of VirtualMachines.
 
 Bugfixes
 --------
 
-- Adding more variables assertions to loadbalancer integration test to ensure it was created as expected
-- Adding support for swap_os_disk which allows you to create a VM from a Snapshot
 - Adding admin password requirements of azure_manage_postgresql role to README file
 - Adding alwayes statment to the first block in test_azure_manage_security_group main to ensure security group deleted
 - Adding always statement to first block in test_azure_load_balancer_with_public_ip test to verify the remove of load balancer and public ip recourses
 - Adding managed_disk_type as possible option in role azure_virtual_machine_with_public_ip
+- Adding more variables assertions to loadbalancer integration test to ensure it was created as expected
+- Adding support for swap_os_disk which allows you to create a VM from a Snapshot
 - Fixed the undefined variables issue in the create.yml and delete.yml of azure_manage_postgresql role.
 - Postgresql Integration test improvement - Add key-value example to postgresql_settings.
 - Removing redundant default variables from the role's default file.

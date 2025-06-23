@@ -1,2 +1,0 @@
-removed_features:
-  - Removal of azure_manage_postgresql role.  Azure no longer supports the azure_rm_postgresqlserver module.
