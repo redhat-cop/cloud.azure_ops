@@ -1,0 +1,31 @@
+---
+argument_specs:
+  main:
+    version_added: 6.1.0
+    short_description: A role to Configure an Azure ARC Host.
+    description:
+      - A role to Configure an Azure ARC host.
+      - This role requires an azure principal id and secret, resource_group, tenant id and subscription_id.
+    options:
+      resource_group:
+        description:
+          - Resource group on/from which the Arc Host will reside.
+        required: true
+      azure_client_id:
+        description: azure service principal client id.
+        required: true
+      azure_secret:
+        description: azure service principal secret.
+        required: true
+      azure_tenant:
+        description: An Azure tenant id.
+        required: true
+      azure_subscription_id:
+        description: An Azure subscription id.
+        required: true
+      azure_configure_archost_tags:
+        description: Dictionary of tags to apply to the Arc Host entry in Azure.
+        type: "dict"
+        default:
+          archost: "true"
+        required: false

@@ -1,0 +1,28 @@
+---
+- name: Process tags
+  set_fact:
+    _azure_configure_archost_tags: "{{ _azure_configure_archost_tags | default([]) + [item.key + '=' + item.value] }}"
+  loop: "{{ azure_configure_archost_tags | dict2items }}"
+
+- name: Generate tags string
+  set_fact:
+    azure_configure_archost_processed_tags: "{{ _azure_configure_archost_tags | join(',') }}"
+
+- name: Gather Resource Group info
+  azure.azcollection.azure_rm_resourcegroup_info:
+    name: "{{ resource_group }}"
+  register: __azure_configure_archost_rg_info
+  delegate_to: localhost
+
+- name: Set azure_location from resource_group
+  ansible.builtin.set_fact:
+    azure_configure_archost_location: "{{ __azure_configure_archost_rg_info.resourcegroups.0.location }}"
+
+- name: Setup Arc host for Linux
+  ansible.builtin.include_tasks: "linux.yml"
+  when: ansible_system == 'Linux'
+
+- name: Setup Arc host for Windows
+  ansible.builtin.include_tasks: "windows.yml"
+  when: ansible_os_family == 'Windows'
+...
