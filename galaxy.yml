@@ -17,6 +17,8 @@ tags:
   - infrastructure
 dependencies:
   azure.azcollection: ">=3.3.0"
+  ansible.windows: ">=3.2.0"
+  community.general: ">=11.2.1"
 build_ignore:
   - '.tox'
   - '.git'
