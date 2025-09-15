@@ -9,13 +9,13 @@
     name: "{{ azure_manage_resource_group_name }}"
     location: "{{ azure_manage_resource_group_region }}"
     tags: "{{ azure_manage_resource_group_tags | default(omit) }}"
-  register: result
+  register: azure_manage_resource_group_result
 
 - name: Lock resource group
   azure.azcollection.azure_rm_lock:
     name: "{{ azure_manage_resource_group_name }}-lock"
     level: can_not_delete
-    managed_resource_id: "{{ result.state.id }}"
+    managed_resource_id: "{{ azure_manage_resource_group_result.state.id }}"
   when:
     - azure_manage_resource_group_lock_resource_group is defined
     - azure_manage_resource_group_lock_resource_group | bool

@@ -13,12 +13,12 @@
   azure.azcollection.azure_rm_virtualnetwork_info:
     resource_group: "{{ azure_manage_network_interface_resource_group }}"
     name: "{{ azure_manage_network_interface_interface.vnet_name }}"
-  register: vnet_info
+  register: azure_manage_network_interface_vnet_info
 
 - name: Ensure vnet exists
   ansible.builtin.fail:
     msg: Virtual network '{{ azure_manage_network_interface_interface.vnet_name }}' does not exist
-  when: vnet_info.virtualnetworks | length == 0
+  when: azure_manage_network_interface_vnet_info.virtualnetworks | length == 0
 
 - name: Ensure subnet exists
   block:
@@ -27,12 +27,12 @@
         resource_group: "{{ azure_manage_network_interface_resource_group }}"
         name: "{{ azure_manage_network_interface_interface.subnet_name }}"
         virtual_network_name: "{{ azure_manage_network_interface_interface.vnet_name }}"
-      register: subnet_info
+      register: azure_manage_network_interface_subnet_info
 
     - name: Ensure subnet exists
       ansible.builtin.fail:
         msg: Subnet '{{ azure_manage_network_interface_interface.subnet_name }}' does not exist
-      when: subnet_info.subnets | length == 0
+      when: azure_manage_network_interface_subnet_info.subnets | length == 0
 
   rescue:
     - name: Throw better error message

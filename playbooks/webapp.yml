@@ -128,5 +128,5 @@
   tasks:
     - name: Print web application URL
       ansible.builtin.debug:
-        msg: Web application accessible at  http://{{ load_balancer_public_ip }}:5000
-      when: load_balancer_public_ip is defined
+        msg: Web application accessible at  http://{{ scale_virtual_machine_load_balancer_public_ip }}:5000
+      when: scale_virtual_machine_load_balancer_public_ip is defined

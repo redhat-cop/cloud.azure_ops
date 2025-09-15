@@ -2,12 +2,12 @@
 - name: Get resource group info
   azure.azcollection.azure_rm_resourcegroup_info:
     name: "{{ azure_manage_network_interface_resource_group }}"
-  register: rg_info
+  register: azure_manage_network_interface_rg_info
 
 - name: Ensure resource group exists
   ansible.builtin.fail:
     msg: Resource group '{{ azure_manage_network_interface_resource_group }}' does not exist
-  when: rg_info.resourcegroups | length == 0
+  when: azure_manage_network_interface_rg_info.resourcegroups | length == 0
 
 - name: Create or delete network interface
   ansible.builtin.include_tasks: "{{ azure_manage_network_interface_operation }}.yml"

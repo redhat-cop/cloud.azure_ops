@@ -46,11 +46,11 @@
     name: "{{ scale_virtual_machine_load_balancer.public_ip_name }}"
     sku: Standard
     domain_name: "{{ scale_virtual_machine_load_balancer.domain_name | default(omit) }}"
-  register: public_ip
+  register: scale_virtual_machine_public_ip
 
 - name: Define load balancer ip address
   ansible.builtin.set_fact:
-    load_balancer_public_ip: "{{ public_ip.state.ip_address }}"
+    scale_virtual_machine_load_balancer_public_ip: "{{ scale_virtual_machine_public_ip.state.ip_address }}"
 
 # Deploy Load Balancer that provides public internet access to application routing back to app servers
 - name: Create load Balancer
@@ -76,7 +76,7 @@
         frontend_port: 5000
         backend_port: 5000
         probe: ping_server
-  register: load_balancer
+  register: scale_virtual_machine_load_balancer
 
 # Create Bastion Host
 - name: Create a bastion host
@@ -109,22 +109,22 @@
   azure.azcollection.azure_rm_virtualmachinescalesetinstance_info:
     resource_group: "{{ scale_virtual_machine_resource_group }}"
     vmss_name: "{{ scale_virtual_machine_vm_name }}ss"
-  register: result
+  register: scale_virtual_machine_result
 
 - name: Init vm instance list
   ansible.builtin.set_fact:
-    vm_instances: []
+    scale_virtual_machine_vm_instances: []
 - name: Add host to vm instances list
   ansible.builtin.include_tasks: tasks/add_host.yml
-  with_items: "{{ result.instances }}"
+  with_items: "{{ scale_virtual_machine_result.instances }}"
 
 - name: Init join_instances
   ansible.builtin.set_fact:
-    join_instances: []
+    scale_virtual_machine_join_instances: []
 - name: Update join_instances
   ansible.builtin.set_fact:
-    join_instances: "{{ join_instances + [item.name + ':' + item.host] }}"
-  with_items: "{{ vm_instances }}"
+    scale_virtual_machine_join_instances: "{{ scale_virtual_machine_join_instances + [item.name + ':' + item.host] }}"
+  with_items: "{{ scale_virtual_machine_vm_instances }}"
 
 - name: Add bastion host to inventory
   ansible.builtin.add_host:
@@ -132,8 +132,8 @@
     ansible_ssh_user: "{{ scale_virtual_machine_vm_user }}"
     ansible_ssh_pass: "{{ scale_virtual_machine_vm_user_password }}"
     ansible_sudo_pass: "{{ scale_virtual_machine_vm_user_password }}"
-    ansible_host: "{{ bastion_public_ip }}"
+    ansible_host: "{{ scale_virtual_machine_bastion_public_ip }}"
     ansible_ssh_common_args: -o "UserKnownHostsFile=/dev/null" -o StrictHostKeyChecking=no
-    workers: "{{ vm_instances }}"
-    workers_join: "{{ join_instances | join(',') }}"
+    workers: "{{ scale_virtual_machine_vm_instances }}"
+    workers_join: "{{ scale_virtual_machine_join_instances | join(',') }}"
     azure_resource_group: "{{ scale_virtual_machine_resource_group }}"

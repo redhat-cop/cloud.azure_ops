@@ -2,7 +2,7 @@
 - name: Get resource group info
   azure.azcollection.azure_rm_resourcegroup_info:
     name: "{{ azure_manage_security_group_resource_group }}"
-  register: rg_info
+  register: azure_manage_security_group_rg_info
 
 - name: Create or delete security group
   ansible.builtin.include_tasks: "{{ azure_manage_security_group_operation }}.yml"

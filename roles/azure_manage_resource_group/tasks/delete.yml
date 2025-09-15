@@ -7,14 +7,14 @@
     - name: Get lock info for the resource group
       azure.azcollection.azure_rm_lock_info:
         resource_group: "{{ azure_manage_resource_group_name }}"
-      register: result
+      register: azure_manage_resource_group_result
 
     - name: Delete locks for the resource group
       azure.azcollection.azure_rm_lock:
         state: absent
         name: "{{ item.name }}"
         resource_group: "{{ azure_manage_resource_group_name }}"
-      with_items: "{{ result.locks }}"
+      with_items: "{{ azure_manage_resource_group_result.locks }}"
 
 - name: Delete resource group
   azure.azcollection.azure_rm_resourcegroup:
@@ -23,5 +23,5 @@
     force_delete_nonempty: "{{ azure_manage_resource_group_force_delete_nonempty | default(omit) }}"
   retries: 20
   delay: 5
-  register: result
-  until: result.failed == false
+  register: azure_manage_resource_group_result
+  until: azure_manage_resource_group_result.failed == false

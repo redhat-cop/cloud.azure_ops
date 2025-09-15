@@ -171,12 +171,12 @@
       block:
         - name: Check that you can connect (GET) to a page and it returns a status 200
           ansible.builtin.uri:
-            url: http://{{ load_balancer_public_ip }}:5000
-          when: load_balancer_public_ip is defined
+            url: http://{{ scale_virtual_machine_load_balancer_public_ip }}:5000
+          when: scale_virtual_machine_load_balancer_public_ip is defined
       rescue:
         - name: Print failed message
           ansible.builtin.debug:
-            msg: Failed to reach the given URL at http://{{ load_balancer_public_ip }}:5000, cleaning up destination resource group
+            msg: Failed to reach the given URL at http://{{ scale_virtual_machine_load_balancer_public_ip }}:5000, cleaning up destination resource group
 
         - name: Delete application infrastructure
           ansible.builtin.import_role:
@@ -187,7 +187,7 @@
 
         - name: Failed to connect
           ansible.builtin.fail:
-            msg: Failed to reach the given URL at http://{{ load_balancer_public_ip }}:5000
+            msg: Failed to reach the given URL at http://{{ scale_virtual_machine_load_balancer_public_ip }}:5000
 
     - name: Set source resource group variables
       ansible.builtin.set_fact:
@@ -243,4 +243,4 @@
 
     - name: Print web application URL
       ansible.builtin.debug:
-        msg: Web application accessible at http://{{ load_balancer_public_ip }}:5000
+        msg: Web application accessible at http://{{ scale_virtual_machine_load_balancer_public_ip }}:5000

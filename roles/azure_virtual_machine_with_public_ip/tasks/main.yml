@@ -1,7 +1,7 @@
 ---
 - name: Replace invalid chars in name
   ansible.builtin.set_fact:
-    vm_name: "{{ azure_virtual_machine_with_public_ip_vm.name | regex_replace('[^a-zA-Z0-9]', '-') }}"
+    azure_virtual_machine_with_public_ip_vm_name: "{{ azure_virtual_machine_with_public_ip_vm.name | regex_replace('[^a-zA-Z0-9]', '-') }}"
 
 - name: Get resource group info
   azure.azcollection.azure_rm_resourcegroup_info:
@@ -18,28 +18,28 @@
 - name: Power Off VM
   azure.azcollection.azure_rm_virtualmachine:
     resource_group: "{{ azure_virtual_machine_with_public_ip_resource_group }}"
-    name: "{{ vm_name }}"
+    name: "{{ azure_virtual_machine_with_public_ip_vm_name }}"
     started: false
   when: azure_virtual_machine_with_public_ip_operation == 'power_off'
 
 - name: Deallocate VM
   azure.azcollection.azure_rm_virtualmachine:
     resource_group: "{{ azure_virtual_machine_with_public_ip_resource_group }}"
-    name: "{{ vm_name }}"
+    name: "{{ azure_virtual_machine_with_public_ip_vm_name }}"
     allocated: false
   when: azure_virtual_machine_with_public_ip_operation == 'deallocate'
 
 - name: Power On VM
   azure.azcollection.azure_rm_virtualmachine:
     resource_group: "{{ azure_virtual_machine_with_public_ip_resource_group }}"
-    name: "{{ vm_name }}"
+    name: "{{ azure_virtual_machine_with_public_ip_vm_name }}"
     started: true
   when: azure_virtual_machine_with_public_ip_operation == 'power_on'
 
 - name: Restart VM
   azure.azcollection.azure_rm_virtualmachine:
     resource_group: "{{ azure_virtual_machine_with_public_ip_resource_group }}"
-    name: "{{ vm_name }}"
+    name: "{{ azure_virtual_machine_with_public_ip_vm_name }}"
     restarted: true
   when: azure_virtual_machine_with_public_ip_operation == 'restart'
 
