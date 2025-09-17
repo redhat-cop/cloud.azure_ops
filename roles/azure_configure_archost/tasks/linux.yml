@@ -1,0 +1,58 @@
+---
+- name: Check if Connected Machine Agent is Downloaded
+  ansible.builtin.stat:
+    path: /usr/bin/azcmagent
+    get_attributes: False
+    get_checksum: False
+  register: azure_configure_archost_azcmagent_lnx_downloaded
+
+- name: Download Connected Machine Agent
+  become: yes
+  ansible.builtin.get_url:
+    url: https://aka.ms/azcmagent
+    dest: ~/install_linux_azcmagent.sh
+    mode: '700'
+  when: not azure_configure_archost_azcmagent_lnx_downloaded.stat.exists
+
+- name: Install Connected Machine Agent
+  become: yes
+  ansible.builtin.command:
+    cmd: bash ~/install_linux_azcmagent.sh
+    creates: /usr/bin/azcmagent
+  when: not azure_configure_archost_azcmagent_lnx_downloaded.stat.exists
+
+- name: Check Connection
+  become: true
+  ansible.builtin.command:
+   cmd: azcmagent check
+  register: azure_configure_archost_azcmagent_lnx_connected
+  ignore_errors: yes
+  failed_when: (azure_configure_archost_azcmagent_lnx_connected.rc not in [ 0, 16 ])
+  changed_when: False
+
+- name: Connect to Azure Arc
+  become: true
+  ansible.builtin.command:
+    argv:
+      - /usr/bin/azcmagent
+      - connect
+      - --service-principal-id
+      - "{{ azure_client_id }}"
+      - --service-principal-secret
+      - "{{ azure_secret }}"
+      - --resource-group
+      - "{{ resource_group }}"
+      - --tenant-id
+      - "{{ azure_tenant }}"
+      - --location
+      - "{{ azure_configure_archost_location }}"
+      - --subscription-id
+      - "{{ azure_subscription_id }}"
+      - --tags
+      - "{{ azure_configure_archost_processed_tags }}"
+  when:
+    - azure_configure_archost_azcmagent_lnx_connected.rc is defined
+    - azure_configure_archost_azcmagent_lnx_connected.rc != 0
+  register: azure_configure_archost_azcmagent_lnx_connected
+  failed_when: (azure_configure_archost_azcmagent_lnx_connected.rc not in [ 0, 16 ])
+  changed_when: False

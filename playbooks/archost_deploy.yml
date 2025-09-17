@@ -1,0 +1,7 @@
+---
+- name: Deploy arc agent on arc_hosts
+  hosts: arc_hosts
+  become: yes
+  become_user: root
+  roles:
+    - azure_configure_archost
