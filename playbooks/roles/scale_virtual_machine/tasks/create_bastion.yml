@@ -1,31 +1,31 @@
 ---
 - name: Define Bastion facts
   ansible.builtin.set_fact:
-    bastion_public_ip_name: "{{ scale_virtual_machine_vm_name }}bastion-ip"
-    bastion_nic_name: "{{ scale_virtual_machine_vm_name }}bastion-nic"
+    scale_virtual_machine_bastion_public_ip_name: "{{ scale_virtual_machine_vm_name }}bastion-ip"
+    scale_virtual_machine_bastion_nic_name: "{{ scale_virtual_machine_vm_name }}bastion-nic"
 
 - name: Create public ip for Bastion VM
   azure.azcollection.azure_rm_publicipaddress:
     resource_group: "{{ scale_virtual_machine_resource_group }}"
     allocation_method: static
-    name: "{{ bastion_public_ip_name }}"
+    name: "{{ scale_virtual_machine_bastion_public_ip_name }}"
     sku: Basic
-  register: public_ip
+  register: scale_virtual_machine_public_ip
 
 - name: Set bastion_public_ip variable
   ansible.builtin.set_fact:
-    bastion_public_ip: "{{ public_ip.state.ip_address }}"
+    scale_virtual_machine_bastion_public_ip: "{{ scale_virtual_machine_public_ip.state.ip_address }}"
 
 - name: Create network interface for Bastion host
   azure.azcollection.azure_rm_networkinterface:
     resource_group: "{{ scale_virtual_machine_resource_group }}"
-    name: "{{ bastion_nic_name }}"
+    name: "{{ scale_virtual_machine_bastion_nic_name }}"
     virtual_network: "{{ scale_virtual_machine_virtual_network }}"
     subnet_name: "{{ scale_virtual_machine_subnet }}"
     security_group: "{{ scale_virtual_machine_security_group }}"
     ip_configurations:
       - name: public_ip
-        public_ip_address_name: "{{ bastion_public_ip_name }}"
+        public_ip_address_name: "{{ scale_virtual_machine_bastion_public_ip_name }}"
 
 - name: Create virtual machine
   azure.azcollection.azure_rm_virtualmachine:
@@ -42,4 +42,4 @@
     subnet_name: "{{ scale_virtual_machine_subnet }}"
     network_interface_names:
       - resource_group: "{{ scale_virtual_machine_resource_group }}"
-        name: "{{ bastion_nic_name }}"
+        name: "{{ scale_virtual_machine_bastion_nic_name }}"

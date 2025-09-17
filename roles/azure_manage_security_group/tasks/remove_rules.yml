@@ -3,18 +3,18 @@
   azure.azcollection.azure_rm_securitygroup_info:
     resource_group: "{{ azure_manage_security_group_resource_group }}"
     name: "{{ azure_manage_security_group_security_group.name }}"
-  register: sg_info
+  register: azure_manage_security_group_sg_info
 
 - name: Init empty list of rules
   ansible.builtin.set_fact:
-    new_sg_rules: []
+    azure_manage_security_group_new_sg_rules: []
 
 - name: Persist rules that will not be removed # noqa jinja[spacing] see: https://github.com/ansible/ansible-lint/issues/2684
   ansible.builtin.set_fact:
-    new_sg_rules: "{{ new_sg_rules + [{ 'name': rule.name, 'protocol': rule.protocol, 'access': rule.access, 'destination_address_prefix': rule.destination_address_prefix,\
+    azure_manage_security_group_new_sg_rules: "{{ azure_manage_security_group_new_sg_rules + [{ 'name': rule.name, 'protocol': rule.protocol, 'access': rule.access, 'destination_address_prefix': rule.destination_address_prefix,\
       \ 'destination_port_range': rule.destination_port_ranges, 'direction': rule.direction, 'priority': rule.priority, 'source_address_prefix':\
       \ rule.source_address_prefix, 'source_port_range': rule.source_port_range, }] }}"
-  with_items: "{{ sg_info.securitygroups[0].rules }}"
+  with_items: "{{ azure_manage_security_group_sg_info.securitygroups[0].rules }}"
   loop_control:
     loop_var: rule
   when: rule.name not in azure_manage_security_group_security_group.rules_to_remove
@@ -24,5 +24,5 @@
     resource_group: "{{ azure_manage_security_group_resource_group }}"
     name: "{{ azure_manage_security_group_security_group.name }}"
     purge_rules: true
-    rules: "{{ new_sg_rules }}"
+    rules: "{{ azure_manage_security_group_new_sg_rules }}"
     tags: "{{ azure_manage_security_group_security_group.tags | default(omit) }}"

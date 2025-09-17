@@ -4,7 +4,7 @@
     msg: Azure region must be defined as azure_load_balancer_with_public_ip_region
   when:
     - azure_load_balancer_with_public_ip_region is not defined
-    - rg_info.resourcegroups | length == 0
+    - azure_load_balancer_with_public_ip_rg_info.resourcegroups | length == 0
 
 - name: Create resource group if it doesn't already exists
   ansible.builtin.include_role:
@@ -14,7 +14,7 @@
     azure_manage_resource_group_name: "{{ azure_load_balancer_with_public_ip_resource_group }}"
     azure_manage_resource_group_region: "{{ azure_load_balancer_with_public_ip_region }}"
     azure_manage_resource_group_tags: "{{ azure_load_balancer_with_public_ip_tags | default({}) }}"
-  when: rg_info.resourcegroups | length == 0
+  when: azure_load_balancer_with_public_ip_rg_info.resourcegroups | length == 0
 
 - name: Ensure public ip exists
   azure.azcollection.azure_rm_publicipaddress:

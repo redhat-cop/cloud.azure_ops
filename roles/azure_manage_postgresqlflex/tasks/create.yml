@@ -3,21 +3,21 @@
   ansible.builtin.fail:
     msg: Azure location must be defined as azure_manage_postgresqlflex_region
   when:
-    - rg_info.resourcegroups | length == 0
+    - azure_manage_postgresqlflex_rg_info.resourcegroups | length == 0
     - azure_manage_postgresqlflex_region is not defined
 
 - name: Check Azure PostgreSQL admin user
   ansible.builtin.fail:
     msg: Azure PostgreSQL Server admin user must be defined as azure_manage_postgresqlflex_admin_username
   when:
-    - server_info.servers | length == 0
+    - azure_manage_postgresqlflex_server_info.servers | length == 0
     - azure_manage_postgresqlflex_admin_username is not defined
 
 - name: Check Azure PostgreSQL admin password
   ansible.builtin.fail:
     msg: Azure PostgreSQL Server admin password must be defined as azure_manage_postgresqlflex_admin_password
   when:
-    - server_info.servers | length == 0
+    - azure_manage_postgresqlflex_server_info.servers | length == 0
     - azure_manage_postgresqlflex_admin_password is not defined
 
 - name: Create resource group if it doesn't already exists
@@ -28,7 +28,7 @@
     azure_manage_resource_group_name: "{{ azure_manage_postgresqlflex_resource_group }}"
     azure_manage_resource_group_region: "{{ azure_manage_postgresqlflex_region }}"
     azure_manage_resource_group_tags: "{{ azure_manage_postgresqlflex_tags | default({}) }}"
-  when: rg_info.resourcegroups | length == 0
+  when: azure_manage_postgresqlflex_rg_info.resourcegroups | length == 0
 
 - name: Check Azure PostgreSQL server restore point
   ansible.builtin.fail:

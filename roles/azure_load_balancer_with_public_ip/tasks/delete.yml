@@ -3,12 +3,12 @@
   ansible.builtin.fail:
     msg: Resource group '{{ azure_load_balancer_with_public_ip_resource_group }}' does not exist.
   when:
-    - rg_info.resourcegroups | length == 0
+    - azure_load_balancer_with_public_ip_rg_info.resourcegroups | length == 0
 
 - name: Get lb's public ip info
   azure.azcollection.azure_rm_resource_info:
-    url: "{{ lb_info.loadbalancers[0].frontend_ip_configurations[0].public_ip_address.id }}"
-  register: pip
+    url: "{{ azure_load_balancer_with_public_ip_lb_info.loadbalancers[0].frontend_ip_configurations[0].public_ip_address.id }}"
+  register: azure_load_balancer_with_public_ip_pip
 
 - name: Delete load balancer
   azure.azcollection.azure_rm_loadbalancer:
@@ -19,7 +19,7 @@
 - name: Delete load balancer's public ip
   azure.azcollection.azure_rm_publicipaddress:
     resource_group: "{{ azure_load_balancer_with_public_ip_resource_group }}"
-    name: "{{ pip.response[0].name }}"
+    name: "{{ azure_load_balancer_with_public_ip_pip.response[0].name }}"
     state: absent
 
 - name: Delete Resource Group if requested

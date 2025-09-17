@@ -24,7 +24,7 @@
     msg: Azure region must be defined as azure_manage_networking_stack_region
   when:
     - azure_manage_networking_stack_region is not defined
-    - rg_info.resourcegroups | length == 0
+    - azure_manage_networking_stack_rg_info.resourcegroups | length == 0
 
 - name: Create resource group if it doesn't already exists
   ansible.builtin.include_role:
@@ -34,7 +34,7 @@
     azure_manage_resource_group_name: "{{ azure_manage_networking_stack_resource_group }}"
     azure_manage_resource_group_region: "{{ azure_manage_networking_stack_region }}"
     azure_manage_resource_group_tags: "{{ azure_manage_networking_stack_tags | default({}) }}"
-  when: rg_info.resourcegroups | length == 0
+  when: azure_manage_networking_stack_rg_info.resourcegroups | length == 0
 
 - name: Create azure virtual network
   azure.azcollection.azure_rm_virtualnetwork:

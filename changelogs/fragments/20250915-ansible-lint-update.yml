@@ -1,0 +1,2 @@
+trivial:
+  - ansible-lint update - Fix internal variables to use name of role prefix.

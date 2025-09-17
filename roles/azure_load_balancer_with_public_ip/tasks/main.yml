@@ -3,12 +3,12 @@
   azure.azcollection.azure_rm_loadbalancer_info:
     resource_group: "{{ azure_load_balancer_with_public_ip_resource_group }}"
     name: "{{ azure_load_balancer_with_public_ip_load_balancer.name }}"
-  register: lb_info
+  register: azure_load_balancer_with_public_ip_lb_info
 
 - name: Get resource group info
   azure.azcollection.azure_rm_resourcegroup_info:
     name: "{{ azure_load_balancer_with_public_ip_resource_group }}"
-  register: rg_info
+  register: azure_load_balancer_with_public_ip_rg_info
 
 - name: Create or delete load balancer
   ansible.builtin.include_tasks: "{{ azure_load_balancer_with_public_ip_operation }}.yml"

@@ -6,20 +6,20 @@
     - name: Get Virtual machine resource info
       azure.azcollection.azure_rm_resource_info:
         url: "{{ item.id }}"
-      register: vm_info
+      register: scale_virtual_machine_vm_info
 
     # Get Network interface info
     - name: Get network interface resource info
       azure.azcollection.azure_rm_resource_info:
-        url: "{{ vm_nic }}"
-      register: nic_info
+        url: "{{ scale_virtual_machine_vm_nic }}"
+      register: scale_virtual_machine_nic_info
       vars:
-        vm_nic: "{{ vm_info.response.0.properties.networkProfile.networkInterfaces.0.id }}"
+        scale_virtual_machine_vm_nic: "{{ vm_info.response.0.properties.networkProfile.networkInterfaces.0.id }}"
 
     - name: Update VM list
       ansible.builtin.set_fact:
-        vm_instances: "{{ vm_instances + [host_info] }}"
+        scale_virtual_machine_vm_instances: "{{ scale_virtual_machine_vm_instances + [host_info] }}"
       vars:
         host_info:
-          host: "{{ nic_info.response.0.properties.ipConfigurations.0.properties.privateIPAddress }}"
+          host: "{{ scale_virtual_machine_nic_info.response.0.properties.ipConfigurations.0.properties.privateIPAddress }}"
           name: "{{ item.computer_name }}"

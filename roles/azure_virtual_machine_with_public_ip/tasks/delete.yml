@@ -7,7 +7,7 @@
 - name: Delete Virtual Machine and specified associated resources
   azure.azcollection.azure_rm_virtualmachine:
     resource_group: "{{ azure_virtual_machine_with_public_ip_resource_group }}"
-    name: "{{ vm_name }}"
+    name: "{{ azure_virtual_machine_with_public_ip_vm_name }}"
     remove_on_absent: "{{ azure_virtual_machine_with_public_ip_remove_on_absent | default(omit) }}"
     state: absent
 
@@ -35,7 +35,7 @@
 - name: Get virtual network info
   azure.azcollection.azure_rm_virtualnetwork_info:
     resource_group: "{{ azure_virtual_machine_with_public_ip_resource_group }}"
-    name: "{{ vm_name }}"
+    name: "{{ azure_virtual_machine_with_public_ip_vm_name }}"
     tags:
       _own_vnet_
   register: azure_virtual_machine_with_public_ip_vnet_info
@@ -43,7 +43,7 @@
 - name: Delete Virtual network if created by role
   azure.azcollection.azure_rm_virtualnetwork:
     resource_group: "{{ azure_virtual_machine_with_public_ip_resource_group }}"
-    name: "{{ vm_name }}"
+    name: "{{ azure_virtual_machine_with_public_ip_vm_name }}"
     state: absent
   when:
     - azure_virtual_machine_with_public_ip_vnet_info.virtualnetworks | length == 1
