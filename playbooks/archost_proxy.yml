@@ -1,0 +1,31 @@
+---
+- name: Configure ARC SSH Proxy
+  hosts: localhost
+  connection: local
+  tasks:
+    - name: Setup Proxy
+      azure.azcollection.azure_rm_arcssh:
+        inventory_hostname: "{{ item }}"
+        ansible_host: "{{ hostvars[item].ansible_host }}"
+        local_user: "{{ hostvars[item].ansible_user }}"
+        resource_group: "{{ hostvars[item].resource_group }}"
+        resource_type: "{{ hostvars[item].resource_type }}"
+        private_key_file: "{{ arc_host_proxy_ssh_private_key_file | default('~/.ssh/id_rsa') }}"
+        ssh_config_file: "{{ arc_host_proxy_ssh_config_file | default('/tmp/' + hostvars[item].resource_group + '-' + item + '/ssh_config') }}"
+        ssh_relay_file: "{{ arc_host_proxy_ssh_relay_file | default('/tmp/' + hostvars[item].resource_group + '-' + item + '/relay_info') }}"
+        ssh_proxy_folder: "{{ arc_host_proxy_ssh_proxy_folder | default('~/.clientsshproxy') }}"
+      loop: "{{ groups['arc_hosts'] }}"
+
+- name: Ping ARC Windows Hosts
+  hosts: arc_windows
+  gather_facts: false
+  tasks:
+    - name: Ping
+      ansible.windows.win_ping:
+
+- name: Ping ARC Linux Hosts
+  hosts: arc_linux
+  gather_facts: false
+  tasks:
+    - name: Ping
+      ansible.builtin.ping:
