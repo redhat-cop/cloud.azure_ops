@@ -4,6 +4,7 @@
     name: cloud.azure_ops.azure_virtual_machine_with_public_ip
   vars:
     azure_virtual_machine_with_public_ip_operation: delete
+    azure_virtual_machine_with_public_ip_remove_on_absent: 'network_interfaces'
     azure_virtual_machine_with_public_ip_delete_resource_group: false
     azure_virtual_machine_with_public_ip_vm:
       name: "{{ vm_name }}"
