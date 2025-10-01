@@ -1,0 +1,7 @@
+---
+- name: Deploy arc agent on arc_hosts
+  hosts: arc_hosts
+  tasks:
+    - name: Configure Arc Hosts
+      ansible.builtin.include_role:
+        name: cloud.azure_ops.azure_configure_archost

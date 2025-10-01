@@ -1,0 +1,92 @@
+---
+- name: Generate tags string
+  set_fact:
+    azure_configure_archost_processed_tags:  |-
+      {%- for k, v in azure_configure_archost_tags.items() %}
+      {{ k | quote }}={{ v | replace(",", "\,") | quote }}{% if not loop.last %},{% endif %}
+      {%- endfor %}
+
+- name: Gather Resource Group info
+  azure.azcollection.azure_rm_resourcegroup_info:
+    name: "{{ azure_configure_archost_resource_group }}"
+  register: __azure_configure_archost_rg_info
+  delegate_to: localhost
+  when: azure_configure_archost_location is not defined
+
+- name: Set azure_location from resource_group
+  ansible.builtin.set_fact:
+    azure_configure_archost_location: "{{ __azure_configure_archost_rg_info.resourcegroups.0.location }}"
+  when: azure_configure_archost_location is not defined
+
+- name: Include install tasks for Linux
+  ansible.builtin.include_tasks: "linux_install.yml"
+  when: ansible_system == 'Linux'
+
+- name: Include install tasks for Windows
+  ansible.builtin.include_tasks: "windows_install.yml"
+  when: ansible_os_family == 'Windows'
+
+- name: Include show tasks for Linux
+  ansible.builtin.include_tasks: "linux_show.yml"
+  when: ansible_system == 'Linux'
+
+- name: Include show tasks for Windows
+  ansible.builtin.include_tasks: "windows_show.yml"
+  when: ansible_os_family == 'Windows'
+
+- name: Set helper fact for configuration
+  ansible.builtin.set_fact:
+    azure_configure_archost_show: "{{ azure_configure_archost_show_json.stdout | ansible.builtin.from_json }}"
+
+- name: Set proxy if needed for azure arc system
+  when: proxy is defined
+  block:
+    - name: Set helper fact for proxy proxy.url
+      ansible.builtin.set_fact:
+        azure_configure_archost_proxy_url: "http://{{ proxy['hostname'] }}:{{ proxy['port'] }}"
+
+    - name: Set azcmagent proxy setting if not already set correctly
+      when: azure_configure_archost_show.httpsProxy != azure_configure_archost_proxy_url
+      block:
+        - name: Include proxy tasks for Linux
+          ansible.builtin.include_tasks: "linux_proxy.yml"
+          when: ansible_system == 'Linux'
+
+        - name: Include proxy tasks for Windows
+          ansible.builtin.include_tasks: "windows_proxy.yml"
+          when: ansible_os_family == 'Windows'
+
+- name: Set resource id as variable for easy access in other roles (connected to azure arc)
+  when: azure_configure_archost_show.status == 'Connected'
+  ansible.builtin.set_fact:
+    azure_configure_archost_resource_id: "{{ azure_configure_archost_show.resourceId }}"
+
+- name: Connect if not already connected to azure
+  # It is currently unclear if this is a valid indicator for "azure arc registration is already done" a query about this is open towards the ARC team
+  when: azure_configure_archost_show.status != 'Connected'
+  block:
+    - name: Get a token using the ARC service principal
+      # Run on localhost, so that service principal secrets don't leave control node
+      delegate_to: localhost
+      # This command produces output that includes an access token
+      no_log: true
+      azure.azcollection.azure_rm_accesstoken_info:
+        scopes:
+          - https://management.azure.com/.default
+      register: azure_configure_archost_access_token
+
+    - name: Include Connect tasks for Linux
+      ansible.builtin.include_tasks: "linux_connect.yml"
+      when: ansible_system == 'Linux'
+
+    - name: Include Connect tasks for Windows
+      ansible.builtin.include_tasks: "windows_connect.yml"
+      when: ansible_os_family == 'Windows'
+
+    - name: Transform json stdout output to variable
+      ansible.builtin.set_fact:
+        azure_configure_archost_azcmagent_connect: "{{ azure_configure_archost_azcmagent_connect_json.stdout | ansible.builtin.from_json }}"
+
+    - name: Set resource id as variable for easy access in other roles (newly registered system in azure arc)
+      ansible.builtin.set_fact:
+        azure_configure_archost_resource_id: "{{ azure_configure_archost_azcmagent_connect.resourceId }}"
