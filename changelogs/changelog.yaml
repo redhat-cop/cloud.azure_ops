@@ -176,3 +176,22 @@ releases:
         name: azure_manage_postgresqlflex
         namespace: null
     release_date: '2025-06-23'
+  6.1.0:
+    changes:
+      release_summary: 'This is the minor release of the ``cloud.azure_ops`` collection.
+
+        This changelog contains all changes to the modules and plugins in this collection
+
+        that have been made after the previous release.'
+    fragments:
+    - 20250915-ansible-lint-update.yml
+    - 6.1.0.yml
+    objects:
+      role:
+      - description: A role to Configure an Azure ARC Host.
+        name: azure_configure_archost
+        namespace: null
+      - description: A role to Configure Microsoft prod repo.
+        name: azure_repo_microsoft_prod
+        namespace: null
+    release_date: '2025-10-02'
