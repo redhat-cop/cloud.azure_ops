@@ -4,6 +4,22 @@ Cloud.Azure\_Ops Release Notes
 
 .. contents:: Topics
 
+v6.1.0
+======
+
+Release Summary
+---------------
+
+This is the minor release of the ``cloud.azure_ops`` collection.
+This changelog contains all changes to the modules and plugins in this collection
+that have been made after the previous release.
+
+New Roles
+---------
+
+- cloud.azure_ops.azure_configure_archost - A role to Configure an Azure ARC Host.
+- cloud.azure_ops.azure_repo_microsoft_prod - A role to Configure Microsoft prod repo.
+
 v6.0.0
 ======
 
