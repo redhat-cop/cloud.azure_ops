@@ -1,3 +1,0 @@
-trivial:
-  - fix azure_repo_microsoft_prod/argument_specs.yml to label the role correctly.
-  - Add missing README.md for azure_configure_archost and azure_repo_microsoft_prod.
