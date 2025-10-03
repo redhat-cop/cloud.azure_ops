@@ -2,10 +2,9 @@
 argument_specs:
   main:
     version_added: 6.1.0
-    short_description: A role to Configure an Azure ARC Host.
+    short_description: A role to Configure Microsoft prod repo.
     description:
-      - A role to Configure an Azure ARC host.
-      - This role requires an resource_group, tenant id and subscription_id.
+      - A role to Configure Microsoft prod repo.
     options:
       azure_repo_microsoft_prod_package_url:
         description:
