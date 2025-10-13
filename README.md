@@ -30,6 +30,8 @@ Name | Description
 ### Playbooks
 Name | Description
 --- | ---
+[cloud.azure_ops.archost_deploy](https://github.com/redhat-cop/cloud.azure_ops/blob/main/playbooks/ARCHOST_DEPLOY.md)| A playbook to deploy ARC agent on machines.
+[cloud.azure_ops.archost_proxy](https://github.com/redhat-cop/cloud.azure_ops/blob/main/playbooks/ARCHOST_PROXY.md)| A playbook to configure proxy for ARC machines.
 [cloud.azure_ops.webapp](https://github.com/redhat-cop/cloud.azure_ops/blob/main/playbooks/WEBAPP.md)|A playbook to deploy a web application on azure using virtual machines.
 [cloud.azure_ops.webapp_container](https://github.com/redhat-cop/cloud.azure_ops/blob/main/playbooks/WEBAPP_CONTAINER.md)|A playbook to deploy a web application on azure using containers.
 [cloud.azure_ops.vmss_migrate](https://github.com/redhat-cop/cloud.azure_ops/blob/main/playbooks/VMSS_MIGRATE.md)|A playbook to migrate virtual machines of a web application from one azure region to another region.
