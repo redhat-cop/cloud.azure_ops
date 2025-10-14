@@ -4,6 +4,15 @@ Cloud.Azure\_Ops Release Notes
 
 .. contents:: Topics
 
+v6.1.2
+======
+
+Release Summary
+---------------
+
+This is the minor release of the ``cloud.azure_ops`` collection.
+This release fixes a documentation mistake.
+
 v6.1.1
 ======
 

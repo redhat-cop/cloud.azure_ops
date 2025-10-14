@@ -206,3 +206,11 @@ releases:
     - 20251003-add-missing-readme.yml
     - 6.1.1.yml
     release_date: '2025-10-03'
+  6.1.2:
+    changes:
+      release_summary: 'This is the minor release of the ``cloud.azure_ops`` collection.
+
+        This release fixes a documentation mistake.'
+    fragments:
+    - 6.1.2.yml
+    release_date: '2025-10-13'
