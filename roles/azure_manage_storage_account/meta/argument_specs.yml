@@ -1,0 +1,38 @@
+---
+argument_specs:
+  main:
+    version_added: 7.0.0
+    short_description: A role to manage Azure Storage Accounts.
+    description:
+      - A role to create or delete Azure Storage Accounts with optional blob container.
+      - This role requires an azure user account with valid permission.
+    options:
+      azure_manage_storage_account_operation:
+        description: Operation to perform.
+        default: "create"
+        choices: ["create", "delete"]
+      azure_manage_storage_account_name:
+        description: The name of the storage account. Must be 3-24 characters, lowercase letters and numbers only.
+        required: true
+      azure_manage_storage_account_resource_group:
+        description: Resource group on/from which the storage account will be created/deleted.
+        required: true
+      azure_manage_storage_account_region:
+        description: An Azure location for the storage account.
+      azure_manage_storage_account_kind:
+        description: The kind of storage account.
+        default: "StorageV2"
+        choices: ["Storage", "StorageV2", "BlobStorage", "BlockBlobStorage", "FileStorage"]
+      azure_manage_storage_account_sku:
+        description: The storage account replication type.
+        default: "Standard_LRS"
+        choices: ["Standard_LRS", "Standard_GRS", "Standard_RAGRS", "Standard_ZRS", "Premium_LRS", "Premium_ZRS"]
+      azure_manage_storage_account_access_tier:
+        description: The access tier for BlobStorage and StorageV2 accounts.
+        default: "Hot"
+        choices: ["Hot", "Cool"]
+      azure_manage_storage_account_container_name:
+        description: Name of blob container to create. Omit to skip container creation.
+      azure_manage_storage_account_tags:
+        description: Dictionary of string:string pairs to assign as metadata to the object.
+        type: dict

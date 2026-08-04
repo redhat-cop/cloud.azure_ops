@@ -1,0 +1,5 @@
+---
+azure_manage_storage_account_operation: create
+azure_manage_storage_account_kind: StorageV2
+azure_manage_storage_account_sku: Standard_LRS
+azure_manage_storage_account_access_tier: Hot
