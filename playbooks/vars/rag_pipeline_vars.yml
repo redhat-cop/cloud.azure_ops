@@ -1,0 +1,28 @@
+---
+azure_region: eastus
+operation: create
+
+# Storage
+azure_storage_account_name: "{{ azure_resource_group | regex_replace('[^a-z0-9]', '') }}storage"
+azure_storage_container_name: documents
+
+# AI Search
+azure_ai_search_name: "{{ azure_resource_group }}-search"
+azure_ai_search_sku: basic
+
+# OpenAI
+azure_openai_account_name: "{{ azure_resource_group }}-openai"
+azure_openai_embedding_model: text-embedding-ada-002
+azure_openai_embedding_model_version: "2"
+azure_openai_embedding_deployment_name: embedding-deployment
+azure_openai_embedding_capacity: 1
+azure_openai_chat_model: gpt-4o
+azure_openai_chat_model_version: "2024-08-06"
+azure_openai_chat_deployment_name: chat-deployment
+azure_openai_chat_capacity: 1
+
+# Search Index
+azure_ai_search_index_name: rag-index
+azure_ai_search_datasource_name: rag-datasource
+azure_ai_search_indexer_name: rag-indexer
+azure_ai_search_skillset_name: rag-skillset
