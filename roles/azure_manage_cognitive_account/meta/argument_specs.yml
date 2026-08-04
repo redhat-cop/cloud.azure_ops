@@ -1,0 +1,38 @@
+---
+argument_specs:
+  main:
+    version_added: 7.0.0
+    short_description: A role to manage Azure Cognitive Services accounts.
+    description:
+      - A role to create or delete Azure Cognitive Services accounts (including Azure OpenAI).
+      - This role requires an azure user account with valid permission.
+    options:
+      azure_manage_cognitive_account_operation:
+        description: Operation to perform.
+        default: "create"
+        choices: ["create", "delete"]
+      azure_manage_cognitive_account_name:
+        description: The name of the Cognitive Services account.
+        required: true
+      azure_manage_cognitive_account_resource_group:
+        description: Resource group on/from which the account will be created/deleted.
+        required: true
+      azure_manage_cognitive_account_region:
+        description: An Azure location for the account.
+      azure_manage_cognitive_account_kind:
+        description: The kind of Cognitive Services account.
+        default: "OpenAI"
+      azure_manage_cognitive_account_sku:
+        description: The pricing tier name.
+        default: "S0"
+      azure_manage_cognitive_account_custom_subdomain:
+        description:
+          - Custom subdomain name for the account endpoint.
+          - Defaults to the account name if not specified.
+      azure_manage_cognitive_account_public_network_access:
+        description: Whether the account is accessible from the public internet.
+        default: "Enabled"
+        choices: ["Enabled", "Disabled"]
+      azure_manage_cognitive_account_tags:
+        description: Dictionary of string:string pairs to assign as metadata to the object.
+        type: dict

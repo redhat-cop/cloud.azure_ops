@@ -1,0 +1,26 @@
+---
+- name: Check Region Setting
+  ansible.builtin.fail:
+    msg: Azure Region must be defined as azure_manage_cognitive_account_region
+  when: azure_manage_cognitive_account_region is not defined
+
+- name: Create Cognitive Services account
+  azure.azcollection.azure_rm_resource:
+    resource_group: "{{ azure_manage_cognitive_account_resource_group }}"
+    provider: CognitiveServices
+    resource_type: accounts
+    resource_name: "{{ azure_manage_cognitive_account_name }}"
+    api_version: "2024-10-01"
+    idempotency: true
+    body:
+      kind: "{{ azure_manage_cognitive_account_kind }}"
+      location: "{{ azure_manage_cognitive_account_region }}"
+      sku:
+        name: "{{ azure_manage_cognitive_account_sku }}"
+      identity:
+        type: SystemAssigned
+      properties:
+        customSubDomainName: "{{ azure_manage_cognitive_account_custom_subdomain | default(azure_manage_cognitive_account_name) }}"
+        publicNetworkAccess: "{{ azure_manage_cognitive_account_public_network_access }}"
+      tags: "{{ azure_manage_cognitive_account_tags | default({}) }}"
+  register: azure_manage_cognitive_account_result
