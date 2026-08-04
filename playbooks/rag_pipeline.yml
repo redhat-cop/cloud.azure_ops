@@ -282,11 +282,13 @@
             method: POST
           register: _search_keys
           no_log: true
+          ignore_errors: true
 
         - name: Set search admin key fact
           ansible.builtin.set_fact:
             _search_admin_key: "{{ _search_keys.response.primaryKey }}"
           no_log: true
+          when: _search_keys is succeeded
 
         - name: Delete search indexer
           ansible.builtin.uri:
@@ -295,6 +297,7 @@
             headers:
               api-key: "{{ _search_admin_key }}"
             status_code: [200, 204, 404]
+          when: _search_keys is succeeded
           ignore_errors: true
 
         - name: Delete search skillset
@@ -304,6 +307,7 @@
             headers:
               api-key: "{{ _search_admin_key }}"
             status_code: [200, 204, 404]
+          when: _search_keys is succeeded
           ignore_errors: true
 
         - name: Delete search index
@@ -313,6 +317,7 @@
             headers:
               api-key: "{{ _search_admin_key }}"
             status_code: [200, 204, 404]
+          when: _search_keys is succeeded
           ignore_errors: true
 
         - name: Delete search data source
@@ -322,6 +327,7 @@
             headers:
               api-key: "{{ _search_admin_key }}"
             status_code: [200, 204, 404]
+          when: _search_keys is succeeded
           ignore_errors: true
 
         - name: Delete embedding model deployment
