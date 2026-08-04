@@ -22,5 +22,5 @@
       properties:
         customSubDomainName: "{{ azure_manage_cognitive_account_custom_subdomain | default(azure_manage_cognitive_account_name) }}"
         publicNetworkAccess: "{{ azure_manage_cognitive_account_public_network_access }}"
-      tags: "{{ azure_manage_cognitive_account_tags | default({}) }}"
+      tags: "{{ azure_manage_cognitive_account_tags | default(omit) }}"
   register: azure_manage_cognitive_account_result

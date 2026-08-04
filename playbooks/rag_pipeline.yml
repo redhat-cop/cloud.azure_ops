@@ -108,148 +108,154 @@
         - name: Set storage connection string fact
           ansible.builtin.set_fact:
             _storage_connection_string: "{{ _storage_info.storageaccounts[0].primary_endpoints.blob.connectionstring }}"
+          no_log: true
+
+        - name: Retrieve AI Search admin key
+          azure.azcollection.azure_rm_resource:
+            resource_group: "{{ azure_resource_group }}"
+            provider: Microsoft.Search
+            resource_type: searchServices
+            resource_name: "{{ azure_ai_search_name }}"
+            subresource:
+              - type: listAdminKeys
+            api_version: "2023-11-01"
+            method: POST
+          register: _search_keys
+          no_log: true
+
+        - name: Set search admin key fact
+          ansible.builtin.set_fact:
+            _search_admin_key: "{{ _search_keys.response.primaryKey }}"
+          no_log: true
 
         - name: Create search data source
-          azure.azcollection.azure_rm_resource:
-            resource_group: "{{ azure_resource_group }}"
-            provider: Microsoft.Search
-            resource_type: searchServices
-            resource_name: "{{ azure_ai_search_name }}"
-            subresource:
-              - type: dataSources
-                name: "{{ azure_ai_search_datasource_name }}"
-            api_version: "2024-07-01"
-            idempotency: true
+          ansible.builtin.uri:
+            url: "https://{{ azure_ai_search_name }}.search.windows.net/datasources/{{ azure_ai_search_datasource_name }}?api-version=2024-07-01"
+            method: PUT
+            headers:
+              Content-Type: application/json
+              api-key: "{{ _search_admin_key }}"
+            body_format: json
             body:
-              properties:
-                type: azureblob
-                credentials:
-                  connectionString: "{{ _storage_connection_string }}"
-                container:
-                  name: "{{ azure_storage_container_name }}"
+              name: "{{ azure_ai_search_datasource_name }}"
+              type: azureblob
+              credentials:
+                connectionString: "{{ _storage_connection_string }}"
+              container:
+                name: "{{ azure_storage_container_name }}"
+            status_code: [200, 201]
+          no_log: true
 
         - name: Create search index
-          azure.azcollection.azure_rm_resource:
-            resource_group: "{{ azure_resource_group }}"
-            provider: Microsoft.Search
-            resource_type: searchServices
-            resource_name: "{{ azure_ai_search_name }}"
-            subresource:
-              - type: indexes
-                name: "{{ azure_ai_search_index_name }}"
-            api_version: "2024-07-01"
-            idempotency: true
+          ansible.builtin.uri:
+            url: "https://{{ azure_ai_search_name }}.search.windows.net/indexes/{{ azure_ai_search_index_name }}?api-version=2024-07-01"
+            method: PUT
+            headers:
+              Content-Type: application/json
+              api-key: "{{ _search_admin_key }}"
+            body_format: json
             body:
-              properties:
-                fields:
-                  - name: id
-                    type: Edm.String
-                    key: true
-                    filterable: true
-                  - name: content
-                    type: Edm.String
-                    searchable: true
-                    retrievable: true
-                  - name: title
-                    type: Edm.String
-                    searchable: true
-                    retrievable: true
-                    filterable: true
-                  - name: content_vector
-                    type: Collection(Edm.Single)
-                    searchable: true
-                    retrievable: false
-                    dimensions: 1536
-                    vectorSearchProfile: vector-profile
-                vectorSearch:
-                  algorithms:
-                    - name: hnsw-algorithm
-                      kind: hnsw
-                      hnswParameters:
-                        metric: cosine
-                        m: 4
-                        efConstruction: 400
-                        efSearch: 500
-                  profiles:
-                    - name: vector-profile
-                      algorithmConfigurationName: hnsw-algorithm
-                semanticConfiguration:
-                  defaultConfiguration: semantic-config
-                  configurations:
-                    - name: semantic-config
-                      prioritizedFields:
-                        titleField:
-                          fieldName: title
-                        contentFields:
-                          - fieldName: content
+              name: "{{ azure_ai_search_index_name }}"
+              fields:
+                - name: id
+                  type: Edm.String
+                  key: true
+                  filterable: true
+                - name: content
+                  type: Edm.String
+                  searchable: true
+                  retrievable: true
+                - name: title
+                  type: Edm.String
+                  searchable: true
+                  retrievable: true
+                  filterable: true
+                - name: content_vector
+                  type: Collection(Edm.Single)
+                  searchable: true
+                  retrievable: false
+                  dimensions: 1536
+                  vectorSearchProfile: vector-profile
+              vectorSearch:
+                algorithms:
+                  - name: hnsw-algorithm
+                    kind: hnsw
+                    hnswParameters:
+                      metric: cosine
+                      m: 4
+                      efConstruction: 400
+                      efSearch: 500
+                profiles:
+                  - name: vector-profile
+                    algorithmConfigurationName: hnsw-algorithm
+              semantic:
+                defaultConfiguration: semantic-config
+                configurations:
+                  - name: semantic-config
+                    prioritizedFields:
+                      titleField:
+                        fieldName: title
+                      contentFields:
+                        - fieldName: content
+            status_code: [200, 201]
 
         - name: Create search skillset
-          azure.azcollection.azure_rm_resource:
-            resource_group: "{{ azure_resource_group }}"
-            provider: Microsoft.Search
-            resource_type: searchServices
-            resource_name: "{{ azure_ai_search_name }}"
-            subresource:
-              - type: skillsets
-                name: "{{ azure_ai_search_skillset_name }}"
-            api_version: "2024-07-01"
-            idempotency: true
+          ansible.builtin.uri:
+            url: "https://{{ azure_ai_search_name }}.search.windows.net/skillsets/{{ azure_ai_search_skillset_name }}?api-version=2024-07-01"
+            method: PUT
+            headers:
+              Content-Type: application/json
+              api-key: "{{ _search_admin_key }}"
+            body_format: json
             body:
-              properties:
-                description: Skillset for generating embeddings via Azure OpenAI
-                skills:
-                  - "@odata.type": "#Microsoft.Skills.Custom.AmlSkill"
-                    name: embedding-skill
-                    description: Generates embeddings using Azure OpenAI
-                    context: /document
-                    uri: "https://{{ azure_openai_account_name }}.openai.azure.com/openai/deployments/{{ azure_openai_embedding_deployment_name }}/embeddings?api-version=2024-06-01"
-                    httpMethod: POST
-                    httpHeaders:
-                      Content-Type: application/json
-                    batchSize: 1
-                    inputs:
-                      - name: input
-                        source: /document/content
-                    outputs:
-                      - name: data
-                        targetName: content_vector
-                cognitiveServices:
-                  "@odata.type": "#Microsoft.Azure.Search.CognitiveServicesByKey"
-                  description: Azure OpenAI resource
-                  key: ""
+              name: "{{ azure_ai_search_skillset_name }}"
+              description: Skillset for generating embeddings via Azure OpenAI
+              skills:
+                - "@odata.type": "#Microsoft.Skills.Text.AzureOpenAIEmbeddingSkill"
+                  name: embedding-skill
+                  description: Generates embeddings using Azure OpenAI
+                  context: /document
+                  resourceUri: "https://{{ azure_openai_account_name }}.openai.azure.com"
+                  deploymentId: "{{ azure_openai_embedding_deployment_name }}"
+                  modelName: "{{ azure_openai_embedding_model }}"
+                  inputs:
+                    - name: text
+                      source: /document/content
+                  outputs:
+                    - name: embedding
+                      targetName: content_vector
+            status_code: [200, 201]
 
         - name: Create search indexer
-          azure.azcollection.azure_rm_resource:
-            resource_group: "{{ azure_resource_group }}"
-            provider: Microsoft.Search
-            resource_type: searchServices
-            resource_name: "{{ azure_ai_search_name }}"
-            subresource:
-              - type: indexers
-                name: "{{ azure_ai_search_indexer_name }}"
-            api_version: "2024-07-01"
-            idempotency: true
+          ansible.builtin.uri:
+            url: "https://{{ azure_ai_search_name }}.search.windows.net/indexers/{{ azure_ai_search_indexer_name }}?api-version=2024-07-01"
+            method: PUT
+            headers:
+              Content-Type: application/json
+              api-key: "{{ _search_admin_key }}"
+            body_format: json
             body:
-              properties:
-                dataSourceName: "{{ azure_ai_search_datasource_name }}"
-                targetIndexName: "{{ azure_ai_search_index_name }}"
-                skillsetName: "{{ azure_ai_search_skillset_name }}"
-                schedule:
-                  interval: PT2H
-                parameters:
-                  configuration:
-                    dataToExtract: contentAndMetadata
-                    parsingMode: default
-                fieldMappings:
-                  - sourceFieldName: metadata_storage_path
-                    targetFieldName: id
-                    mappingFunction:
-                      name: base64Encode
-                  - sourceFieldName: metadata_storage_name
-                    targetFieldName: title
-                outputFieldMappings:
-                  - sourceFieldName: /document/content_vector
-                    targetFieldName: content_vector
+              name: "{{ azure_ai_search_indexer_name }}"
+              dataSourceName: "{{ azure_ai_search_datasource_name }}"
+              targetIndexName: "{{ azure_ai_search_index_name }}"
+              skillsetName: "{{ azure_ai_search_skillset_name }}"
+              schedule:
+                interval: PT2H
+              parameters:
+                configuration:
+                  dataToExtract: contentAndMetadata
+                  parsingMode: default
+              fieldMappings:
+                - sourceFieldName: metadata_storage_path
+                  targetFieldName: id
+                  mappingFunction:
+                    name: base64Encode
+                - sourceFieldName: metadata_storage_name
+                  targetFieldName: title
+              outputFieldMappings:
+                - sourceFieldName: /document/content_vector
+                  targetFieldName: content_vector
+            status_code: [200, 201]
 
         # Phase 4 - Output
         - name: Display RAG pipeline endpoints
@@ -264,56 +270,58 @@
     - name: Delete RAG pipeline infrastructure
       when: operation | default('create') == 'delete'
       block:
-        - name: Delete search indexer
+        - name: Retrieve AI Search admin key
           azure.azcollection.azure_rm_resource:
             resource_group: "{{ azure_resource_group }}"
             provider: Microsoft.Search
             resource_type: searchServices
             resource_name: "{{ azure_ai_search_name }}"
             subresource:
-              - type: indexers
-                name: "{{ azure_ai_search_indexer_name }}"
-            api_version: "2024-07-01"
-            state: absent
+              - type: listAdminKeys
+            api_version: "2023-11-01"
+            method: POST
+          register: _search_keys
+          no_log: true
+
+        - name: Set search admin key fact
+          ansible.builtin.set_fact:
+            _search_admin_key: "{{ _search_keys.response.primaryKey }}"
+          no_log: true
+
+        - name: Delete search indexer
+          ansible.builtin.uri:
+            url: "https://{{ azure_ai_search_name }}.search.windows.net/indexers/{{ azure_ai_search_indexer_name }}?api-version=2024-07-01"
+            method: DELETE
+            headers:
+              api-key: "{{ _search_admin_key }}"
+            status_code: [200, 204, 404]
           ignore_errors: true
 
         - name: Delete search skillset
-          azure.azcollection.azure_rm_resource:
-            resource_group: "{{ azure_resource_group }}"
-            provider: Microsoft.Search
-            resource_type: searchServices
-            resource_name: "{{ azure_ai_search_name }}"
-            subresource:
-              - type: skillsets
-                name: "{{ azure_ai_search_skillset_name }}"
-            api_version: "2024-07-01"
-            state: absent
+          ansible.builtin.uri:
+            url: "https://{{ azure_ai_search_name }}.search.windows.net/skillsets/{{ azure_ai_search_skillset_name }}?api-version=2024-07-01"
+            method: DELETE
+            headers:
+              api-key: "{{ _search_admin_key }}"
+            status_code: [200, 204, 404]
           ignore_errors: true
 
         - name: Delete search index
-          azure.azcollection.azure_rm_resource:
-            resource_group: "{{ azure_resource_group }}"
-            provider: Microsoft.Search
-            resource_type: searchServices
-            resource_name: "{{ azure_ai_search_name }}"
-            subresource:
-              - type: indexes
-                name: "{{ azure_ai_search_index_name }}"
-            api_version: "2024-07-01"
-            state: absent
+          ansible.builtin.uri:
+            url: "https://{{ azure_ai_search_name }}.search.windows.net/indexes/{{ azure_ai_search_index_name }}?api-version=2024-07-01"
+            method: DELETE
+            headers:
+              api-key: "{{ _search_admin_key }}"
+            status_code: [200, 204, 404]
           ignore_errors: true
 
         - name: Delete search data source
-          azure.azcollection.azure_rm_resource:
-            resource_group: "{{ azure_resource_group }}"
-            provider: Microsoft.Search
-            resource_type: searchServices
-            resource_name: "{{ azure_ai_search_name }}"
-            subresource:
-              - type: dataSources
-                name: "{{ azure_ai_search_datasource_name }}"
-            api_version: "2024-07-01"
-            state: absent
+          ansible.builtin.uri:
+            url: "https://{{ azure_ai_search_name }}.search.windows.net/datasources/{{ azure_ai_search_datasource_name }}?api-version=2024-07-01"
+            method: DELETE
+            headers:
+              api-key: "{{ _search_admin_key }}"
+            status_code: [200, 204, 404]
           ignore_errors: true
 
         - name: Delete embedding model deployment
