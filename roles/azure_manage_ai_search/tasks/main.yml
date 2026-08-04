@@ -1,0 +1,3 @@
+---
+- name: Create or delete AI Search service
+  ansible.builtin.include_tasks: "{{ azure_manage_ai_search_operation }}.yml"

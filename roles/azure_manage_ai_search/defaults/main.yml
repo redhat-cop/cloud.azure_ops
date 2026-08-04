@@ -1,0 +1,7 @@
+---
+azure_manage_ai_search_operation: create
+azure_manage_ai_search_sku: basic
+azure_manage_ai_search_replica_count: 1
+azure_manage_ai_search_partition_count: 1
+azure_manage_ai_search_identity: SystemAssigned
+azure_manage_ai_search_public_network_access: enabled
