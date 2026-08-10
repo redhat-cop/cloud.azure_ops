@@ -17,7 +17,7 @@ azure_openai_embedding_model_version: "2"
 azure_openai_embedding_deployment_name: embedding-deployment
 azure_openai_embedding_capacity: 1
 azure_openai_chat_model: gpt-4o
-azure_openai_chat_model_version: "2024-08-06"
+azure_openai_chat_model_version: "2024-11-20"
 azure_openai_chat_deployment_name: chat-deployment
 azure_openai_chat_capacity: 1
 

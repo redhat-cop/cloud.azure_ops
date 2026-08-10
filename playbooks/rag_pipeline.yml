@@ -113,7 +113,7 @@
         - name: Retrieve AI Search admin key
           azure.azcollection.azure_rm_resource:
             resource_group: "{{ azure_resource_group }}"
-            provider: Microsoft.Search
+            provider: Search
             resource_type: searchServices
             resource_name: "{{ azure_ai_search_name }}"
             subresource:
@@ -143,7 +143,7 @@
                 connectionString: "{{ _storage_connection_string }}"
               container:
                 name: "{{ azure_storage_container_name }}"
-            status_code: [200, 201]
+            status_code: [200, 201, 204]
           no_log: true
 
         - name: Create search index
@@ -187,7 +187,7 @@
                       efSearch: 500
                 profiles:
                   - name: vector-profile
-                    algorithmConfigurationName: hnsw-algorithm
+                    algorithm: hnsw-algorithm
               semantic:
                 defaultConfiguration: semantic-config
                 configurations:
@@ -195,9 +195,9 @@
                     prioritizedFields:
                       titleField:
                         fieldName: title
-                      contentFields:
+                      prioritizedContentFields:
                         - fieldName: content
-            status_code: [200, 201]
+            status_code: [200, 201, 204]
 
         - name: Create search skillset
           ansible.builtin.uri:
@@ -224,7 +224,7 @@
                   outputs:
                     - name: embedding
                       targetName: content_vector
-            status_code: [200, 201]
+            status_code: [200, 201, 204]
 
         - name: Create search indexer
           ansible.builtin.uri:
@@ -255,7 +255,7 @@
               outputFieldMappings:
                 - sourceFieldName: /document/content_vector
                   targetFieldName: content_vector
-            status_code: [200, 201]
+            status_code: [200, 201, 204]
 
         # Phase 4 - Output
         - name: Display RAG pipeline endpoints
@@ -273,7 +273,7 @@
         - name: Retrieve AI Search admin key
           azure.azcollection.azure_rm_resource:
             resource_group: "{{ azure_resource_group }}"
-            provider: Microsoft.Search
+            provider: Search
             resource_type: searchServices
             resource_name: "{{ azure_ai_search_name }}"
             subresource:

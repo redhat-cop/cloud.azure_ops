@@ -18,7 +18,7 @@
 - name: Create blob container
   azure.azcollection.azure_rm_resource:
     resource_group: "{{ azure_manage_storage_account_resource_group }}"
-    provider: Microsoft.Storage
+    provider: Storage
     resource_type: storageAccounts
     resource_name: "{{ azure_manage_storage_account_name }}"
     subresource:
