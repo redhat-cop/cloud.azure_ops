@@ -54,7 +54,7 @@ Variables
 * **azure_openai_embedding_deployment_name**: Deployment name for the embedding model. Default: `embedding-deployment`
 * **azure_openai_embedding_capacity**: Capacity units for the embedding deployment. Default: `1`
 * **azure_openai_chat_model**: Chat completion model name. Default: `gpt-4o`
-* **azure_openai_chat_model_version**: Chat model version. Default: `2024-08-06`
+* **azure_openai_chat_model_version**: Chat model version. Default: `2024-11-20`
 * **azure_openai_chat_deployment_name**: Deployment name for the chat model. Default: `chat-deployment`
 * **azure_openai_chat_capacity**: Capacity units for the chat deployment. Default: `1`
 
