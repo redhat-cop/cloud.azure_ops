@@ -1,0 +1,22 @@
+---
+# Determine Azure Region
+- name: Gather Resource Group info
+  azure.azcollection.azure_rm_resourcegroup_info:
+    name: "{{ resource_group }}"
+  register: __rg_info
+
+- name: Test role cloud.azure_ops.azure_manage_ai_search
+  block:
+    - name: Run create and delete tests
+      ansible.builtin.include_tasks: create_and_delete_ai_search.yml
+      vars:
+        test_resource_group: "{{ resource_group }}"
+        azure_manage_ai_search_region: "{{ __rg_info.resourcegroups.0.location }}"
+
+  always:
+    - name: Cleanup - Delete AI Search service
+      azure.azcollection.azure_rm_cognitivesearch:
+        resource_group: "{{ resource_group }}"
+        name: "{{ azure_manage_ai_search_name }}"
+        state: absent
+      ignore_errors: true

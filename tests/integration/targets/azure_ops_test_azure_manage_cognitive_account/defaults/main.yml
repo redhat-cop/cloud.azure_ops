@@ -1,0 +1,7 @@
+---
+azure_manage_cognitive_account_name: "{{ resource_prefix }}-cogacct"
+azure_manage_cognitive_account_kind: OpenAI
+azure_manage_cognitive_account_sku: S0
+azure_manage_cognitive_account_public_network_access: Enabled
+azure_manage_cognitive_account_tags:
+  resource_prefix: "{{ resource_prefix }}"

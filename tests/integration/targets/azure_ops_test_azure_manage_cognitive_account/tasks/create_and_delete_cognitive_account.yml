@@ -1,0 +1,67 @@
+---
+- name: Test Create and Delete Cognitive Services account
+  block:
+    - name: Print test step details
+      ansible.builtin.debug:
+        msg: "Run test with resource_group={{ test_resource_group }}"
+
+    # Test: Create Cognitive Services account
+    - name: Create Cognitive Services account
+      ansible.builtin.include_role:
+        name: cloud.azure_ops.azure_manage_cognitive_account
+      vars:
+        azure_manage_cognitive_account_operation: create
+        azure_manage_cognitive_account_resource_group: "{{ test_resource_group }}"
+
+    # Verify Cognitive Services account was created
+    - name: Gather Cognitive Services account info
+      azure.azcollection.azure_rm_cognitiveservicesaccount_info:
+        resource_group: "{{ test_resource_group }}"
+        name: "{{ azure_manage_cognitive_account_name }}"
+      register: _cognitive_account
+
+    - name: Assert that Cognitive Services account was created as expected
+      ansible.builtin.assert:
+        that:
+          - _cognitive_account.accounts | length == 1
+          - _cognitive_account.accounts[0].name == azure_manage_cognitive_account_name
+          - _cognitive_account.accounts[0].kind == azure_manage_cognitive_account_kind
+          - _cognitive_account.accounts[0].sku.name == azure_manage_cognitive_account_sku
+
+    # Test: Create Cognitive Services account again (idempotency)
+    - name: Create Cognitive Services account again (idempotency check)
+      ansible.builtin.include_role:
+        name: cloud.azure_ops.azure_manage_cognitive_account
+      vars:
+        azure_manage_cognitive_account_operation: create
+        azure_manage_cognitive_account_resource_group: "{{ test_resource_group }}"
+
+    - name: Gather Cognitive Services account info after idempotency check
+      azure.azcollection.azure_rm_cognitiveservicesaccount_info:
+        resource_group: "{{ test_resource_group }}"
+        name: "{{ azure_manage_cognitive_account_name }}"
+      register: _cognitive_account_idem
+
+    - name: Assert that Cognitive Services account still exists after idempotent create
+      ansible.builtin.assert:
+        that:
+          - _cognitive_account_idem.accounts | length == 1
+          - _cognitive_account_idem.accounts[0].name == azure_manage_cognitive_account_name
+
+    # Test: Delete Cognitive Services account
+    - name: Delete Cognitive Services account
+      ansible.builtin.include_role:
+        name: cloud.azure_ops.azure_manage_cognitive_account
+      vars:
+        azure_manage_cognitive_account_operation: delete
+        azure_manage_cognitive_account_resource_group: "{{ test_resource_group }}"
+
+    # Verify Cognitive Services account was deleted
+    - name: Ensure Cognitive Services account was deleted
+      azure.azcollection.azure_rm_cognitiveservicesaccount_info:
+        resource_group: "{{ test_resource_group }}"
+        name: "{{ azure_manage_cognitive_account_name }}"
+      register: _cognitive_account
+      until: _cognitive_account.accounts | length == 0
+      retries: 10
+      delay: 10

@@ -14,7 +14,7 @@ Role Variables
 * **azure_manage_cognitive_account_operation** - Operation to perform. Valid values are 'create', 'delete'. Default: **create**
 * **azure_manage_cognitive_account_name** - The name of the Cognitive Services account.
 * **azure_manage_cognitive_account_resource_group** - Resource group on/from which the account will be created/deleted.
-* **azure_manage_cognitive_account_region** - An Azure location for the account.
+* **azure_manage_cognitive_account_region** - An Azure location for the account. Defaults to the resource group location.
 * **azure_manage_cognitive_account_kind** - The kind of Cognitive Services account (e.g., 'OpenAI', 'TextAnalytics', 'FormRecognizer'). Default: **OpenAI**
 * **azure_manage_cognitive_account_sku** - The pricing tier name. Default: **S0**
 * **azure_manage_cognitive_account_custom_subdomain** - Custom subdomain name for the account endpoint. Defaults to the account name.

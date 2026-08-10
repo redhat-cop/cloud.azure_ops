@@ -18,7 +18,9 @@ argument_specs:
         description: Resource group on/from which the account will be created/deleted.
         required: true
       azure_manage_cognitive_account_region:
-        description: An Azure location for the account.
+        description:
+          - An Azure location for the account.
+          - Defaults to the location of the resource group if not specified.
       azure_manage_cognitive_account_kind:
         description: The kind of Cognitive Services account.
         default: "OpenAI"
