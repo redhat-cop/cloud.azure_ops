@@ -4,3 +4,4 @@
     resource_group: "{{ azure_manage_storage_account_resource_group }}"
     name: "{{ azure_manage_storage_account_name }}"
     state: absent
+    force_delete_nonempty: true

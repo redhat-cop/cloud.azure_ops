@@ -288,7 +288,7 @@
           ansible.builtin.set_fact:
             _search_admin_key: "{{ _search_keys.response.primaryKey }}"
           no_log: true
-          when: _search_keys is succeeded
+          when: _search_keys.response.primaryKey is defined
 
         - name: Delete search indexer
           ansible.builtin.uri:
@@ -297,7 +297,7 @@
             headers:
               api-key: "{{ _search_admin_key }}"
             status_code: [200, 204, 404]
-          when: _search_keys is succeeded
+          when: _search_admin_key is defined
           register: _delete_indexer
           failed_when: false
 
@@ -308,7 +308,7 @@
             headers:
               api-key: "{{ _search_admin_key }}"
             status_code: [200, 204, 404]
-          when: _search_keys is succeeded
+          when: _search_admin_key is defined
           register: _delete_skillset
           failed_when: false
 
@@ -319,7 +319,7 @@
             headers:
               api-key: "{{ _search_admin_key }}"
             status_code: [200, 204, 404]
-          when: _search_keys is succeeded
+          when: _search_admin_key is defined
           register: _delete_index
           failed_when: false
 
@@ -330,7 +330,7 @@
             headers:
               api-key: "{{ _search_admin_key }}"
             status_code: [200, 204, 404]
-          when: _search_keys is succeeded
+          when: _search_admin_key is defined
           register: _delete_datasource
           failed_when: false
 
