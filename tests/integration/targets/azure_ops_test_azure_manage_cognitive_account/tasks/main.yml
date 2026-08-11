@@ -1,0 +1,21 @@
+---
+- name: Gather Resource Group info
+  azure.azcollection.azure_rm_resourcegroup_info:
+    name: "{{ resource_group }}"
+  register: __rg_info
+
+- name: Test role cloud.azure_ops.azure_manage_cognitive_account
+  block:
+    - name: Run create and delete tests
+      ansible.builtin.include_tasks: create_and_delete_cognitive_account.yml
+      vars:
+        test_resource_group: "{{ resource_group }}"
+        azure_manage_cognitive_account_region: "{{ __rg_info.resourcegroups.0.location }}"
+
+  always:
+    - name: Cleanup - Delete Cognitive Services account
+      azure.azcollection.azure_rm_cognitiveservicesaccount:
+        resource_group: "{{ resource_group }}"
+        name: "{{ azure_manage_cognitive_account_name }}"
+        state: absent
+      ignore_errors: true

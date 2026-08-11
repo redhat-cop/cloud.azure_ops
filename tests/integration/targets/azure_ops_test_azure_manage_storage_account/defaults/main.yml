@@ -1,0 +1,8 @@
+---
+azure_manage_storage_account_name: "{{ resource_prefix | replace('-', '') | truncate(24, true, '') }}"
+azure_manage_storage_account_kind: StorageV2
+azure_manage_storage_account_sku: Standard_LRS
+azure_manage_storage_account_access_tier: Hot
+azure_manage_storage_account_container_name: testcontainer
+azure_manage_storage_account_tags:
+  resource_prefix: "{{ resource_prefix }}"

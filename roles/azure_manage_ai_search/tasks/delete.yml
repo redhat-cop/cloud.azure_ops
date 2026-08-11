@@ -1,0 +1,6 @@
+---
+- name: Delete AI Search service
+  azure.azcollection.azure_rm_cognitivesearch:
+    resource_group: "{{ azure_manage_ai_search_resource_group }}"
+    name: "{{ azure_manage_ai_search_name }}"
+    state: absent

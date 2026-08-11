@@ -1,0 +1,44 @@
+---
+argument_specs:
+  main:
+    version_added: 7.0.0
+    short_description: A role to manage Azure AI Search service.
+    description:
+      - A role to create or delete Azure AI Search (formerly Cognitive Search) services.
+      - This role requires an azure user account with valid permission.
+    options:
+      azure_manage_ai_search_operation:
+        description: Operation to perform.
+        default: "create"
+        choices: ["create", "delete"]
+      azure_manage_ai_search_name:
+        description: The name of the search service. Must be 2-60 characters, lowercase letters, digits, and dashes only, globally unique.
+        required: true
+      azure_manage_ai_search_resource_group:
+        description: Resource group on/from which the search service will be created/deleted.
+        required: true
+      azure_manage_ai_search_region:
+        description: An Azure location for the search service.
+      azure_manage_ai_search_sku:
+        description: The pricing tier of the search service.
+        default: "basic"
+        choices: ["free", "basic", "standard", "standard2", "standard3", "storage_optimized_l1", "storage_optimized_l2"]
+      azure_manage_ai_search_replica_count:
+        description: The number of replicas in the search service.
+        type: int
+        default: 1
+      azure_manage_ai_search_partition_count:
+        description: The number of partitions in the search service.
+        type: int
+        default: 1
+      azure_manage_ai_search_identity:
+        description: The managed identity type for the search service.
+        default: "SystemAssigned"
+        choices: ["None", "SystemAssigned"]
+      azure_manage_ai_search_public_network_access:
+        description: Whether the search service is accessible from the public internet.
+        default: "enabled"
+        choices: ["enabled", "disabled"]
+      azure_manage_ai_search_tags:
+        description: Dictionary of string:string pairs to assign as metadata to the object.
+        type: dict

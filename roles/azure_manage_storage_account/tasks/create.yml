@@ -1,0 +1,34 @@
+---
+- name: Check Region Setting
+  ansible.builtin.fail:
+    msg: Azure Region must be defined as azure_manage_storage_account_region
+  when: azure_manage_storage_account_region is not defined
+
+- name: Create storage account
+  azure.azcollection.azure_rm_storageaccount:
+    resource_group: "{{ azure_manage_storage_account_resource_group }}"
+    name: "{{ azure_manage_storage_account_name }}"
+    location: "{{ azure_manage_storage_account_region }}"
+    account_type: "{{ azure_manage_storage_account_sku }}"
+    kind: "{{ azure_manage_storage_account_kind }}"
+    access_tier: "{{ azure_manage_storage_account_access_tier }}"
+    tags: "{{ azure_manage_storage_account_tags | default(omit) }}"
+  register: azure_manage_storage_account_result
+
+- name: Create blob container
+  azure.azcollection.azure_rm_resource:
+    resource_group: "{{ azure_manage_storage_account_resource_group }}"
+    provider: Storage
+    resource_type: storageAccounts
+    resource_name: "{{ azure_manage_storage_account_name }}"
+    subresource:
+      - type: blobServices
+        name: default
+      - type: containers
+        name: "{{ azure_manage_storage_account_container_name }}"
+    api_version: "2023-05-01"
+    body:
+      properties:
+        publicAccess: None
+    idempotency: true
+  when: azure_manage_storage_account_container_name is defined

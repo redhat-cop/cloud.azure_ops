@@ -1,0 +1,5 @@
+---
+azure_manage_cognitive_account_operation: create
+azure_manage_cognitive_account_kind: OpenAI
+azure_manage_cognitive_account_sku: S0
+azure_manage_cognitive_account_public_network_access: Enabled

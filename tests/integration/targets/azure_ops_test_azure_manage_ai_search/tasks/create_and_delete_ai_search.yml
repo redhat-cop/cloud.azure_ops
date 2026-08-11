@@ -1,0 +1,68 @@
+---
+- name: Test Create and Delete AI Search service
+  block:
+    - name: Print test step details
+      ansible.builtin.debug:
+        msg: "Run test with resource_group={{ test_resource_group }}"
+
+    # Test: Create AI Search service
+    - name: Create AI Search service
+      ansible.builtin.include_role:
+        name: cloud.azure_ops.azure_manage_ai_search
+      vars:
+        azure_manage_ai_search_operation: create
+        azure_manage_ai_search_resource_group: "{{ test_resource_group }}"
+
+    # Verify AI Search service was created
+    - name: Gather AI Search service info
+      azure.azcollection.azure_rm_cognitivesearch_info:
+        resource_group: "{{ test_resource_group }}"
+        name: "{{ azure_manage_ai_search_name }}"
+      register: _ai_search
+
+    - name: Assert that AI Search service was created as expected
+      ansible.builtin.assert:
+        that:
+          - _ai_search.search | length == 1
+          - _ai_search.search[0].name == azure_manage_ai_search_name
+          - _ai_search.search[0].sku == azure_manage_ai_search_sku
+          - _ai_search.search[0].replica_count == azure_manage_ai_search_replica_count
+          - _ai_search.search[0].partition_count == azure_manage_ai_search_partition_count
+
+    # Test: Create AI Search service again (idempotency)
+    - name: Create AI Search service again (idempotency check)
+      ansible.builtin.include_role:
+        name: cloud.azure_ops.azure_manage_ai_search
+      vars:
+        azure_manage_ai_search_operation: create
+        azure_manage_ai_search_resource_group: "{{ test_resource_group }}"
+
+    - name: Gather AI Search service info after idempotency check
+      azure.azcollection.azure_rm_cognitivesearch_info:
+        resource_group: "{{ test_resource_group }}"
+        name: "{{ azure_manage_ai_search_name }}"
+      register: _ai_search_idem
+
+    - name: Assert that AI Search service still exists after idempotent create
+      ansible.builtin.assert:
+        that:
+          - _ai_search_idem.search | length == 1
+          - _ai_search_idem.search[0].name == azure_manage_ai_search_name
+
+    # Test: Delete AI Search service
+    - name: Delete AI Search service
+      ansible.builtin.include_role:
+        name: cloud.azure_ops.azure_manage_ai_search
+      vars:
+        azure_manage_ai_search_operation: delete
+        azure_manage_ai_search_resource_group: "{{ test_resource_group }}"
+
+    # Verify AI Search service was deleted
+    - name: Ensure AI Search service was deleted
+      azure.azcollection.azure_rm_cognitivesearch_info:
+        resource_group: "{{ test_resource_group }}"
+        name: "{{ azure_manage_ai_search_name }}"
+      register: _ai_search
+      until: _ai_search.search | length == 0
+      retries: 10
+      delay: 10

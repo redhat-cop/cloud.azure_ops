@@ -1,0 +1,18 @@
+---
+- name: Check Region Setting
+  ansible.builtin.fail:
+    msg: Azure Region must be defined as azure_manage_ai_search_region
+  when: azure_manage_ai_search_region is not defined
+
+- name: Create AI Search service
+  azure.azcollection.azure_rm_cognitivesearch:
+    resource_group: "{{ azure_manage_ai_search_resource_group }}"
+    name: "{{ azure_manage_ai_search_name }}"
+    location: "{{ azure_manage_ai_search_region }}"
+    sku: "{{ azure_manage_ai_search_sku }}"
+    replica_count: "{{ azure_manage_ai_search_replica_count }}"
+    partition_count: "{{ azure_manage_ai_search_partition_count }}"
+    identity: "{{ azure_manage_ai_search_identity }}"
+    public_network_access: "{{ azure_manage_ai_search_public_network_access }}"
+    tags: "{{ azure_manage_ai_search_tags | default(omit) }}"
+  register: azure_manage_ai_search_result

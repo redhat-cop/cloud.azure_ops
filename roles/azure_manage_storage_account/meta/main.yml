@@ -1,7 +1,7 @@
 ---
 galaxy_info:
-  author: Bikouo Aubin
-  description: Role to manage a virtual machine in Azure Cloud.
+  author: Bill Peck
+  description: Role to manage Azure Storage Account.
   company: Red Hat
 
   license: GPL-3.0-or-later

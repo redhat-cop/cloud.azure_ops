@@ -1,0 +1,115 @@
+---
+- name: Test Create and Delete Storage Account
+  block:
+    - name: Print test step details
+      ansible.builtin.debug:
+        msg: "Run test with resource_group={{ test_resource_group }}"
+
+    # Test: Create storage account with blob container
+    - name: Create storage account with blob container
+      ansible.builtin.include_role:
+        name: cloud.azure_ops.azure_manage_storage_account
+      vars:
+        azure_manage_storage_account_operation: create
+        azure_manage_storage_account_resource_group: "{{ test_resource_group }}"
+
+    # Verify storage account was created
+    - name: Gather storage account info
+      azure.azcollection.azure_rm_storageaccount_info:
+        resource_group: "{{ test_resource_group }}"
+        name: "{{ azure_manage_storage_account_name }}"
+      register: _storage_account
+
+    - name: Assert that storage account was created as expected
+      ansible.builtin.assert:
+        that:
+          - _storage_account.storageaccounts | length == 1
+          - _storage_account.storageaccounts[0].name == azure_manage_storage_account_name
+          - _storage_account.storageaccounts[0].account_type == azure_manage_storage_account_sku
+          - _storage_account.storageaccounts[0].kind == azure_manage_storage_account_kind
+
+    # Verify blob container was created
+    - name: Gather blob container info
+      azure.azcollection.azure_rm_resource_info:
+        resource_group: "{{ test_resource_group }}"
+        provider: Microsoft.Storage
+        resource_type: storageAccounts
+        resource_name: "{{ azure_manage_storage_account_name }}"
+        subresource:
+          - type: blobServices
+            name: default
+          - type: containers
+            name: "{{ azure_manage_storage_account_container_name }}"
+        api_version: "2023-05-01"
+      register: _blob_container
+
+    - name: Assert that blob container was created
+      ansible.builtin.assert:
+        that:
+          - _blob_container.response | length == 1
+          - _blob_container.response[0].name == azure_manage_storage_account_container_name
+
+    # Test: Create storage account again (idempotency)
+    - name: Create storage account again (idempotency check)
+      ansible.builtin.include_role:
+        name: cloud.azure_ops.azure_manage_storage_account
+      vars:
+        azure_manage_storage_account_operation: create
+        azure_manage_storage_account_resource_group: "{{ test_resource_group }}"
+
+    - name: Gather storage account info after idempotency check
+      azure.azcollection.azure_rm_storageaccount_info:
+        resource_group: "{{ test_resource_group }}"
+        name: "{{ azure_manage_storage_account_name }}"
+      register: _storage_account_idem
+
+    - name: Assert that storage account still exists after idempotent create
+      ansible.builtin.assert:
+        that:
+          - _storage_account_idem.storageaccounts | length == 1
+          - _storage_account_idem.storageaccounts[0].name == azure_manage_storage_account_name
+
+    # Test: Create storage account without container
+    - name: Delete storage account before no-container test
+      azure.azcollection.azure_rm_storageaccount:
+        resource_group: "{{ test_resource_group }}"
+        name: "{{ azure_manage_storage_account_name }}"
+        state: absent
+
+    - name: Create storage account without blob container
+      ansible.builtin.include_role:
+        name: cloud.azure_ops.azure_manage_storage_account
+      vars:
+        azure_manage_storage_account_operation: create
+        azure_manage_storage_account_resource_group: "{{ test_resource_group }}"
+        azure_manage_storage_account_container_name: "{{ omit }}"
+
+    - name: Gather storage account info after no-container create
+      azure.azcollection.azure_rm_storageaccount_info:
+        resource_group: "{{ test_resource_group }}"
+        name: "{{ azure_manage_storage_account_name }}"
+      register: _storage_account_no_container
+
+    - name: Assert that storage account was created without container
+      ansible.builtin.assert:
+        that:
+          - _storage_account_no_container.storageaccounts | length == 1
+          - _storage_account_no_container.storageaccounts[0].name == azure_manage_storage_account_name
+
+    # Test: Delete storage account
+    - name: Delete storage account
+      ansible.builtin.include_role:
+        name: cloud.azure_ops.azure_manage_storage_account
+      vars:
+        azure_manage_storage_account_operation: delete
+        azure_manage_storage_account_resource_group: "{{ test_resource_group }}"
+
+    # Verify storage account was deleted
+    - name: Ensure storage account was deleted
+      azure.azcollection.azure_rm_storageaccount_info:
+        resource_group: "{{ test_resource_group }}"
+        name: "{{ azure_manage_storage_account_name }}"
+      register: _storage_account
+      until: _storage_account.storageaccounts | length == 0
+      retries: 10
+      delay: 5

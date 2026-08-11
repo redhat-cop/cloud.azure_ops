@@ -1,0 +1,6 @@
+---
+- name: Delete Cognitive Services account
+  azure.azcollection.azure_rm_cognitiveservicesaccount:
+    resource_group: "{{ azure_manage_cognitive_account_resource_group }}"
+    name: "{{ azure_manage_cognitive_account_name }}"
+    state: absent

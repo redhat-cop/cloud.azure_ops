@@ -1,0 +1,15 @@
+---
+- name: Create Cognitive Services account
+  azure.azcollection.azure_rm_cognitiveservicesaccount:
+    resource_group: "{{ azure_manage_cognitive_account_resource_group }}"
+    name: "{{ azure_manage_cognitive_account_name }}"
+    kind: "{{ azure_manage_cognitive_account_kind }}"
+    location: "{{ azure_manage_cognitive_account_region | default(omit) }}"
+    sku: "{{ azure_manage_cognitive_account_sku }}"
+    custom_domain_name: "{{ azure_manage_cognitive_account_custom_subdomain | default(azure_manage_cognitive_account_name) }}"
+    public_network_access: "{{ azure_manage_cognitive_account_public_network_access }}"
+    identity:
+      type: SystemAssigned
+    tags: "{{ azure_manage_cognitive_account_tags | default(omit) }}"
+    state: present
+  register: azure_manage_cognitive_account_result
