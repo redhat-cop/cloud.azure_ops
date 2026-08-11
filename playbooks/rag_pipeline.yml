@@ -198,6 +198,7 @@
                       prioritizedContentFields:
                         - fieldName: content
             status_code: [200, 201, 204]
+          no_log: true
 
         - name: Create search skillset
           ansible.builtin.uri:
@@ -225,6 +226,7 @@
                     - name: embedding
                       targetName: content_vector
             status_code: [200, 201, 204]
+          no_log: true
 
         - name: Create search indexer
           ansible.builtin.uri:
@@ -256,6 +258,7 @@
                 - sourceFieldName: /document/content_vector
                   targetFieldName: content_vector
             status_code: [200, 201, 204]
+          no_log: true
 
         # Phase 4 - Output
         - name: Display RAG pipeline endpoints
@@ -300,6 +303,7 @@
           when: _search_admin_key is defined
           register: _delete_indexer
           failed_when: false
+          no_log: true
 
         - name: Delete search skillset
           ansible.builtin.uri:
@@ -311,6 +315,7 @@
           when: _search_admin_key is defined
           register: _delete_skillset
           failed_when: false
+          no_log: true
 
         - name: Delete search index
           ansible.builtin.uri:
@@ -322,6 +327,7 @@
           when: _search_admin_key is defined
           register: _delete_index
           failed_when: false
+          no_log: true
 
         - name: Delete search data source
           ansible.builtin.uri:
@@ -333,6 +339,7 @@
           when: _search_admin_key is defined
           register: _delete_datasource
           failed_when: false
+          no_log: true
 
         - name: Delete embedding model deployment
           azure.azcollection.azure_rm_resource:
