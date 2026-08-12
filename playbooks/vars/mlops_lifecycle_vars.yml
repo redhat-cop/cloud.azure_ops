@@ -42,11 +42,6 @@ azure_ml_component_version: "1"
 # Training Job
 azure_ml_job_name: mlops-training-run
 azure_ml_experiment_name: mlops-lifecycle
-azure_ml_training_command: >-
-  python train.py
-  --input_data ${{inputs.training_data}}
-  --output_model ${{outputs.model_output}}
-  --epochs 10
 
 # Model
 azure_ml_model_name: mlops-model
@@ -73,6 +68,3 @@ azure_ml_traffic_split:
 azure_ml_traffic_final:
   blue: 0
   green: 100
-
-# Azure ML REST API version
-azure_ml_api_version: "2024-10-01"

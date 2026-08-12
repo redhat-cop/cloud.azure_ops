@@ -312,7 +312,7 @@
         - name: Shift traffic gradually to green deployment
           when: _green_deployment is not failed
           block:
-            - name: "Canary: shift {{ azure_ml_traffic_canary.green }}% traffic to green"
+            - name: Shift canary traffic to green deployment
               azure.azcollection.azure_rm_ml_online_endpoint:
                 resource_group: "{{ azure_resource_group }}"
                 ml_workspace: "{{ azure_ml_workspace_name_prod }}"
@@ -322,7 +322,7 @@
                   $schema: https://azuremlschemas.azureedge.net/latest/managedOnlineEndpoint.schema.json
                   auth_mode: key
 
-            - name: "Split: shift to {{ azure_ml_traffic_split.green }}% green"
+            - name: Shift to even traffic split between blue and green
               azure.azcollection.azure_rm_ml_online_endpoint:
                 resource_group: "{{ azure_resource_group }}"
                 ml_workspace: "{{ azure_ml_workspace_name_prod }}"
@@ -332,7 +332,7 @@
                   $schema: https://azuremlschemas.azureedge.net/latest/managedOnlineEndpoint.schema.json
                   auth_mode: key
 
-            - name: "Promote: shift to {{ azure_ml_traffic_final.green }}% green"
+            - name: Promote green deployment to full traffic
               azure.azcollection.azure_rm_ml_online_endpoint:
                 resource_group: "{{ azure_resource_group }}"
                 ml_workspace: "{{ azure_ml_workspace_name_prod }}"
