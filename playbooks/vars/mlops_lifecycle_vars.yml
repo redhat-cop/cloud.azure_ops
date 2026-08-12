@@ -12,12 +12,12 @@ azure_keyvault_name: "{{ azure_resource_group[:19] }}-mlkv"
 azure_app_insights_name: "{{ azure_resource_group }}-mlinsights"
 azure_container_registry_name: "{{ (azure_resource_group | regex_replace('[^a-z0-9]', ''))[:45] }}mlacr"
 
-# ML Workspaces
-azure_ml_workspace_name_dev: "{{ azure_resource_group }}-ml-dev"
-azure_ml_workspace_name_prod: "{{ azure_resource_group }}-ml-prod"
+# ML Workspaces (max 33 chars, alphanumeric/hyphens/underscores)
+azure_ml_workspace_name_dev: "{{ azure_resource_group[:25] }}-ml-dev"
+azure_ml_workspace_name_prod: "{{ azure_resource_group[:25] }}-ml-prod"
 
-# ML Registry (cross-workspace model sharing)
-azure_ml_registry_name: "{{ azure_resource_group }}-mlregistry"
+# ML Registry (max 33 chars)
+azure_ml_registry_name: "{{ azure_resource_group[:22] }}-mlregistry"
 
 # Compute
 azure_ml_compute_name: training-cluster
@@ -49,7 +49,8 @@ azure_ml_model_version_blue: "1"
 azure_ml_model_version_green: "2"
 
 # Online Endpoint and Deployments
-azure_ml_endpoint_name: "{{ azure_resource_group }}-serving"
+# Online endpoint (max 32 chars)
+azure_ml_endpoint_name: "{{ azure_resource_group[:24] }}-serving"
 azure_ml_blue_deployment_name: blue
 azure_ml_green_deployment_name: green
 azure_ml_deployment_instance_type: Standard_DS3_v2

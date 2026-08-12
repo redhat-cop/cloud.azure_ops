@@ -1,9 +1,9 @@
 ---
 azure_resource_group: "{{ resource_prefix }}-mlops"
 azure_region: eastus
-azure_ml_workspace_name_dev: "{{ resource_prefix }}-ml-dev"
-azure_ml_workspace_name_prod: "{{ resource_prefix }}-ml-prod"
-azure_ml_registry_name: "{{ resource_prefix }}-mlregistry"
+azure_ml_workspace_name_dev: "{{ resource_prefix[:25] }}-ml-dev"
+azure_ml_workspace_name_prod: "{{ resource_prefix[:25] }}-ml-prod"
+azure_ml_registry_name: "{{ resource_prefix[:22] }}-mlregistry"
 azure_storage_account_name_dev: "{{ (resource_prefix | regex_replace('[^a-z0-9]', ''))[:18] }}devml"
 azure_storage_account_name_prod: "{{ (resource_prefix | regex_replace('[^a-z0-9]', ''))[:18] }}prodml"
 azure_keyvault_name: "{{ resource_prefix[:19] }}-mlkv"

@@ -47,9 +47,11 @@
           azure.azcollection.azure_rm_subscription_info:
           register: _sub_info
 
-        - name: Set tenant ID fact
+        - name: Set subscription and tenant ID facts
           ansible.builtin.set_fact:
+            _subscription_id: "{{ _sub_info.subscriptions[0].subscription_id }}"
             _tenant_id: "{{ _sub_info.subscriptions[0].tenant_id }}"
+            _arm_prefix: "/subscriptions/{{ _sub_info.subscriptions[0].subscription_id }}/resourceGroups/{{ azure_resource_group }}/providers"
 
         - name: Create Key Vault
           azure.azcollection.azure_rm_keyvault:
@@ -91,10 +93,10 @@
             name: "{{ azure_ml_workspace_name_dev }}"
             location: "{{ azure_region }}"
             display_name: "{{ azure_ml_workspace_name_dev }}"
-            storage_account: "{{ azure_storage_account_name_dev }}"
-            key_vault: "{{ azure_keyvault_name }}"
-            application_insights: "{{ azure_app_insights_name }}"
-            container_registry: "{{ azure_container_registry_name }}"
+            storage_account: "{{ _arm_prefix }}/Microsoft.Storage/storageAccounts/{{ azure_storage_account_name_dev }}"
+            key_vault: "{{ _arm_prefix }}/Microsoft.KeyVault/vaults/{{ azure_keyvault_name }}"
+            application_insights: "{{ _arm_prefix }}/Microsoft.Insights/components/{{ azure_app_insights_name }}"
+            container_registry: "{{ _arm_prefix }}/Microsoft.ContainerRegistry/registries/{{ azure_container_registry_name }}"
             public_network_access: Enabled
 
         - name: Create prod ML workspace
@@ -103,10 +105,10 @@
             name: "{{ azure_ml_workspace_name_prod }}"
             location: "{{ azure_region }}"
             display_name: "{{ azure_ml_workspace_name_prod }}"
-            storage_account: "{{ azure_storage_account_name_prod }}"
-            key_vault: "{{ azure_keyvault_name }}"
-            application_insights: "{{ azure_app_insights_name }}"
-            container_registry: "{{ azure_container_registry_name }}"
+            storage_account: "{{ _arm_prefix }}/Microsoft.Storage/storageAccounts/{{ azure_storage_account_name_prod }}"
+            key_vault: "{{ _arm_prefix }}/Microsoft.KeyVault/vaults/{{ azure_keyvault_name }}"
+            application_insights: "{{ _arm_prefix }}/Microsoft.Insights/components/{{ azure_app_insights_name }}"
+            container_registry: "{{ _arm_prefix }}/Microsoft.ContainerRegistry/registries/{{ azure_container_registry_name }}"
             public_network_access: Enabled
 
         # ── Phase 3: ML Registry (Cross-Workspace Sharing) ──────────────

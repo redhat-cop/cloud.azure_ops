@@ -24,9 +24,13 @@
         azure_manage_storage_account_region: "{{ azure_region }}"
         azure_manage_storage_account_container_name: training-data
 
-    - name: Retrieve tenant info
+    - name: Retrieve subscription and tenant info
       azure.azcollection.azure_rm_subscription_info:
       register: _sub_info
+
+    - name: Set ARM prefix fact
+      ansible.builtin.set_fact:
+        _arm_prefix: "/subscriptions/{{ _sub_info.subscriptions[0].subscription_id }}/resourceGroups/{{ azure_resource_group }}/providers"
 
     - name: Create Key Vault
       azure.azcollection.azure_rm_keyvault:
@@ -66,10 +70,10 @@
         resource_group: "{{ azure_resource_group }}"
         name: "{{ azure_ml_workspace_name_dev }}"
         location: "{{ azure_region }}"
-        storage_account: "{{ azure_storage_account_name_dev }}"
-        key_vault: "{{ azure_keyvault_name }}"
-        application_insights: "{{ azure_app_insights_name }}"
-        container_registry: "{{ azure_container_registry_name }}"
+        storage_account: "{{ _arm_prefix }}/Microsoft.Storage/storageAccounts/{{ azure_storage_account_name_dev }}"
+        key_vault: "{{ _arm_prefix }}/Microsoft.KeyVault/vaults/{{ azure_keyvault_name }}"
+        application_insights: "{{ _arm_prefix }}/Microsoft.Insights/components/{{ azure_app_insights_name }}"
+        container_registry: "{{ _arm_prefix }}/Microsoft.ContainerRegistry/registries/{{ azure_container_registry_name }}"
         public_network_access: Enabled
 
     # ── Verify workspace was created ────────────────────────────────
@@ -82,8 +86,8 @@
     - name: Assert dev workspace was created
       ansible.builtin.assert:
         that:
-          - _ws_info.ml_workspace is defined
-          - _ws_info.ml_workspace.name == azure_ml_workspace_name_dev
+          - _ws_info.ml_workspaces | length == 1
+          - _ws_info.ml_workspaces[0].name == azure_ml_workspace_name_dev
 
     # ── Phase 3: ML Registry ───────────────────────────────────────
     - name: Create ML registry
@@ -104,8 +108,8 @@
     - name: Assert ML registry was created
       ansible.builtin.assert:
         that:
-          - _registry_info.ml_registry is defined
-          - _registry_info.ml_registry.name == azure_ml_registry_name
+          - _registry_info.ml_registries | length == 1
+          - _registry_info.ml_registries[0].name == azure_ml_registry_name
 
     # ── Phase 4: Compute ───────────────────────────────────────────
     - name: Create compute cluster
@@ -130,8 +134,8 @@
     - name: Assert compute cluster was created
       ansible.builtin.assert:
         that:
-          - _compute_info.ml_compute is defined
-          - _compute_info.ml_compute.name == azure_ml_compute_name
+          - _compute_info.ml_computes | length == 1
+          - _compute_info.ml_computes[0].name == azure_ml_compute_name
 
     # ── Phase 5: Datastore ─────────────────────────────────────────
     - name: Retrieve storage account keys
@@ -164,8 +168,8 @@
     - name: Assert datastore was created
       ansible.builtin.assert:
         that:
-          - _datastore_info.ml_datastore is defined
-          - _datastore_info.ml_datastore.name == 'test_datastore'
+          - _datastore_info.ml_datastores | length == 1
+          - _datastore_info.ml_datastores[0].name == 'test_datastore'
 
     # ── Phase 6: Environment ───────────────────────────────────────
     - name: Create training environment
@@ -188,7 +192,7 @@
     - name: Assert environment was created
       ansible.builtin.assert:
         that:
-          - _env_info.ml_environment is defined
+          - _env_info.ml_environments | length == 1
 
     # ── Phase 10: Online Endpoint (verify serving path) ────────────
     - name: Create online endpoint
@@ -211,8 +215,8 @@
     - name: Assert online endpoint was created
       ansible.builtin.assert:
         that:
-          - _endpoint_info.ml_online_endpoint is defined
-          - _endpoint_info.ml_online_endpoint.name == azure_ml_endpoint_name
+          - _endpoint_info.ml_online_endpoints | length == 1
+          - _endpoint_info.ml_online_endpoints[0].name == azure_ml_endpoint_name
 
     - name: Display test results
       ansible.builtin.debug:
