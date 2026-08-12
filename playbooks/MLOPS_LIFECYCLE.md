@@ -150,9 +150,9 @@ Variables
 ###### Workspace Dependencies
 --------------
 
-* **azure_storage_account_name_dev**: Dev storage account name. Default: `{{ azure_resource_group | regex_replace('[^a-z0-9]', '') }}devml`
-* **azure_storage_account_name_prod**: Prod storage account name. Default: `{{ azure_resource_group | regex_replace('[^a-z0-9]', '') }}prodml`
-* **azure_keyvault_name**: Key Vault name. Default: `{{ azure_resource_group }}-mlkv`
+* **azure_storage_account_name_dev**: Dev storage account name (max 24 chars, alphanumeric only). Default: derived from `azure_resource_group` with `devml` suffix, truncated to 24 chars
+* **azure_storage_account_name_prod**: Prod storage account name (max 24 chars, alphanumeric only). Default: derived from `azure_resource_group` with `prodml` suffix, truncated to 24 chars
+* **azure_keyvault_name**: Key Vault name (max 24 chars). Default: derived from `azure_resource_group` with `-mlkv` suffix, truncated to 24 chars
 * **azure_app_insights_name**: Application Insights name. Default: `{{ azure_resource_group }}-mlinsights`
 * **azure_container_registry_name**: Container Registry name. Default: `{{ azure_resource_group | regex_replace('[^a-z0-9]', '') }}mlacr`
 * **azure_storage_container_name**: Blob container for training data. Default: `training-data`

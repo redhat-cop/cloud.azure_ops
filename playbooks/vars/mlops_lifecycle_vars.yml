@@ -2,15 +2,15 @@
 azure_region: eastus
 operation: create
 
-# Workspace Dependencies - Storage
-azure_storage_account_name_dev: "{{ azure_resource_group | regex_replace('[^a-z0-9]', '') }}devml"
-azure_storage_account_name_prod: "{{ azure_resource_group | regex_replace('[^a-z0-9]', '') }}prodml"
+# Workspace Dependencies - Storage (names max 24 chars, alphanumeric only)
+azure_storage_account_name_dev: "{{ (azure_resource_group | regex_replace('[^a-z0-9]', ''))[:18] }}devml"
+azure_storage_account_name_prod: "{{ (azure_resource_group | regex_replace('[^a-z0-9]', ''))[:18] }}prodml"
 azure_storage_container_name: training-data
 
-# Workspace Dependencies - Key Vault, App Insights, Container Registry
-azure_keyvault_name: "{{ azure_resource_group }}-mlkv"
+# Workspace Dependencies - Key Vault (max 24 chars), App Insights, Container Registry
+azure_keyvault_name: "{{ azure_resource_group[:19] }}-mlkv"
 azure_app_insights_name: "{{ azure_resource_group }}-mlinsights"
-azure_container_registry_name: "{{ azure_resource_group | regex_replace('[^a-z0-9]', '') }}mlacr"
+azure_container_registry_name: "{{ (azure_resource_group | regex_replace('[^a-z0-9]', ''))[:45] }}mlacr"
 
 # ML Workspaces
 azure_ml_workspace_name_dev: "{{ azure_resource_group }}-ml-dev"
