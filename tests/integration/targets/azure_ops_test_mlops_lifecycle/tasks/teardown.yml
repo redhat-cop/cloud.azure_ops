@@ -1,0 +1,72 @@
+---
+- name: Teardown MLOps lifecycle test resources
+  block:
+    - name: Delete online endpoint
+      azure.azcollection.azure_rm_ml_online_endpoint:
+        resource_group: "{{ azure_resource_group }}"
+        ml_workspace: "{{ azure_ml_workspace_name_dev }}"
+        name: "{{ azure_ml_endpoint_name }}"
+        state: absent
+      failed_when: false
+
+    - name: Delete compute cluster
+      azure.azcollection.azure_rm_ml_compute:
+        resource_group: "{{ azure_resource_group }}"
+        ml_workspace: "{{ azure_ml_workspace_name_dev }}"
+        name: "{{ azure_ml_compute_name }}"
+        state: absent
+      failed_when: false
+
+    - name: Delete dev ML workspace
+      azure.azcollection.azure_rm_ml_workspace:
+        resource_group: "{{ azure_resource_group }}"
+        name: "{{ azure_ml_workspace_name_dev }}"
+        state: absent
+      failed_when: false
+
+    - name: Delete ML registry
+      azure.azcollection.azure_rm_ml_registry:
+        resource_group: "{{ azure_resource_group }}"
+        name: "{{ azure_ml_registry_name }}"
+        state: absent
+      failed_when: false
+
+    - name: Delete Container Registry
+      azure.azcollection.azure_rm_containerregistry:
+        resource_group: "{{ azure_resource_group }}"
+        name: "{{ azure_container_registry_name }}"
+        state: absent
+      failed_when: false
+
+    - name: Delete Application Insights
+      azure.azcollection.azure_rm_resource:
+        resource_group: "{{ azure_resource_group }}"
+        provider: Insights
+        resource_type: components
+        resource_name: "{{ azure_app_insights_name }}"
+        api_version: "2020-02-02"
+        state: absent
+      failed_when: false
+
+    - name: Delete Key Vault
+      azure.azcollection.azure_rm_keyvault:
+        resource_group: "{{ azure_resource_group }}"
+        vault_name: "{{ azure_keyvault_name }}"
+        state: absent
+      failed_when: false
+
+    - name: Delete storage account
+      ansible.builtin.include_role:
+        name: cloud.azure_ops.azure_manage_storage_account
+      vars:
+        azure_manage_storage_account_operation: delete
+        azure_manage_storage_account_name: "{{ azure_storage_account_name_dev }}"
+        azure_manage_storage_account_resource_group: "{{ azure_resource_group }}"
+
+    - name: Delete resource group
+      ansible.builtin.include_role:
+        name: cloud.azure_ops.azure_manage_resource_group
+      vars:
+        azure_manage_resource_group_operation: delete
+        azure_manage_resource_group_name: "{{ azure_resource_group }}"
+        azure_manage_resource_group_force_delete_nonempty: true

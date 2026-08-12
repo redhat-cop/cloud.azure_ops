@@ -1,0 +1,78 @@
+---
+azure_region: eastus
+operation: create
+
+# Workspace Dependencies - Storage
+azure_storage_account_name_dev: "{{ azure_resource_group | regex_replace('[^a-z0-9]', '') }}devml"
+azure_storage_account_name_prod: "{{ azure_resource_group | regex_replace('[^a-z0-9]', '') }}prodml"
+azure_storage_container_name: training-data
+
+# Workspace Dependencies - Key Vault, App Insights, Container Registry
+azure_keyvault_name: "{{ azure_resource_group }}-mlkv"
+azure_app_insights_name: "{{ azure_resource_group }}-mlinsights"
+azure_container_registry_name: "{{ azure_resource_group | regex_replace('[^a-z0-9]', '') }}mlacr"
+
+# ML Workspaces
+azure_ml_workspace_name_dev: "{{ azure_resource_group }}-ml-dev"
+azure_ml_workspace_name_prod: "{{ azure_resource_group }}-ml-prod"
+
+# ML Registry (cross-workspace model sharing)
+azure_ml_registry_name: "{{ azure_resource_group }}-mlregistry"
+
+# Compute
+azure_ml_compute_name: training-cluster
+azure_ml_compute_vm_size: Standard_DS3_v2
+azure_ml_compute_min_nodes: 0
+azure_ml_compute_max_nodes: 4
+
+# Data
+azure_ml_datastore_name: training_datastore
+azure_ml_data_asset_name: training-dataset
+azure_ml_data_asset_version: "1"
+
+# Environment
+azure_ml_environment_name: training-env
+azure_ml_environment_version: "1"
+azure_ml_environment_image: mcr.microsoft.com/azureml/openmpi4.1.0-ubuntu22.04:latest
+
+# Component
+azure_ml_component_name: train-component
+azure_ml_component_version: "1"
+
+# Training Job
+azure_ml_job_name: mlops-training-run
+azure_ml_experiment_name: mlops-lifecycle
+azure_ml_training_command: >-
+  python train.py
+  --input_data ${{inputs.training_data}}
+  --output_model ${{outputs.model_output}}
+  --epochs 10
+
+# Model
+azure_ml_model_name: mlops-model
+azure_ml_model_version_blue: "1"
+azure_ml_model_version_green: "2"
+
+# Online Endpoint and Deployments
+azure_ml_endpoint_name: "{{ azure_resource_group }}-serving"
+azure_ml_blue_deployment_name: blue
+azure_ml_green_deployment_name: green
+azure_ml_deployment_instance_type: Standard_DS3_v2
+azure_ml_deployment_instance_count: 1
+
+# Blue/Green Traffic Configuration
+azure_ml_traffic_initial:
+  blue: 100
+  green: 0
+azure_ml_traffic_canary:
+  blue: 90
+  green: 10
+azure_ml_traffic_split:
+  blue: 50
+  green: 50
+azure_ml_traffic_final:
+  blue: 0
+  green: 100
+
+# Azure ML REST API version
+azure_ml_api_version: "2024-10-01"
