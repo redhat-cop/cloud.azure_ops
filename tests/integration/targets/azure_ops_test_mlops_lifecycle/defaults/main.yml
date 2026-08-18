@@ -1,0 +1,17 @@
+---
+azure_resource_group: "{{ resource_prefix }}-mlops"
+azure_region: eastus
+azure_ml_use_registry: false
+azure_ml_workspace_name_dev: "{{ resource_prefix[:25] }}-ml-dev"
+azure_ml_workspace_name_prod: "{{ resource_prefix[:25] }}-ml-prod"
+azure_ml_registry_name: "{{ resource_prefix[:22] }}-mlregistry"
+azure_storage_account_name_dev: "{{ (resource_prefix | regex_replace('[^a-z0-9]', ''))[:18] }}devml"
+azure_storage_account_name_prod: "{{ (resource_prefix | regex_replace('[^a-z0-9]', ''))[:18] }}prodml"
+azure_keyvault_name: "{{ resource_prefix[:19] }}-mlkv"
+azure_app_insights_name: "{{ resource_prefix }}-mlinsights"
+azure_container_registry_name: "{{ (resource_prefix | regex_replace('[^a-z0-9]', ''))[:45] }}mlacr"
+azure_ml_compute_name: test-cluster
+azure_ml_compute_vm_size: Standard_DS2_v2
+azure_ml_compute_min_nodes: 0
+azure_ml_compute_max_nodes: 1
+azure_ml_endpoint_name: "{{ resource_prefix[:24] }}-serving"
