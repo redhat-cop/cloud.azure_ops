@@ -255,7 +255,7 @@
                 content: '{"framework": "dummy", "accuracy": 0.95}'
                 mode: "0644"
 
-            - name: Upload model v{{ azure_ml_model_version_blue }} to dev workspace
+            - name: Upload blue model to dev workspace (version {{ azure_ml_model_version_blue }})
               azure.azcollection.azure_rm_ml_model:
                 resource_group: "{{ azure_resource_group }}"
                 ml_workspace: "{{ azure_ml_workspace_name_dev }}"
@@ -266,7 +266,7 @@
                   path: {{ _dev_model_tmpdir.path }}
                   description: Model v{{ azure_ml_model_version_blue }} from MLOps lifecycle training
 
-            - name: Upload model v{{ azure_ml_model_version_green }} to dev workspace
+            - name: Upload green model to dev workspace (version {{ azure_ml_model_version_green }})
               azure.azcollection.azure_rm_ml_model:
                 resource_group: "{{ azure_resource_group }}"
                 ml_workspace: "{{ azure_ml_workspace_name_dev }}"
@@ -355,7 +355,7 @@
                 content: '{"framework": "dummy", "accuracy": 0.95}'
                 mode: "0644"
 
-            - name: Upload model v{{ azure_ml_model_version_blue }} to prod workspace
+            - name: Upload blue model to prod workspace (version {{ azure_ml_model_version_blue }})
               azure.azcollection.azure_rm_ml_model:
                 resource_group: "{{ azure_resource_group }}"
                 ml_workspace: "{{ azure_ml_workspace_name_prod }}"
@@ -366,7 +366,7 @@
                   path: {{ _prod_model_tmpdir.path }}
                   description: Model v{{ azure_ml_model_version_blue }} from MLOps lifecycle training
 
-            - name: Upload model v{{ azure_ml_model_version_green }} to prod workspace
+            - name: Upload green model to prod workspace (version {{ azure_ml_model_version_green }})
               azure.azcollection.azure_rm_ml_model:
                 resource_group: "{{ azure_resource_group }}"
                 ml_workspace: "{{ azure_ml_workspace_name_prod }}"
