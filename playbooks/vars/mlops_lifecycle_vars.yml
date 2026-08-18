@@ -2,6 +2,14 @@
 azure_region: eastus
 operation: create
 
+# ML Registry - set to true to enable cross-workspace model sharing via ML Registry
+azure_ml_use_registry: false
+
+# Azure Service Principal (required for ML registry role assignment)
+azure_client_id: "{{ lookup('ansible.builtin.env', 'AZURE_CLIENT_ID') }}"
+azure_secret: "{{ lookup('ansible.builtin.env', 'AZURE_SECRET') }}"
+azure_tenant: "{{ lookup('ansible.builtin.env', 'AZURE_TENANT') }}"
+
 # Workspace Dependencies - Storage (names max 24 chars, alphanumeric only)
 azure_storage_account_name_dev: "{{ (azure_resource_group | regex_replace('[^a-z0-9]', ''))[:18] }}devml"
 azure_storage_account_name_prod: "{{ (azure_resource_group | regex_replace('[^a-z0-9]', ''))[:18] }}prodml"
@@ -32,11 +40,13 @@ azure_ml_data_asset_version: "1"
 
 # Environment
 azure_ml_environment_name: training-env
+azure_ml_serving_environment_name: serving-env
 azure_ml_environment_version: "1"
 azure_ml_environment_image: mcr.microsoft.com/azureml/openmpi4.1.0-ubuntu22.04:latest
+azure_ml_serving_environment_image: mcr.microsoft.com/azureml/minimal-ubuntu22.04-py39-cpu-inference:latest
 
 # Component
-azure_ml_component_name: train-component
+azure_ml_component_name: train_component
 azure_ml_component_version: "1"
 
 # Training Job

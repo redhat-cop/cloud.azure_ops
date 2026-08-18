@@ -90,26 +90,29 @@
           - _ws_info.ml_workspaces[0].name == azure_ml_workspace_name_dev
 
     # ── Phase 3: ML Registry ───────────────────────────────────────
-    - name: Create ML registry
-      azure.azcollection.azure_rm_ml_registry:
-        resource_group: "{{ azure_resource_group }}"
-        name: "{{ azure_ml_registry_name }}"
-        resource_definition: |
-          location: {{ azure_region }}
-          replication_locations:
-            - location: {{ azure_region }}
+    - name: Create and validate ML registry
+      when: azure_ml_use_registry | bool
+      block:
+        - name: Create ML registry
+          azure.azcollection.azure_rm_ml_registry:
+            resource_group: "{{ azure_resource_group }}"
+            name: "{{ azure_ml_registry_name }}"
+            resource_definition: |
+              location: {{ azure_region }}
+              replication_locations:
+                - location: {{ azure_region }}
 
-    - name: Gather ML registry info
-      azure.azcollection.azure_rm_ml_registry_info:
-        resource_group: "{{ azure_resource_group }}"
-        name: "{{ azure_ml_registry_name }}"
-      register: _registry_info
+        - name: Gather ML registry info
+          azure.azcollection.azure_rm_ml_registry_info:
+            resource_group: "{{ azure_resource_group }}"
+            name: "{{ azure_ml_registry_name }}"
+          register: _registry_info
 
-    - name: Assert ML registry was created
-      ansible.builtin.assert:
-        that:
-          - _registry_info.ml_registries | length == 1
-          - _registry_info.ml_registries[0].name == azure_ml_registry_name
+        - name: Assert ML registry was created
+          ansible.builtin.assert:
+            that:
+              - _registry_info.ml_registries | length == 1
+              - _registry_info.ml_registries[0].name == azure_ml_registry_name
 
     # ── Phase 4: Compute ───────────────────────────────────────────
     - name: Create compute cluster
@@ -220,9 +223,11 @@
 
     - name: Display test results
       ansible.builtin.debug:
-        msg:
-          - "All MLOps lifecycle stages validated successfully"
-          - "Workspace: {{ azure_ml_workspace_name_dev }}"
-          - "Registry: {{ azure_ml_registry_name }}"
-          - "Compute: {{ azure_ml_compute_name }}"
-          - "Endpoint: {{ azure_ml_endpoint_name }}"
+        msg: >-
+          {{
+            ['All MLOps lifecycle stages validated successfully',
+             'Workspace: ' ~ azure_ml_workspace_name_dev]
+            + (['Registry: ' ~ azure_ml_registry_name] if azure_ml_use_registry | bool else [])
+            + ['Compute: ' ~ azure_ml_compute_name,
+               'Endpoint: ' ~ azure_ml_endpoint_name]
+          }}

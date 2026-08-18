@@ -30,6 +30,7 @@
         name: "{{ azure_ml_registry_name }}"
         state: absent
       failed_when: false
+      when: azure_ml_use_registry | bool
 
     - name: Delete Container Registry
       azure.azcollection.azure_rm_containerregistry:

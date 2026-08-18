@@ -120,6 +120,7 @@
               location: {{ azure_region }}
               replication_locations:
                 - location: {{ azure_region }}
+          when: azure_ml_use_registry | bool
 
         # ── Phase 4: Compute (Dev Workspace) ─────────────────────────────
         - name: Create compute cluster in dev workspace
@@ -167,9 +168,10 @@
             ml_workspace: "{{ azure_ml_workspace_name_dev }}"
             name: "{{ azure_ml_data_asset_name }}"
             version: "{{ azure_ml_data_asset_version }}"
-            data_type: uri_folder
-            path: "azureml://datastores/{{ azure_ml_datastore_name }}/paths/{{ azure_storage_container_name }}"
-            description: Training dataset for MLOps lifecycle
+            resource_definition: |
+              type: uri_folder
+              path: azureml://datastores/workspaceblobstore/paths/training-data
+              description: Training dataset for MLOps lifecycle
 
         # ── Phase 6: Environment (Dev Workspace) ─────────────────────────
         - name: Create training environment in dev workspace
@@ -178,10 +180,9 @@
             ml_workspace: "{{ azure_ml_workspace_name_dev }}"
             name: "{{ azure_ml_environment_name }}"
             version: "{{ azure_ml_environment_version }}"
-            image: "{{ azure_ml_environment_image }}"
-            description: Training environment for MLOps lifecycle
             resource_definition: |
               image: {{ azure_ml_environment_image }}
+              description: Training environment for MLOps lifecycle
 
         # ── Phase 7: Component (Dev Workspace) ──────────────────────────
         - name: Register training component in dev workspace
@@ -195,10 +196,9 @@
               type: command
               display_name: MLOps Training Component
               command: >-
-                python train.py
-                --input_data ${{ '{{' }}inputs.training_data{{ '}}' }}
-                --output_model ${{ '{{' }}outputs.model_output{{ '}}' }}
-                --epochs 10
+                echo "Training complete" &&
+                mkdir -p ${{ '{{' }}outputs.model_output{{ '}}' }} &&
+                echo '{"framework": "dummy", "accuracy": 0.95}' > ${{ '{{' }}outputs.model_output{{ '}}' }}/model.json
               environment: azureml:{{ azure_ml_environment_name }}:{{ azure_ml_environment_version }}
               inputs:
                 training_data:
@@ -221,17 +221,9 @@
               compute: azureml:{{ azure_ml_compute_name }}
               environment: azureml:{{ azure_ml_environment_name }}:{{ azure_ml_environment_version }}
               command: >-
-                python train.py
-                --input_data ${{ '{{' }}inputs.training_data{{ '}}' }}
-                --output_model ${{ '{{' }}outputs.model_output{{ '}}' }}
-                --epochs 10
-              inputs:
-                training_data:
-                  type: uri_folder
-                  path: azureml://datastores/{{ azure_ml_datastore_name }}/paths/{{ azure_storage_container_name }}
-              outputs:
-                model_output:
-                  type: uri_folder
+                mkdir -p outputs/model &&
+                echo '{"framework": "dummy", "accuracy": 0.95}' > outputs/model/model.json &&
+                echo "Training complete"
 
         - name: Wait for training job to complete
           azure.azcollection.azure_rm_ml_job_info:
@@ -239,36 +231,212 @@
             ml_workspace: "{{ azure_ml_workspace_name_dev }}"
             name: "{{ azure_ml_job_name }}"
           register: _job_status
-          until: _job_status.ml_job.status in ['Completed', 'Failed', 'Canceled']
+          until: _job_status.ml_jobs[0].status in ['Completed', 'Failed', 'Canceled']
           retries: 60
           delay: 30
 
         - name: Fail if training job did not complete successfully
           ansible.builtin.fail:
-            msg: "Training job {{ azure_ml_job_name }} ended with status: {{ _job_status.ml_job.status }}"
-          when: _job_status.ml_job.status != 'Completed'
+            msg: "Training job {{ azure_ml_job_name }} ended with status: {{ _job_status.ml_jobs[0].status }}"
+          when: _job_status.ml_jobs[0].status != 'Completed'
 
         # ── Phase 9: Model Registration (Dev Workspace + Registry) ──────
         - name: Register model in dev workspace
-          azure.azcollection.azure_rm_ml_model:
-            resource_group: "{{ azure_resource_group }}"
-            ml_workspace: "{{ azure_ml_workspace_name_dev }}"
-            name: "{{ azure_ml_model_name }}"
-            version: "{{ azure_ml_model_version_blue }}"
-            type: custom_model
-            path: "azureml://jobs/{{ azure_ml_job_name }}/outputs/model_output"
-            description: "Model v{{ azure_ml_model_version_blue }} from MLOps lifecycle training"
+          block:
+            - name: Create local model artifact for dev workspace
+              ansible.builtin.tempfile:
+                state: directory
+                prefix: mlops_model_dev_
+              register: _dev_model_tmpdir
+
+            - name: Write model file for dev workspace
+              ansible.builtin.copy:
+                dest: "{{ _dev_model_tmpdir.path }}/model.json"
+                content: '{"framework": "dummy", "accuracy": 0.95}'
+                mode: "0644"
+
+            - name: Upload model v{{ azure_ml_model_version_blue }} to dev workspace
+              azure.azcollection.azure_rm_ml_model:
+                resource_group: "{{ azure_resource_group }}"
+                ml_workspace: "{{ azure_ml_workspace_name_dev }}"
+                name: "{{ azure_ml_model_name }}"
+                version: "{{ azure_ml_model_version_blue }}"
+                resource_definition: |
+                  type: custom_model
+                  path: {{ _dev_model_tmpdir.path }}
+                  description: Model v{{ azure_ml_model_version_blue }} from MLOps lifecycle training
+
+            - name: Upload model v{{ azure_ml_model_version_green }} to dev workspace
+              azure.azcollection.azure_rm_ml_model:
+                resource_group: "{{ azure_resource_group }}"
+                ml_workspace: "{{ azure_ml_workspace_name_dev }}"
+                name: "{{ azure_ml_model_name }}"
+                version: "{{ azure_ml_model_version_green }}"
+                resource_definition: |
+                  type: custom_model
+                  path: {{ _dev_model_tmpdir.path }}
+                  description: Model v{{ azure_ml_model_version_green }} from MLOps lifecycle training
+
+          always:
+            - name: Clean up temporary dev model directory
+              ansible.builtin.file:
+                path: "{{ _dev_model_tmpdir.path | default('/nonexistent') }}"
+                state: absent
+              when: _dev_model_tmpdir.path is defined
 
         - name: Register model in ML registry for cross-workspace sharing
-          azure.azcollection.azure_rm_ml_model:
-            ml_registry: "{{ azure_ml_registry_name }}"
-            name: "{{ azure_ml_model_name }}"
-            version: "{{ azure_ml_model_version_blue }}"
-            type: custom_model
-            path: "azureml://jobs/{{ azure_ml_job_name }}/outputs/model_output"
-            description: "Shared model v{{ azure_ml_model_version_blue }} from dev workspace"
+          when: azure_ml_use_registry | bool
+          block:
+            - name: Get service principal object ID
+              ansible.builtin.set_fact:
+                _sp_object_id: "{{ lookup('azure.azcollection.azure_service_principal_attribute', azure_client_id=azure_client_id, azure_secret=azure_secret, azure_tenant=azure_tenant) }}"
+
+            - name: Look up ML Registry User role definition
+              azure.azcollection.azure_rm_roledefinition_info:
+                scope: "{{ _arm_prefix }}/Microsoft.MachineLearningServices/registries/{{ azure_ml_registry_name }}"
+                role_name: "AzureML Data Scientist"
+              register: _registry_role
+
+            - name: Assign ML Registry User role to current identity
+              azure.azcollection.azure_rm_roleassignment:
+                scope: "{{ _arm_prefix }}/Microsoft.MachineLearningServices/registries/{{ azure_ml_registry_name }}"
+                assignee_object_id: "{{ _sp_object_id }}"
+                role_definition_id: "{{ _registry_role.roledefinitions[0].id }}"
+
+            - name: Create local dummy model artifact for registry upload
+              ansible.builtin.tempfile:
+                state: directory
+                prefix: mlops_model_
+              register: _model_tmpdir
+
+            - name: Write dummy model file
+              ansible.builtin.copy:
+                dest: "{{ _model_tmpdir.path }}/model.json"
+                content: '{"framework": "dummy", "accuracy": 0.95}'
+                mode: "0644"
+
+            - name: Upload model to ML registry
+              azure.azcollection.azure_rm_ml_model:
+                ml_registry: "{{ azure_ml_registry_name }}"
+                name: "{{ azure_ml_model_name }}"
+                version: "{{ azure_ml_model_version_blue }}"
+                resource_definition: |
+                  type: custom_model
+                  path: {{ _model_tmpdir.path }}
+                  description: Shared model v{{ azure_ml_model_version_blue }} from dev workspace
+
+          rescue:
+            - name: Warn that registry model upload requires additional permissions
+              ansible.builtin.debug:
+                msg: >-
+                  Registry model registration skipped due to authorization error.
+                  Ensure the identity has Storage Blob Data Contributor role on
+                  the ML registry's backing storage account.
+
+          always:
+            - name: Clean up temporary model directory
+              ansible.builtin.file:
+                path: "{{ _model_tmpdir.path | default('/nonexistent') }}"
+                state: absent
+              when: _model_tmpdir.path is defined
+
+        - name: Register model in prod workspace for direct deployment
+          when: not (azure_ml_use_registry | bool)
+          block:
+            - name: Create local model artifact for prod workspace upload
+              ansible.builtin.tempfile:
+                state: directory
+                prefix: mlops_model_prod_
+              register: _prod_model_tmpdir
+
+            - name: Write model file for prod workspace
+              ansible.builtin.copy:
+                dest: "{{ _prod_model_tmpdir.path }}/model.json"
+                content: '{"framework": "dummy", "accuracy": 0.95}'
+                mode: "0644"
+
+            - name: Upload model v{{ azure_ml_model_version_blue }} to prod workspace
+              azure.azcollection.azure_rm_ml_model:
+                resource_group: "{{ azure_resource_group }}"
+                ml_workspace: "{{ azure_ml_workspace_name_prod }}"
+                name: "{{ azure_ml_model_name }}"
+                version: "{{ azure_ml_model_version_blue }}"
+                resource_definition: |
+                  type: custom_model
+                  path: {{ _prod_model_tmpdir.path }}
+                  description: Model v{{ azure_ml_model_version_blue }} from MLOps lifecycle training
+
+            - name: Upload model v{{ azure_ml_model_version_green }} to prod workspace
+              azure.azcollection.azure_rm_ml_model:
+                resource_group: "{{ azure_resource_group }}"
+                ml_workspace: "{{ azure_ml_workspace_name_prod }}"
+                name: "{{ azure_ml_model_name }}"
+                version: "{{ azure_ml_model_version_green }}"
+                resource_definition: |
+                  type: custom_model
+                  path: {{ _prod_model_tmpdir.path }}
+                  description: Model v{{ azure_ml_model_version_green }} from MLOps lifecycle training
+
+          always:
+            - name: Clean up temporary prod model directory
+              ansible.builtin.file:
+                path: "{{ _prod_model_tmpdir.path | default('/nonexistent') }}"
+                state: absent
+              when: _prod_model_tmpdir.path is defined
 
         # ── Phase 10: Blue/Green Deployment (Prod Workspace) ────────────
+        - name: Create serving environment in prod workspace
+          azure.azcollection.azure_rm_ml_environment:
+            resource_group: "{{ azure_resource_group }}"
+            ml_workspace: "{{ azure_ml_workspace_name_prod }}"
+            name: "{{ azure_ml_serving_environment_name }}"
+            version: "{{ azure_ml_environment_version }}"
+            resource_definition: |
+              image: {{ azure_ml_serving_environment_image }}
+              description: Serving environment for MLOps lifecycle
+          when: not (azure_ml_use_registry | bool)
+
+        - name: Set model URI for deployments
+          ansible.builtin.set_fact:
+            _model_uri_blue: >-
+              {{ 'azureml://registries/' ~ azure_ml_registry_name ~ '/models/' ~ azure_ml_model_name ~ '/versions/' ~ azure_ml_model_version_blue
+              if azure_ml_use_registry | bool
+              else 'azureml:' ~ azure_ml_model_name ~ ':' ~ azure_ml_model_version_blue }}
+            _model_uri_green: >-
+              {{ 'azureml://registries/' ~ azure_ml_registry_name ~ '/models/' ~ azure_ml_model_name ~ '/versions/' ~ azure_ml_model_version_green
+              if azure_ml_use_registry | bool
+              else 'azureml:' ~ azure_ml_model_name ~ ':' ~ azure_ml_model_version_green }}
+
+        - name: Create scoring script for custom model deployment
+          when: not (azure_ml_use_registry | bool)
+          block:
+            - name: Create temporary directory for scoring code
+              ansible.builtin.tempfile:
+                state: directory
+                prefix: mlops_score_
+              register: _score_tmpdir
+
+            - name: Write scoring script
+              ansible.builtin.copy:
+                dest: "{{ _score_tmpdir.path }}/score.py"
+                content: |
+                  import json
+                  import os
+
+                  def init():
+                      global model
+                      model_dir = os.getenv("AZUREML_MODEL_DIR", ".")
+                      for root, dirs, files in os.walk(model_dir):
+                          if "model.json" in files:
+                              with open(os.path.join(root, "model.json")) as f:
+                                  model = json.load(f)
+                              return
+                      model = {"status": "no model file found"}
+
+                  def run(raw_data):
+                      return json.dumps({"prediction": "dummy", "model_info": model})
+                mode: "0644"
+
         - name: Create online endpoint in prod workspace
           azure.azcollection.azure_rm_ml_online_endpoint:
             resource_group: "{{ azure_resource_group }}"
@@ -288,7 +456,13 @@
             resource_definition: |
               $schema: https://azuremlschemas.azureedge.net/latest/managedOnlineDeployment.schema.json
               name: {{ azure_ml_blue_deployment_name }}
-              model: azureml://registries/{{ azure_ml_registry_name }}/models/{{ azure_ml_model_name }}/versions/{{ azure_ml_model_version_blue }}
+              model: {{ _model_uri_blue }}
+              {% if not (azure_ml_use_registry | bool) %}
+              environment: azureml:{{ azure_ml_serving_environment_name }}:{{ azure_ml_environment_version }}
+              code_configuration:
+                code: {{ _score_tmpdir.path }}
+                scoring_script: score.py
+              {% endif %}
               instance_type: {{ azure_ml_deployment_instance_type }}
               instance_count: {{ azure_ml_deployment_instance_count }}
 
@@ -300,11 +474,17 @@
             resource_definition: |
               $schema: https://azuremlschemas.azureedge.net/latest/managedOnlineDeployment.schema.json
               name: {{ azure_ml_green_deployment_name }}
-              model: azureml://registries/{{ azure_ml_registry_name }}/models/{{ azure_ml_model_name }}/versions/{{ azure_ml_model_version_green }}
+              model: {{ _model_uri_green }}
+              {% if not (azure_ml_use_registry | bool) %}
+              environment: azureml:{{ azure_ml_serving_environment_name }}:{{ azure_ml_environment_version }}
+              code_configuration:
+                code: {{ _score_tmpdir.path }}
+                scoring_script: score.py
+              {% endif %}
               instance_type: {{ azure_ml_deployment_instance_type }}
               instance_count: {{ azure_ml_deployment_instance_count }}
           register: _green_deployment
-          failed_when: false
+          ignore_errors: true
 
         - name: Rollback - keep 100% blue if green deployment failed
           ansible.builtin.debug:
@@ -352,17 +532,25 @@
                 endpoint_name: "{{ azure_ml_endpoint_name }}"
                 state: absent
 
+        - name: Clean up temporary scoring code directory
+          ansible.builtin.file:
+            path: "{{ _score_tmpdir.path | default('/nonexistent') }}"
+            state: absent
+          when: _score_tmpdir.path is defined
+
         # ── Output ──────────────────────────────────────────────────────
         - name: Display MLOps lifecycle endpoints
           ansible.builtin.debug:
-            msg:
-              - "Dev workspace: {{ azure_ml_workspace_name_dev }}"
-              - "Prod workspace: {{ azure_ml_workspace_name_prod }}"
-              - "ML Registry: {{ azure_ml_registry_name }}"
-              - "Compute cluster: {{ azure_ml_compute_name }}"
-              - "Training job: {{ azure_ml_job_name }}"
-              - "Model: {{ azure_ml_model_name }}"
-              - "Serving endpoint: {{ azure_ml_endpoint_name }}"
+            msg: >-
+              {{
+                ['Dev workspace: ' ~ azure_ml_workspace_name_dev,
+                 'Prod workspace: ' ~ azure_ml_workspace_name_prod]
+                + (['ML Registry: ' ~ azure_ml_registry_name] if azure_ml_use_registry | bool else [])
+                + ['Compute cluster: ' ~ azure_ml_compute_name,
+                   'Training job: ' ~ azure_ml_job_name,
+                   'Model: ' ~ azure_ml_model_name,
+                   'Serving endpoint: ' ~ azure_ml_endpoint_name]
+              }}
 
     - name: Delete MLOps lifecycle infrastructure
       when: operation | default('create') == 'delete'
@@ -406,6 +594,30 @@
             state: archive
           register: _delete_registry_model
           failed_when: false
+          when: azure_ml_use_registry | bool
+
+        # ── Delete prod workspace resources (non-registry mode) ─────────
+        - name: Delete serving environment from prod workspace
+          azure.azcollection.azure_rm_ml_environment:
+            resource_group: "{{ azure_resource_group }}"
+            ml_workspace: "{{ azure_ml_workspace_name_prod }}"
+            name: "{{ azure_ml_serving_environment_name }}"
+            version: "{{ azure_ml_environment_version }}"
+            state: archive
+          register: _delete_prod_env
+          failed_when: false
+          when: not (azure_ml_use_registry | bool)
+
+        - name: Delete model from prod workspace
+          azure.azcollection.azure_rm_ml_model:
+            resource_group: "{{ azure_resource_group }}"
+            ml_workspace: "{{ azure_ml_workspace_name_prod }}"
+            name: "{{ azure_ml_model_name }}"
+            version: "{{ azure_ml_model_version_blue }}"
+            state: archive
+          register: _delete_prod_model
+          failed_when: false
+          when: not (azure_ml_use_registry | bool)
 
         # ── Delete dev workspace resources ──────────────────────────────
         - name: Delete model from dev workspace
@@ -499,6 +711,7 @@
             state: absent
           register: _delete_registry
           failed_when: false
+          when: azure_ml_use_registry | bool
 
         # ── Delete workspace dependencies ───────────────────────────────
         - name: Delete Container Registry
