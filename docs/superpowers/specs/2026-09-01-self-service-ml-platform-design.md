@@ -737,36 +737,33 @@ workflow_nodes:
 
 **Checks:**
 - Azure subscription quota: Key Vault (max 500), ACR, App Insights
-- Resource providers registered: `Microsoft.KeyVault`, `Microsoft.ContainerRegistry`, `Microsoft.Insights`, `Microsoft.MachineLearningServices`
 - Globally unique names available: Key Vault (DNS check `<name>.vault.azure.net`), ACR (DNS check `<name>.azurecr.io`)
 - Service principal permissions: Contributor role on subscription scope
 
+**Note:** Resource provider registration (`Microsoft.KeyVault`, `Microsoft.ContainerRegistry`, `Microsoft.Insights`, `Microsoft.MachineLearningServices`) is documented as a prerequisite in the playbook documentation, not validated in the playbook. This follows the existing pattern from `mlops_lifecycle.yml`.
+
 **Implementation:**
 ```yaml
-- name: Validate Azure resource providers
-  azure.azcollection.azure_rm_resourceprovider:
-    namespace: "{{ item }}"
-    state: registered
-  loop:
-    - Microsoft.KeyVault
-    - Microsoft.ContainerRegistry
-    - Microsoft.Insights
-    - Microsoft.MachineLearningServices
-  register: _provider_check
-  failed_when: _provider_check is failed
+- name: Check if shared resource group already exists
+  azure.azcollection.azure_rm_resourcegroup_info:
+    name: "{{ azure_ml_platform_shared_rg }}"
+  register: _rg_info
+  ignore_errors: true
 
-- name: Check Key Vault name availability
-  azure.azcollection.azure_rm_resource:
+- name: Check if Key Vault already exists (prevent name collision)
+  azure.azcollection.azure_rm_keyvault_info:
     resource_group: "{{ azure_ml_platform_shared_rg }}"
-    provider: Microsoft.KeyVault
-    resource_type: checkNameAvailability
-    api_version: "2023-07-01"
-    method: POST
-    body:
-      name: "{{ azure_ml_platform_keyvault }}"
-      type: "Microsoft.KeyVault/vaults"
-  register: _kv_check
-  failed_when: not _kv_check.response.nameAvailable
+    name: "{{ azure_ml_platform_keyvault }}"
+  register: _kv_exists
+  ignore_errors: true
+  when: _rg_info.resourcegroups | length > 0
+
+- name: Fail if Key Vault name is already in use
+  ansible.builtin.fail:
+    msg: "Key Vault '{{ azure_ml_platform_keyvault }}' already exists. Choose a different name."
+  when:
+    - _rg_info.resourcegroups | length > 0
+    - _kv_exists.keyvaults | default([]) | length > 0
 ```
 
 #### Before Provisioning Team Workspace
@@ -976,7 +973,7 @@ test_steps:
 
 **Sections:**
 1. **Overview** — Architecture diagram, business value, user stories
-2. **Prerequisites** — Azure subscription, quota, service principal permissions, AAP version
+2. **Prerequisites** — Azure subscription, required resource providers (`Microsoft.KeyVault`, `Microsoft.ContainerRegistry`, `Microsoft.Insights`, `Microsoft.MachineLearningServices`), quota requirements, service principal permissions (Contributor + User Access Administrator), AAP version
 3. **Variables Reference** — Complete variable list with descriptions, defaults, validation rules
 4. **Usage Examples** — Command-line examples for both operations
 5. **AAP Integration** — Survey specs, workflow templates, approval gates
