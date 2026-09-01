@@ -1,0 +1,19 @@
+---
+- name: Gather Resource Group info
+  azure.azcollection.azure_rm_resourcegroup_info:
+    name: "{{ resource_group }}"
+  register: __rg_info
+
+- name: Test MLOps lifecycle playbook
+  block:
+    - name: Run create and validate tests
+      ansible.builtin.include_tasks: create_and_validate_mlops.yml
+      vars:
+        test_resource_group: "{{ resource_group }}"
+        azure_region: "{{ __rg_info.resourcegroups.0.location }}"
+
+  always:
+    - name: Cleanup - Delete all MLOps resources
+      ansible.builtin.include_tasks: teardown.yml
+      vars:
+        test_resource_group: "{{ resource_group }}"

@@ -1,0 +1,233 @@
+---
+- name: Test end-to-end MLOps lifecycle
+  block:
+    - name: Print test step details
+      ansible.builtin.debug:
+        msg: "Run test with resource_group={{ test_resource_group }}"
+
+    # ── Phase 1-2: Create workspace infrastructure ──────────────────
+    - name: Create resource group
+      ansible.builtin.include_role:
+        name: cloud.azure_ops.azure_manage_resource_group
+      vars:
+        azure_manage_resource_group_operation: create
+        azure_manage_resource_group_name: "{{ azure_resource_group }}"
+        azure_manage_resource_group_region: "{{ azure_region }}"
+
+    - name: Create dev storage account
+      ansible.builtin.include_role:
+        name: cloud.azure_ops.azure_manage_storage_account
+      vars:
+        azure_manage_storage_account_operation: create
+        azure_manage_storage_account_name: "{{ azure_storage_account_name_dev }}"
+        azure_manage_storage_account_resource_group: "{{ azure_resource_group }}"
+        azure_manage_storage_account_region: "{{ azure_region }}"
+        azure_manage_storage_account_container_name: training-data
+
+    - name: Retrieve subscription and tenant info
+      azure.azcollection.azure_rm_subscription_info:
+      register: _sub_info
+
+    - name: Set ARM prefix fact
+      ansible.builtin.set_fact:
+        _arm_prefix: "/subscriptions/{{ _sub_info.subscriptions[0].subscription_id }}/resourceGroups/{{ azure_resource_group }}/providers"
+
+    - name: Create Key Vault
+      azure.azcollection.azure_rm_keyvault:
+        resource_group: "{{ azure_resource_group }}"
+        vault_name: "{{ azure_keyvault_name }}"
+        vault_tenant: "{{ _sub_info.subscriptions[0].tenant_id }}"
+        location: "{{ azure_region }}"
+        enable_rbac_authorization: true
+        sku:
+          name: standard
+          family: A
+
+    - name: Create Application Insights
+      azure.azcollection.azure_rm_resource:
+        resource_group: "{{ azure_resource_group }}"
+        provider: Insights
+        resource_type: components
+        resource_name: "{{ azure_app_insights_name }}"
+        api_version: "2020-02-02"
+        idempotency: true
+        body:
+          location: "{{ azure_region }}"
+          kind: web
+          properties:
+            Application_Type: web
+
+    - name: Create Container Registry
+      azure.azcollection.azure_rm_containerregistry:
+        resource_group: "{{ azure_resource_group }}"
+        name: "{{ azure_container_registry_name }}"
+        location: "{{ azure_region }}"
+        sku: Basic
+        admin_user_enabled: false
+
+    - name: Create dev ML workspace
+      azure.azcollection.azure_rm_ml_workspace:
+        resource_group: "{{ azure_resource_group }}"
+        name: "{{ azure_ml_workspace_name_dev }}"
+        location: "{{ azure_region }}"
+        storage_account: "{{ _arm_prefix }}/Microsoft.Storage/storageAccounts/{{ azure_storage_account_name_dev }}"
+        key_vault: "{{ _arm_prefix }}/Microsoft.KeyVault/vaults/{{ azure_keyvault_name }}"
+        application_insights: "{{ _arm_prefix }}/Microsoft.Insights/components/{{ azure_app_insights_name }}"
+        container_registry: "{{ _arm_prefix }}/Microsoft.ContainerRegistry/registries/{{ azure_container_registry_name }}"
+        public_network_access: Enabled
+
+    # ── Verify workspace was created ────────────────────────────────
+    - name: Gather dev workspace info
+      azure.azcollection.azure_rm_ml_workspace_info:
+        resource_group: "{{ azure_resource_group }}"
+        name: "{{ azure_ml_workspace_name_dev }}"
+      register: _ws_info
+
+    - name: Assert dev workspace was created
+      ansible.builtin.assert:
+        that:
+          - _ws_info.ml_workspaces | length == 1
+          - _ws_info.ml_workspaces[0].name == azure_ml_workspace_name_dev
+
+    # ── Phase 3: ML Registry ───────────────────────────────────────
+    - name: Create and validate ML registry
+      when: azure_ml_use_registry | bool
+      block:
+        - name: Create ML registry
+          azure.azcollection.azure_rm_ml_registry:
+            resource_group: "{{ azure_resource_group }}"
+            name: "{{ azure_ml_registry_name }}"
+            resource_definition: |
+              location: {{ azure_region }}
+              replication_locations:
+                - location: {{ azure_region }}
+
+        - name: Gather ML registry info
+          azure.azcollection.azure_rm_ml_registry_info:
+            resource_group: "{{ azure_resource_group }}"
+            name: "{{ azure_ml_registry_name }}"
+          register: _registry_info
+
+        - name: Assert ML registry was created
+          ansible.builtin.assert:
+            that:
+              - _registry_info.ml_registries | length == 1
+              - _registry_info.ml_registries[0].name == azure_ml_registry_name
+
+    # ── Phase 4: Compute ───────────────────────────────────────────
+    - name: Create compute cluster
+      azure.azcollection.azure_rm_ml_compute:
+        resource_group: "{{ azure_resource_group }}"
+        ml_workspace: "{{ azure_ml_workspace_name_dev }}"
+        name: "{{ azure_ml_compute_name }}"
+        location: "{{ azure_region }}"
+        type: amlcompute
+        size: "{{ azure_ml_compute_vm_size }}"
+        min_instances: "{{ azure_ml_compute_min_nodes }}"
+        max_instances: "{{ azure_ml_compute_max_nodes }}"
+        idle_time_before_scale_down: 120
+
+    - name: Gather compute info
+      azure.azcollection.azure_rm_ml_compute_info:
+        resource_group: "{{ azure_resource_group }}"
+        ml_workspace: "{{ azure_ml_workspace_name_dev }}"
+        name: "{{ azure_ml_compute_name }}"
+      register: _compute_info
+
+    - name: Assert compute cluster was created
+      ansible.builtin.assert:
+        that:
+          - _compute_info.ml_computes | length == 1
+          - _compute_info.ml_computes[0].name == azure_ml_compute_name
+
+    # ── Phase 5: Datastore ─────────────────────────────────────────
+    - name: Retrieve storage account keys
+      azure.azcollection.azure_rm_storageaccount_info:
+        resource_group: "{{ azure_resource_group }}"
+        name: "{{ azure_storage_account_name_dev }}"
+        show_connection_string: true
+      register: _storage_info
+
+    - name: Register blob datastore
+      azure.azcollection.azure_rm_ml_datastore:
+        resource_group: "{{ azure_resource_group }}"
+        ml_workspace: "{{ azure_ml_workspace_name_dev }}"
+        name: test_datastore
+        resource_definition: |
+          type: azure_blob
+          account_name: {{ azure_storage_account_name_dev }}
+          container_name: training-data
+          credentials:
+            account_key: {{ _storage_info.storageaccounts[0].primary_endpoints.key }}
+      no_log: true
+
+    - name: Gather datastore info
+      azure.azcollection.azure_rm_ml_datastore_info:
+        resource_group: "{{ azure_resource_group }}"
+        ml_workspace: "{{ azure_ml_workspace_name_dev }}"
+        name: test_datastore
+      register: _datastore_info
+
+    - name: Assert datastore was created
+      ansible.builtin.assert:
+        that:
+          - _datastore_info.ml_datastores | length == 1
+          - _datastore_info.ml_datastores[0].name == 'test_datastore'
+
+    # ── Phase 6: Environment ───────────────────────────────────────
+    - name: Create training environment
+      azure.azcollection.azure_rm_ml_environment:
+        resource_group: "{{ azure_resource_group }}"
+        ml_workspace: "{{ azure_ml_workspace_name_dev }}"
+        name: test-env
+        version: "1"
+        resource_definition: |
+          image: mcr.microsoft.com/azureml/openmpi4.1.0-ubuntu22.04:latest
+
+    - name: Gather environment info
+      azure.azcollection.azure_rm_ml_environment_info:
+        resource_group: "{{ azure_resource_group }}"
+        ml_workspace: "{{ azure_ml_workspace_name_dev }}"
+        name: test-env
+        version: "1"
+      register: _env_info
+
+    - name: Assert environment was created
+      ansible.builtin.assert:
+        that:
+          - _env_info.ml_environments | length == 1
+
+    # ── Phase 10: Online Endpoint (verify serving path) ────────────
+    - name: Create online endpoint
+      azure.azcollection.azure_rm_ml_online_endpoint:
+        resource_group: "{{ azure_resource_group }}"
+        ml_workspace: "{{ azure_ml_workspace_name_dev }}"
+        name: "{{ azure_ml_endpoint_name }}"
+        auth_mode: key
+        resource_definition: |
+          $schema: https://azuremlschemas.azureedge.net/latest/managedOnlineEndpoint.schema.json
+          auth_mode: key
+
+    - name: Gather online endpoint info
+      azure.azcollection.azure_rm_ml_online_endpoint_info:
+        resource_group: "{{ azure_resource_group }}"
+        ml_workspace: "{{ azure_ml_workspace_name_dev }}"
+        name: "{{ azure_ml_endpoint_name }}"
+      register: _endpoint_info
+
+    - name: Assert online endpoint was created
+      ansible.builtin.assert:
+        that:
+          - _endpoint_info.ml_online_endpoints | length == 1
+          - _endpoint_info.ml_online_endpoints[0].name == azure_ml_endpoint_name
+
+    - name: Display test results
+      ansible.builtin.debug:
+        msg: >-
+          {{
+            ['All MLOps lifecycle stages validated successfully',
+             'Workspace: ' ~ azure_ml_workspace_name_dev]
+            + (['Registry: ' ~ azure_ml_registry_name] if azure_ml_use_registry | bool else [])
+            + ['Compute: ' ~ azure_ml_compute_name,
+               'Endpoint: ' ~ azure_ml_endpoint_name]
+          }}

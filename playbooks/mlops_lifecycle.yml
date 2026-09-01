@@ -1,0 +1,766 @@
+---
+- name: MLOps lifecycle automation with Azure Machine Learning
+  hosts: localhost
+  gather_facts: false
+
+  vars_files:
+    - vars/mlops_lifecycle_vars.yml
+
+  tasks:
+    - name: Fail when azure_resource_group is not defined
+      ansible.builtin.fail:
+        msg: Azure Resource group must be defined as azure_resource_group
+      when: azure_resource_group is not defined
+
+    - name: Create MLOps lifecycle infrastructure
+      when: operation | default('create') == 'create'
+      block:
+        # ── Phase 1: Workspace Dependencies ──────────────────────────────
+        - name: Create resource group
+          ansible.builtin.include_role:
+            name: cloud.azure_ops.azure_manage_resource_group
+          vars:
+            azure_manage_resource_group_operation: create
+            azure_manage_resource_group_name: "{{ azure_resource_group }}"
+            azure_manage_resource_group_region: "{{ azure_region }}"
+
+        - name: Create dev storage account
+          ansible.builtin.include_role:
+            name: cloud.azure_ops.azure_manage_storage_account
+          vars:
+            azure_manage_storage_account_operation: create
+            azure_manage_storage_account_name: "{{ azure_storage_account_name_dev }}"
+            azure_manage_storage_account_resource_group: "{{ azure_resource_group }}"
+            azure_manage_storage_account_region: "{{ azure_region }}"
+            azure_manage_storage_account_container_name: "{{ azure_storage_container_name }}"
+
+        - name: Create prod storage account
+          ansible.builtin.include_role:
+            name: cloud.azure_ops.azure_manage_storage_account
+          vars:
+            azure_manage_storage_account_operation: create
+            azure_manage_storage_account_name: "{{ azure_storage_account_name_prod }}"
+            azure_manage_storage_account_resource_group: "{{ azure_resource_group }}"
+            azure_manage_storage_account_region: "{{ azure_region }}"
+
+        - name: Retrieve subscription and tenant info
+          azure.azcollection.azure_rm_subscription_info:
+          register: _sub_info
+
+        - name: Set subscription and tenant ID facts
+          ansible.builtin.set_fact:
+            _subscription_id: "{{ _sub_info.subscriptions[0].subscription_id }}"
+            _tenant_id: "{{ _sub_info.subscriptions[0].tenant_id }}"
+            _arm_prefix: "/subscriptions/{{ _sub_info.subscriptions[0].subscription_id }}/resourceGroups/{{ azure_resource_group }}/providers"
+
+        - name: Create Key Vault
+          azure.azcollection.azure_rm_keyvault:
+            resource_group: "{{ azure_resource_group }}"
+            vault_name: "{{ azure_keyvault_name }}"
+            vault_tenant: "{{ _tenant_id }}"
+            location: "{{ azure_region }}"
+            enable_rbac_authorization: true
+            sku:
+              name: standard
+              family: A
+
+        - name: Create Application Insights
+          azure.azcollection.azure_rm_resource:
+            resource_group: "{{ azure_resource_group }}"
+            provider: Insights
+            resource_type: components
+            resource_name: "{{ azure_app_insights_name }}"
+            api_version: "2020-02-02"
+            idempotency: true
+            body:
+              location: "{{ azure_region }}"
+              kind: web
+              properties:
+                Application_Type: web
+
+        - name: Create Container Registry
+          azure.azcollection.azure_rm_containerregistry:
+            resource_group: "{{ azure_resource_group }}"
+            name: "{{ azure_container_registry_name }}"
+            location: "{{ azure_region }}"
+            sku: Basic
+            admin_user_enabled: false
+
+        # ── Phase 2: ML Workspaces (Dev + Prod) ─────────────────────────
+        - name: Create dev ML workspace
+          azure.azcollection.azure_rm_ml_workspace:
+            resource_group: "{{ azure_resource_group }}"
+            name: "{{ azure_ml_workspace_name_dev }}"
+            location: "{{ azure_region }}"
+            display_name: "{{ azure_ml_workspace_name_dev }}"
+            storage_account: "{{ _arm_prefix }}/Microsoft.Storage/storageAccounts/{{ azure_storage_account_name_dev }}"
+            key_vault: "{{ _arm_prefix }}/Microsoft.KeyVault/vaults/{{ azure_keyvault_name }}"
+            application_insights: "{{ _arm_prefix }}/Microsoft.Insights/components/{{ azure_app_insights_name }}"
+            container_registry: "{{ _arm_prefix }}/Microsoft.ContainerRegistry/registries/{{ azure_container_registry_name }}"
+            public_network_access: Enabled
+
+        - name: Create prod ML workspace
+          azure.azcollection.azure_rm_ml_workspace:
+            resource_group: "{{ azure_resource_group }}"
+            name: "{{ azure_ml_workspace_name_prod }}"
+            location: "{{ azure_region }}"
+            display_name: "{{ azure_ml_workspace_name_prod }}"
+            storage_account: "{{ _arm_prefix }}/Microsoft.Storage/storageAccounts/{{ azure_storage_account_name_prod }}"
+            key_vault: "{{ _arm_prefix }}/Microsoft.KeyVault/vaults/{{ azure_keyvault_name }}"
+            application_insights: "{{ _arm_prefix }}/Microsoft.Insights/components/{{ azure_app_insights_name }}"
+            container_registry: "{{ _arm_prefix }}/Microsoft.ContainerRegistry/registries/{{ azure_container_registry_name }}"
+            public_network_access: Enabled
+
+        # ── Phase 3: ML Registry (Cross-Workspace Sharing) ──────────────
+        - name: Create ML registry for cross-workspace model sharing
+          azure.azcollection.azure_rm_ml_registry:
+            resource_group: "{{ azure_resource_group }}"
+            name: "{{ azure_ml_registry_name }}"
+            resource_definition: |
+              location: {{ azure_region }}
+              replication_locations:
+                - location: {{ azure_region }}
+          when: azure_ml_use_registry | bool
+
+        # ── Phase 4: Compute (Dev Workspace) ─────────────────────────────
+        - name: Create compute cluster in dev workspace
+          azure.azcollection.azure_rm_ml_compute:
+            resource_group: "{{ azure_resource_group }}"
+            ml_workspace: "{{ azure_ml_workspace_name_dev }}"
+            name: "{{ azure_ml_compute_name }}"
+            location: "{{ azure_region }}"
+            type: amlcompute
+            size: "{{ azure_ml_compute_vm_size }}"
+            min_instances: "{{ azure_ml_compute_min_nodes }}"
+            max_instances: "{{ azure_ml_compute_max_nodes }}"
+            idle_time_before_scale_down: 120
+
+        # ── Phase 5: Data (Dev Workspace) ────────────────────────────────
+        - name: Retrieve dev storage account keys
+          azure.azcollection.azure_rm_storageaccount_info:
+            resource_group: "{{ azure_resource_group }}"
+            name: "{{ azure_storage_account_name_dev }}"
+            show_connection_string: true
+          register: _dev_storage_info
+
+        - name: Set dev storage account key fact
+          ansible.builtin.set_fact:
+            _dev_storage_key: "{{ _dev_storage_info.storageaccounts[0].primary_endpoints.key }}"
+          no_log: true
+
+        - name: Register blob datastore in dev workspace
+          azure.azcollection.azure_rm_ml_datastore:
+            resource_group: "{{ azure_resource_group }}"
+            ml_workspace: "{{ azure_ml_workspace_name_dev }}"
+            name: "{{ azure_ml_datastore_name }}"
+            description: Blob datastore for MLOps training data
+            resource_definition: |
+              type: azure_blob
+              account_name: {{ azure_storage_account_name_dev }}
+              container_name: {{ azure_storage_container_name }}
+              credentials:
+                account_key: {{ _dev_storage_key }}
+          no_log: true
+
+        - name: Register data asset in dev workspace
+          azure.azcollection.azure_rm_ml_data:
+            resource_group: "{{ azure_resource_group }}"
+            ml_workspace: "{{ azure_ml_workspace_name_dev }}"
+            name: "{{ azure_ml_data_asset_name }}"
+            version: "{{ azure_ml_data_asset_version }}"
+            resource_definition: |
+              type: uri_folder
+              path: azureml://datastores/workspaceblobstore/paths/training-data
+              description: Training dataset for MLOps lifecycle
+
+        # ── Phase 6: Environment (Dev Workspace) ─────────────────────────
+        - name: Create training environment in dev workspace
+          azure.azcollection.azure_rm_ml_environment:
+            resource_group: "{{ azure_resource_group }}"
+            ml_workspace: "{{ azure_ml_workspace_name_dev }}"
+            name: "{{ azure_ml_environment_name }}"
+            version: "{{ azure_ml_environment_version }}"
+            resource_definition: |
+              image: {{ azure_ml_environment_image }}
+              description: Training environment for MLOps lifecycle
+
+        # ── Phase 7: Component (Dev Workspace) ──────────────────────────
+        - name: Register training component in dev workspace
+          azure.azcollection.azure_rm_ml_component:
+            resource_group: "{{ azure_resource_group }}"
+            ml_workspace: "{{ azure_ml_workspace_name_dev }}"
+            name: "{{ azure_ml_component_name }}"
+            version: "{{ azure_ml_component_version }}"
+            resource_definition: |
+              $schema: https://azuremlschemas.azureedge.net/latest/commandComponent.schema.json
+              type: command
+              display_name: MLOps Training Component
+              command: >-
+                echo "Training complete" &&
+                mkdir -p ${{ '{{' }}outputs.model_output{{ '}}' }} &&
+                echo '{"framework": "dummy", "accuracy": 0.95}' > ${{ '{{' }}outputs.model_output{{ '}}' }}/model.json
+              environment: azureml:{{ azure_ml_environment_name }}:{{ azure_ml_environment_version }}
+              inputs:
+                training_data:
+                  type: uri_folder
+              outputs:
+                model_output:
+                  type: uri_folder
+
+        # ── Phase 8: Training Job (Dev Workspace) ───────────────────────
+        - name: Submit training job in dev workspace
+          azure.azcollection.azure_rm_ml_job:
+            resource_group: "{{ azure_resource_group }}"
+            ml_workspace: "{{ azure_ml_workspace_name_dev }}"
+            name: "{{ azure_ml_job_name }}"
+            description: MLOps lifecycle training run
+            resource_definition: |
+              $schema: https://azuremlschemas.azureedge.net/latest/commandJob.schema.json
+              type: command
+              experiment_name: {{ azure_ml_experiment_name }}
+              compute: azureml:{{ azure_ml_compute_name }}
+              environment: azureml:{{ azure_ml_environment_name }}:{{ azure_ml_environment_version }}
+              command: >-
+                mkdir -p outputs/model &&
+                echo '{"framework": "dummy", "accuracy": 0.95}' > outputs/model/model.json &&
+                echo "Training complete"
+
+        - name: Wait for training job to complete
+          azure.azcollection.azure_rm_ml_job_info:
+            resource_group: "{{ azure_resource_group }}"
+            ml_workspace: "{{ azure_ml_workspace_name_dev }}"
+            name: "{{ azure_ml_job_name }}"
+          register: _job_status
+          until: _job_status.ml_jobs[0].status in ['Completed', 'Failed', 'Canceled']
+          retries: 60
+          delay: 30
+
+        - name: Fail if training job did not complete successfully
+          ansible.builtin.fail:
+            msg: "Training job {{ azure_ml_job_name }} ended with status: {{ _job_status.ml_jobs[0].status }}"
+          when: _job_status.ml_jobs[0].status != 'Completed'
+
+        # ── Phase 9: Model Registration (Dev Workspace + Registry) ──────
+        - name: Register model in dev workspace
+          block:
+            - name: Create local model artifact for dev workspace
+              ansible.builtin.tempfile:
+                state: directory
+                prefix: mlops_model_dev_
+              register: _dev_model_tmpdir
+
+            - name: Write model file for dev workspace
+              ansible.builtin.copy:
+                dest: "{{ _dev_model_tmpdir.path }}/model.json"
+                content: '{"framework": "dummy", "accuracy": 0.95}'
+                mode: "0644"
+
+            - name: Upload blue model to dev workspace (version {{ azure_ml_model_version_blue }})
+              azure.azcollection.azure_rm_ml_model:
+                resource_group: "{{ azure_resource_group }}"
+                ml_workspace: "{{ azure_ml_workspace_name_dev }}"
+                name: "{{ azure_ml_model_name }}"
+                version: "{{ azure_ml_model_version_blue }}"
+                resource_definition: |
+                  type: custom_model
+                  path: {{ _dev_model_tmpdir.path }}
+                  description: Model v{{ azure_ml_model_version_blue }} from MLOps lifecycle training
+
+            - name: Upload green model to dev workspace (version {{ azure_ml_model_version_green }})
+              azure.azcollection.azure_rm_ml_model:
+                resource_group: "{{ azure_resource_group }}"
+                ml_workspace: "{{ azure_ml_workspace_name_dev }}"
+                name: "{{ azure_ml_model_name }}"
+                version: "{{ azure_ml_model_version_green }}"
+                resource_definition: |
+                  type: custom_model
+                  path: {{ _dev_model_tmpdir.path }}
+                  description: Model v{{ azure_ml_model_version_green }} from MLOps lifecycle training
+
+          always:
+            - name: Clean up temporary dev model directory
+              ansible.builtin.file:
+                path: "{{ _dev_model_tmpdir.path | default('/nonexistent') }}"
+                state: absent
+              when: _dev_model_tmpdir.path is defined
+
+        - name: Register model in ML registry for cross-workspace sharing
+          when: azure_ml_use_registry | bool
+          block:
+            - name: Get service principal object ID
+              ansible.builtin.set_fact:
+                _sp_object_id: "{{ lookup('azure.azcollection.azure_service_principal_attribute', azure_client_id=azure_client_id, azure_secret=azure_secret, azure_tenant=azure_tenant) }}"
+
+            - name: Look up ML Registry User role definition
+              azure.azcollection.azure_rm_roledefinition_info:
+                scope: "{{ _arm_prefix }}/Microsoft.MachineLearningServices/registries/{{ azure_ml_registry_name }}"
+                role_name: "AzureML Data Scientist"
+              register: _registry_role
+
+            - name: Assign ML Registry User role to current identity
+              azure.azcollection.azure_rm_roleassignment:
+                scope: "{{ _arm_prefix }}/Microsoft.MachineLearningServices/registries/{{ azure_ml_registry_name }}"
+                assignee_object_id: "{{ _sp_object_id }}"
+                role_definition_id: "{{ _registry_role.roledefinitions[0].id }}"
+
+            - name: Create local dummy model artifact for registry upload
+              ansible.builtin.tempfile:
+                state: directory
+                prefix: mlops_model_
+              register: _model_tmpdir
+
+            - name: Write dummy model file
+              ansible.builtin.copy:
+                dest: "{{ _model_tmpdir.path }}/model.json"
+                content: '{"framework": "dummy", "accuracy": 0.95}'
+                mode: "0644"
+
+            - name: Upload model to ML registry
+              azure.azcollection.azure_rm_ml_model:
+                ml_registry: "{{ azure_ml_registry_name }}"
+                name: "{{ azure_ml_model_name }}"
+                version: "{{ azure_ml_model_version_blue }}"
+                resource_definition: |
+                  type: custom_model
+                  path: {{ _model_tmpdir.path }}
+                  description: Shared model v{{ azure_ml_model_version_blue }} from dev workspace
+
+          rescue:
+            - name: Warn that registry model upload requires additional permissions
+              ansible.builtin.debug:
+                msg: >-
+                  Registry model registration skipped due to authorization error.
+                  Ensure the identity has Storage Blob Data Contributor role on
+                  the ML registry's backing storage account.
+
+          always:
+            - name: Clean up temporary model directory
+              ansible.builtin.file:
+                path: "{{ _model_tmpdir.path | default('/nonexistent') }}"
+                state: absent
+              when: _model_tmpdir.path is defined
+
+        - name: Register model in prod workspace for direct deployment
+          when: not (azure_ml_use_registry | bool)
+          block:
+            - name: Create local model artifact for prod workspace upload
+              ansible.builtin.tempfile:
+                state: directory
+                prefix: mlops_model_prod_
+              register: _prod_model_tmpdir
+
+            - name: Write model file for prod workspace
+              ansible.builtin.copy:
+                dest: "{{ _prod_model_tmpdir.path }}/model.json"
+                content: '{"framework": "dummy", "accuracy": 0.95}'
+                mode: "0644"
+
+            - name: Upload blue model to prod workspace (version {{ azure_ml_model_version_blue }})
+              azure.azcollection.azure_rm_ml_model:
+                resource_group: "{{ azure_resource_group }}"
+                ml_workspace: "{{ azure_ml_workspace_name_prod }}"
+                name: "{{ azure_ml_model_name }}"
+                version: "{{ azure_ml_model_version_blue }}"
+                resource_definition: |
+                  type: custom_model
+                  path: {{ _prod_model_tmpdir.path }}
+                  description: Model v{{ azure_ml_model_version_blue }} from MLOps lifecycle training
+
+            - name: Upload green model to prod workspace (version {{ azure_ml_model_version_green }})
+              azure.azcollection.azure_rm_ml_model:
+                resource_group: "{{ azure_resource_group }}"
+                ml_workspace: "{{ azure_ml_workspace_name_prod }}"
+                name: "{{ azure_ml_model_name }}"
+                version: "{{ azure_ml_model_version_green }}"
+                resource_definition: |
+                  type: custom_model
+                  path: {{ _prod_model_tmpdir.path }}
+                  description: Model v{{ azure_ml_model_version_green }} from MLOps lifecycle training
+
+          always:
+            - name: Clean up temporary prod model directory
+              ansible.builtin.file:
+                path: "{{ _prod_model_tmpdir.path | default('/nonexistent') }}"
+                state: absent
+              when: _prod_model_tmpdir.path is defined
+
+        # ── Phase 10: Blue/Green Deployment (Prod Workspace) ────────────
+        - name: Create serving environment in prod workspace
+          azure.azcollection.azure_rm_ml_environment:
+            resource_group: "{{ azure_resource_group }}"
+            ml_workspace: "{{ azure_ml_workspace_name_prod }}"
+            name: "{{ azure_ml_serving_environment_name }}"
+            version: "{{ azure_ml_environment_version }}"
+            resource_definition: |
+              image: {{ azure_ml_serving_environment_image }}
+              description: Serving environment for MLOps lifecycle
+          when: not (azure_ml_use_registry | bool)
+
+        - name: Set model URI for deployments
+          ansible.builtin.set_fact:
+            _model_uri_blue: >-
+              {{ 'azureml://registries/' ~ azure_ml_registry_name ~ '/models/' ~ azure_ml_model_name ~ '/versions/' ~ azure_ml_model_version_blue
+              if azure_ml_use_registry | bool
+              else 'azureml:' ~ azure_ml_model_name ~ ':' ~ azure_ml_model_version_blue }}
+            _model_uri_green: >-
+              {{ 'azureml://registries/' ~ azure_ml_registry_name ~ '/models/' ~ azure_ml_model_name ~ '/versions/' ~ azure_ml_model_version_green
+              if azure_ml_use_registry | bool
+              else 'azureml:' ~ azure_ml_model_name ~ ':' ~ azure_ml_model_version_green }}
+
+        - name: Create scoring script for custom model deployment
+          when: not (azure_ml_use_registry | bool)
+          block:
+            - name: Create temporary directory for scoring code
+              ansible.builtin.tempfile:
+                state: directory
+                prefix: mlops_score_
+              register: _score_tmpdir
+
+            - name: Write scoring script
+              ansible.builtin.copy:
+                dest: "{{ _score_tmpdir.path }}/score.py"
+                content: |
+                  import json
+                  import os
+
+                  def init():
+                      global model
+                      model_dir = os.getenv("AZUREML_MODEL_DIR", ".")
+                      for root, dirs, files in os.walk(model_dir):
+                          if "model.json" in files:
+                              with open(os.path.join(root, "model.json")) as f:
+                                  model = json.load(f)
+                              return
+                      model = {"status": "no model file found"}
+
+                  def run(raw_data):
+                      return json.dumps({"prediction": "dummy", "model_info": model})
+                mode: "0644"
+
+        - name: Create online endpoint in prod workspace
+          azure.azcollection.azure_rm_ml_online_endpoint:
+            resource_group: "{{ azure_resource_group }}"
+            ml_workspace: "{{ azure_ml_workspace_name_prod }}"
+            name: "{{ azure_ml_endpoint_name }}"
+            auth_mode: key
+            resource_definition: |
+              $schema: https://azuremlschemas.azureedge.net/latest/managedOnlineEndpoint.schema.json
+              auth_mode: key
+
+        - name: Create blue deployment with model v{{ azure_ml_model_version_blue }}
+          azure.azcollection.azure_rm_ml_online_deployment:
+            resource_group: "{{ azure_resource_group }}"
+            ml_workspace: "{{ azure_ml_workspace_name_prod }}"
+            endpoint_name: "{{ azure_ml_endpoint_name }}"
+            all_traffic: true
+            resource_definition: |
+              $schema: https://azuremlschemas.azureedge.net/latest/managedOnlineDeployment.schema.json
+              name: {{ azure_ml_blue_deployment_name }}
+              model: {{ _model_uri_blue }}
+              {% if not (azure_ml_use_registry | bool) %}
+              environment: azureml:{{ azure_ml_serving_environment_name }}:{{ azure_ml_environment_version }}
+              code_configuration:
+                code: {{ _score_tmpdir.path }}
+                scoring_script: score.py
+              {% endif %}
+              instance_type: {{ azure_ml_deployment_instance_type }}
+              instance_count: {{ azure_ml_deployment_instance_count }}
+
+        - name: Create green deployment with model v{{ azure_ml_model_version_green }}
+          azure.azcollection.azure_rm_ml_online_deployment:
+            resource_group: "{{ azure_resource_group }}"
+            ml_workspace: "{{ azure_ml_workspace_name_prod }}"
+            endpoint_name: "{{ azure_ml_endpoint_name }}"
+            resource_definition: |
+              $schema: https://azuremlschemas.azureedge.net/latest/managedOnlineDeployment.schema.json
+              name: {{ azure_ml_green_deployment_name }}
+              model: {{ _model_uri_green }}
+              {% if not (azure_ml_use_registry | bool) %}
+              environment: azureml:{{ azure_ml_serving_environment_name }}:{{ azure_ml_environment_version }}
+              code_configuration:
+                code: {{ _score_tmpdir.path }}
+                scoring_script: score.py
+              {% endif %}
+              instance_type: {{ azure_ml_deployment_instance_type }}
+              instance_count: {{ azure_ml_deployment_instance_count }}
+          register: _green_deployment
+          ignore_errors: true
+
+        - name: Rollback - keep 100% blue if green deployment failed
+          ansible.builtin.debug:
+            msg: "Green deployment failed to provision. Keeping 100% traffic on blue deployment."
+          when: _green_deployment is failed
+
+        - name: Shift traffic gradually to green deployment
+          when: _green_deployment is not failed
+          block:
+            - name: Shift canary traffic to green deployment
+              azure.azcollection.azure_rm_ml_online_endpoint:
+                resource_group: "{{ azure_resource_group }}"
+                ml_workspace: "{{ azure_ml_workspace_name_prod }}"
+                name: "{{ azure_ml_endpoint_name }}"
+                traffic: "{{ azure_ml_traffic_canary }}"
+                resource_definition: |
+                  $schema: https://azuremlschemas.azureedge.net/latest/managedOnlineEndpoint.schema.json
+                  auth_mode: key
+
+            - name: Shift to even traffic split between blue and green
+              azure.azcollection.azure_rm_ml_online_endpoint:
+                resource_group: "{{ azure_resource_group }}"
+                ml_workspace: "{{ azure_ml_workspace_name_prod }}"
+                name: "{{ azure_ml_endpoint_name }}"
+                traffic: "{{ azure_ml_traffic_split }}"
+                resource_definition: |
+                  $schema: https://azuremlschemas.azureedge.net/latest/managedOnlineEndpoint.schema.json
+                  auth_mode: key
+
+            - name: Promote green deployment to full traffic
+              azure.azcollection.azure_rm_ml_online_endpoint:
+                resource_group: "{{ azure_resource_group }}"
+                ml_workspace: "{{ azure_ml_workspace_name_prod }}"
+                name: "{{ azure_ml_endpoint_name }}"
+                traffic: "{{ azure_ml_traffic_final }}"
+                resource_definition: |
+                  $schema: https://azuremlschemas.azureedge.net/latest/managedOnlineEndpoint.schema.json
+                  auth_mode: key
+
+            - name: Remove old blue deployment after full traffic shift
+              azure.azcollection.azure_rm_ml_online_deployment:
+                resource_group: "{{ azure_resource_group }}"
+                ml_workspace: "{{ azure_ml_workspace_name_prod }}"
+                name: "{{ azure_ml_blue_deployment_name }}"
+                endpoint_name: "{{ azure_ml_endpoint_name }}"
+                state: absent
+
+        - name: Clean up temporary scoring code directory
+          ansible.builtin.file:
+            path: "{{ _score_tmpdir.path | default('/nonexistent') }}"
+            state: absent
+          when: _score_tmpdir.path is defined
+
+        # ── Output ──────────────────────────────────────────────────────
+        - name: Display MLOps lifecycle endpoints
+          ansible.builtin.debug:
+            msg: >-
+              {{
+                ['Dev workspace: ' ~ azure_ml_workspace_name_dev,
+                 'Prod workspace: ' ~ azure_ml_workspace_name_prod]
+                + (['ML Registry: ' ~ azure_ml_registry_name] if azure_ml_use_registry | bool else [])
+                + ['Compute cluster: ' ~ azure_ml_compute_name,
+                   'Training job: ' ~ azure_ml_job_name,
+                   'Model: ' ~ azure_ml_model_name,
+                   'Serving endpoint: ' ~ azure_ml_endpoint_name]
+              }}
+
+    - name: Delete MLOps lifecycle infrastructure
+      when: operation | default('create') == 'delete'
+      block:
+        # ── Delete deployments and endpoint ─────────────────────────────
+        - name: Delete green deployment
+          azure.azcollection.azure_rm_ml_online_deployment:
+            resource_group: "{{ azure_resource_group }}"
+            ml_workspace: "{{ azure_ml_workspace_name_prod }}"
+            name: "{{ azure_ml_green_deployment_name }}"
+            endpoint_name: "{{ azure_ml_endpoint_name }}"
+            state: absent
+          register: _delete_green
+          failed_when: false
+
+        - name: Delete blue deployment
+          azure.azcollection.azure_rm_ml_online_deployment:
+            resource_group: "{{ azure_resource_group }}"
+            ml_workspace: "{{ azure_ml_workspace_name_prod }}"
+            name: "{{ azure_ml_blue_deployment_name }}"
+            endpoint_name: "{{ azure_ml_endpoint_name }}"
+            state: absent
+          register: _delete_blue
+          failed_when: false
+
+        - name: Delete online endpoint
+          azure.azcollection.azure_rm_ml_online_endpoint:
+            resource_group: "{{ azure_resource_group }}"
+            ml_workspace: "{{ azure_ml_workspace_name_prod }}"
+            name: "{{ azure_ml_endpoint_name }}"
+            state: absent
+          register: _delete_endpoint
+          failed_when: false
+
+        # ── Delete model from registry ──────────────────────────────────
+        - name: Delete model from registry
+          azure.azcollection.azure_rm_ml_model:
+            ml_registry: "{{ azure_ml_registry_name }}"
+            name: "{{ azure_ml_model_name }}"
+            version: "{{ azure_ml_model_version_blue }}"
+            state: archive
+          register: _delete_registry_model
+          failed_when: false
+          when: azure_ml_use_registry | bool
+
+        # ── Delete prod workspace resources (non-registry mode) ─────────
+        - name: Delete serving environment from prod workspace
+          azure.azcollection.azure_rm_ml_environment:
+            resource_group: "{{ azure_resource_group }}"
+            ml_workspace: "{{ azure_ml_workspace_name_prod }}"
+            name: "{{ azure_ml_serving_environment_name }}"
+            version: "{{ azure_ml_environment_version }}"
+            state: archive
+          register: _delete_prod_env
+          failed_when: false
+          when: not (azure_ml_use_registry | bool)
+
+        - name: Delete model from prod workspace
+          azure.azcollection.azure_rm_ml_model:
+            resource_group: "{{ azure_resource_group }}"
+            ml_workspace: "{{ azure_ml_workspace_name_prod }}"
+            name: "{{ azure_ml_model_name }}"
+            version: "{{ azure_ml_model_version_blue }}"
+            state: archive
+          register: _delete_prod_model
+          failed_when: false
+          when: not (azure_ml_use_registry | bool)
+
+        # ── Delete dev workspace resources ──────────────────────────────
+        - name: Delete model from dev workspace
+          azure.azcollection.azure_rm_ml_model:
+            resource_group: "{{ azure_resource_group }}"
+            ml_workspace: "{{ azure_ml_workspace_name_dev }}"
+            name: "{{ azure_ml_model_name }}"
+            version: "{{ azure_ml_model_version_blue }}"
+            state: archive
+          register: _delete_model
+          failed_when: false
+
+        - name: Cancel training job if running
+          azure.azcollection.azure_rm_ml_job:
+            resource_group: "{{ azure_resource_group }}"
+            ml_workspace: "{{ azure_ml_workspace_name_dev }}"
+            name: "{{ azure_ml_job_name }}"
+            state: cancel
+          register: _cancel_job
+          failed_when: false
+
+        - name: Delete training component from dev workspace
+          azure.azcollection.azure_rm_ml_component:
+            resource_group: "{{ azure_resource_group }}"
+            ml_workspace: "{{ azure_ml_workspace_name_dev }}"
+            name: "{{ azure_ml_component_name }}"
+            version: "{{ azure_ml_component_version }}"
+            state: archive
+          register: _delete_component
+          failed_when: false
+
+        - name: Delete environment from dev workspace
+          azure.azcollection.azure_rm_ml_environment:
+            resource_group: "{{ azure_resource_group }}"
+            ml_workspace: "{{ azure_ml_workspace_name_dev }}"
+            name: "{{ azure_ml_environment_name }}"
+            version: "{{ azure_ml_environment_version }}"
+            state: archive
+          register: _delete_env
+          failed_when: false
+
+        - name: Delete data asset from dev workspace
+          azure.azcollection.azure_rm_ml_data:
+            resource_group: "{{ azure_resource_group }}"
+            ml_workspace: "{{ azure_ml_workspace_name_dev }}"
+            name: "{{ azure_ml_data_asset_name }}"
+            version: "{{ azure_ml_data_asset_version }}"
+            state: archive
+          register: _delete_data
+          failed_when: false
+
+        - name: Delete datastore from dev workspace
+          azure.azcollection.azure_rm_ml_datastore:
+            resource_group: "{{ azure_resource_group }}"
+            ml_workspace: "{{ azure_ml_workspace_name_dev }}"
+            name: "{{ azure_ml_datastore_name }}"
+            state: absent
+          register: _delete_datastore
+          failed_when: false
+
+        - name: Delete compute cluster from dev workspace
+          azure.azcollection.azure_rm_ml_compute:
+            resource_group: "{{ azure_resource_group }}"
+            ml_workspace: "{{ azure_ml_workspace_name_dev }}"
+            name: "{{ azure_ml_compute_name }}"
+            state: absent
+          register: _delete_compute
+          failed_when: false
+
+        # ── Delete ML workspaces and registry ───────────────────────────
+        - name: Delete prod ML workspace
+          azure.azcollection.azure_rm_ml_workspace:
+            resource_group: "{{ azure_resource_group }}"
+            name: "{{ azure_ml_workspace_name_prod }}"
+            state: absent
+          register: _delete_prod_ws
+          failed_when: false
+
+        - name: Delete dev ML workspace
+          azure.azcollection.azure_rm_ml_workspace:
+            resource_group: "{{ azure_resource_group }}"
+            name: "{{ azure_ml_workspace_name_dev }}"
+            state: absent
+          register: _delete_dev_ws
+          failed_when: false
+
+        - name: Delete ML registry
+          azure.azcollection.azure_rm_ml_registry:
+            resource_group: "{{ azure_resource_group }}"
+            name: "{{ azure_ml_registry_name }}"
+            state: absent
+          register: _delete_registry
+          failed_when: false
+          when: azure_ml_use_registry | bool
+
+        # ── Delete workspace dependencies ───────────────────────────────
+        - name: Delete Container Registry
+          azure.azcollection.azure_rm_containerregistry:
+            resource_group: "{{ azure_resource_group }}"
+            name: "{{ azure_container_registry_name }}"
+            state: absent
+          register: _delete_acr
+          failed_when: false
+
+        - name: Delete Application Insights
+          azure.azcollection.azure_rm_resource:
+            resource_group: "{{ azure_resource_group }}"
+            provider: Insights
+            resource_type: components
+            resource_name: "{{ azure_app_insights_name }}"
+            api_version: "2020-02-02"
+            state: absent
+          register: _delete_appinsights
+          failed_when: false
+
+        - name: Delete Key Vault
+          azure.azcollection.azure_rm_keyvault:
+            resource_group: "{{ azure_resource_group }}"
+            vault_name: "{{ azure_keyvault_name }}"
+            state: absent
+          register: _delete_keyvault
+          failed_when: false
+
+        - name: Delete prod storage account
+          ansible.builtin.include_role:
+            name: cloud.azure_ops.azure_manage_storage_account
+          vars:
+            azure_manage_storage_account_operation: delete
+            azure_manage_storage_account_name: "{{ azure_storage_account_name_prod }}"
+            azure_manage_storage_account_resource_group: "{{ azure_resource_group }}"
+
+        - name: Delete dev storage account
+          ansible.builtin.include_role:
+            name: cloud.azure_ops.azure_manage_storage_account
+          vars:
+            azure_manage_storage_account_operation: delete
+            azure_manage_storage_account_name: "{{ azure_storage_account_name_dev }}"
+            azure_manage_storage_account_resource_group: "{{ azure_resource_group }}"
+
+        - name: Delete resource group
+          ansible.builtin.include_role:
+            name: cloud.azure_ops.azure_manage_resource_group
+          vars:
+            azure_manage_resource_group_operation: delete
+            azure_manage_resource_group_name: "{{ azure_resource_group }}"
+            azure_manage_resource_group_force_delete_nonempty: true

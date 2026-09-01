@@ -1,0 +1,81 @@
+---
+azure_region: eastus
+operation: create
+
+# ML Registry - set to true to enable cross-workspace model sharing via ML Registry
+azure_ml_use_registry: false
+
+# Azure Service Principal (required for ML registry role assignment)
+azure_client_id: "{{ lookup('ansible.builtin.env', 'AZURE_CLIENT_ID') }}"
+azure_secret: "{{ lookup('ansible.builtin.env', 'AZURE_SECRET') }}"
+azure_tenant: "{{ lookup('ansible.builtin.env', 'AZURE_TENANT') }}"
+
+# Workspace Dependencies - Storage (names max 24 chars, alphanumeric only)
+azure_storage_account_name_dev: "{{ (azure_resource_group | regex_replace('[^a-z0-9]', ''))[:18] }}devml"
+azure_storage_account_name_prod: "{{ (azure_resource_group | regex_replace('[^a-z0-9]', ''))[:18] }}prodml"
+azure_storage_container_name: training-data
+
+# Workspace Dependencies - Key Vault (max 24 chars), App Insights, Container Registry
+azure_keyvault_name: "{{ azure_resource_group[:19] }}-mlkv"
+azure_app_insights_name: "{{ azure_resource_group }}-mlinsights"
+azure_container_registry_name: "{{ (azure_resource_group | regex_replace('[^a-z0-9]', ''))[:45] }}mlacr"
+
+# ML Workspaces (max 33 chars, alphanumeric/hyphens/underscores)
+azure_ml_workspace_name_dev: "{{ azure_resource_group[:25] }}-ml-dev"
+azure_ml_workspace_name_prod: "{{ azure_resource_group[:25] }}-ml-prod"
+
+# ML Registry (max 33 chars)
+azure_ml_registry_name: "{{ azure_resource_group[:22] }}-mlregistry"
+
+# Compute
+azure_ml_compute_name: training-cluster
+azure_ml_compute_vm_size: Standard_DS3_v2
+azure_ml_compute_min_nodes: 0
+azure_ml_compute_max_nodes: 4
+
+# Data
+azure_ml_datastore_name: training_datastore
+azure_ml_data_asset_name: training-dataset
+azure_ml_data_asset_version: "1"
+
+# Environment
+azure_ml_environment_name: training-env
+azure_ml_serving_environment_name: serving-env
+azure_ml_environment_version: "1"
+azure_ml_environment_image: mcr.microsoft.com/azureml/openmpi4.1.0-ubuntu22.04:latest
+azure_ml_serving_environment_image: mcr.microsoft.com/azureml/minimal-ubuntu22.04-py39-cpu-inference:latest
+
+# Component
+azure_ml_component_name: train_component
+azure_ml_component_version: "1"
+
+# Training Job
+azure_ml_job_name: mlops-training-run
+azure_ml_experiment_name: mlops-lifecycle
+
+# Model
+azure_ml_model_name: mlops-model
+azure_ml_model_version_blue: "1"
+azure_ml_model_version_green: "2"
+
+# Online Endpoint and Deployments
+# Online endpoint (max 32 chars)
+azure_ml_endpoint_name: "{{ azure_resource_group[:24] }}-serving"
+azure_ml_blue_deployment_name: blue
+azure_ml_green_deployment_name: green
+azure_ml_deployment_instance_type: Standard_DS3_v2
+azure_ml_deployment_instance_count: 1
+
+# Blue/Green Traffic Configuration
+azure_ml_traffic_initial:
+  blue: 100
+  green: 0
+azure_ml_traffic_canary:
+  blue: 90
+  green: 10
+azure_ml_traffic_split:
+  blue: 50
+  green: 50
+azure_ml_traffic_final:
+  blue: 0
+  green: 100
