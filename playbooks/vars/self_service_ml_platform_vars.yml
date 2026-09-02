@@ -1,0 +1,26 @@
+---
+# Common variables
+operation: "create"
+azure_region: "eastus"
+
+# Shared Infrastructure (Hub)
+azure_ml_platform_shared_rg: "ml-platform-shared"
+azure_ml_platform_keyvault: "ml-platform-kv-001"  # Must be globally unique
+azure_ml_platform_acr: "mlplatformacr001"  # Must be globally unique
+azure_ml_platform_appinsights: "ml-platform-insights"
+azure_ml_platform_admin_email: "admin@example.com"
+
+# Team Workspace (Spoke) - defaults
+azure_ml_team_name: ""
+azure_ml_team_contact_email: ""
+azure_ml_team_budget_limit: 2500
+azure_ml_team_compute_vm_size: "Standard_DS3_v2"
+azure_ml_team_compute_max_nodes: 4
+azure_ml_team_data_access_scope: "restricted"
+
+# Computed variables (set by playbook)
+azure_ml_team_storage_account: "{{ (azure_ml_team_name ~ 'mlstor') | regex_replace('[^a-z0-9]', '') | truncate(24, True, '') }}"
+azure_ml_team_workspace_name: "{{ azure_ml_team_name }}-ml-workspace"
+azure_ml_team_compute_name: "{{ azure_ml_team_name }}-compute"
+azure_ml_team_datastore_name: "{{ azure_ml_team_name | regex_replace('-', '_') }}_datastore"
+azure_ml_team_environment_name: "{{ azure_ml_team_name }}-base-env"
