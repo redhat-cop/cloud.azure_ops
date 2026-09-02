@@ -1,6 +1,6 @@
 ---
 # Common variables
-operation: "create"
+operation: "provision_shared_infrastructure"
 azure_region: "eastus"
 
 # Shared Infrastructure (Hub)
@@ -10,6 +10,11 @@ azure_ml_platform_acr: "mlplatformacr001"  # Must be globally unique
 azure_ml_platform_appinsights: "ml-platform-insights"
 azure_ml_platform_admin_email: "admin@example.com"
 
+# Resource Tags
+azure_ml_platform_environment: "production"
+azure_ml_platform_cost_center: "ml-platform"
+azure_ml_platform_team: "platform"
+
 # Team Workspace (Spoke) - defaults
 azure_ml_team_name: ""
 azure_ml_team_contact_email: ""
@@ -18,7 +23,7 @@ azure_ml_team_compute_vm_size: "Standard_DS3_v2"
 azure_ml_team_compute_max_nodes: 4
 azure_ml_team_data_access_scope: "restricted"
 
-# Computed variables (set by playbook)
+# Computed variables (evaluated dynamically via Jinja2)
 azure_ml_team_storage_account: "{{ (azure_ml_team_name ~ 'mlstor') | regex_replace('[^a-z0-9]', '') | truncate(24, True, '') }}"
 azure_ml_team_workspace_name: "{{ azure_ml_team_name }}-ml-workspace"
 azure_ml_team_compute_name: "{{ azure_ml_team_name }}-compute"
