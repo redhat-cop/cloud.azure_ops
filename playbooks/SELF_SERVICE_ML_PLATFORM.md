@@ -51,6 +51,9 @@ This reference architecture demonstrates how AAP orchestrates multi-team ML envi
 
 * **operation**: Operation to perform. Valid values: `provision_shared_infrastructure`, `provision_team_workspace`, `delete_team_workspace`, `delete_shared_infrastructure`. Required.
 * **azure_region**: Azure location for resources. Default: `eastus`
+* **azure_ml_platform_environment**: Environment tag for all resources. Default: `production`
+* **azure_ml_platform_cost_center**: Cost center tag for shared infrastructure. Default: `ml-platform`
+* **azure_ml_platform_team**: Team tag for shared infrastructure. Default: `platform`
 
 #### Shared Infrastructure (Hub)
 
@@ -151,7 +154,7 @@ This playbook is designed to be called from AAP workflow templates via self-serv
 4. Generate RBAC instructions for platform admin
 5. Notify team and admin
 
-See `docs/aap_surveys/` for complete survey JSON exports and workflow templates.
+Survey JSON exports and workflow templates can be generated from the field specifications above.
 
 ### Cost Controls
 
@@ -164,7 +167,7 @@ See `docs/aap_surveys/` for complete survey JSON exports and workflow templates.
 #### Auto-Shutdown
 
 - **Compute Cluster:** Scales to zero after 5 minutes idle (`min_instances: 0`)
-- **Cost Allocation:** All resources tagged with `team`, `budget_limit`, `cost_center` for chargeback
+- **Cost Allocation:** All resources tagged with `team`, `cost_center`, `environment`, `budget_limit`, and `provisioned_date` for chargeback and cost tracking
 
 ### Security Best Practices
 
