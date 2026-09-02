@@ -1,0 +1,159 @@
+---
+- name: Test self-service ML platform playbook
+  block:
+    # ── Test 1: Provision Shared Infrastructure ─────────────────────────
+    - name: Test provision shared infrastructure
+      ansible.builtin.include_role:
+        name: cloud.azure_ops
+        tasks_from: playbooks/self_service_ml_platform.yml
+      vars:
+        operation: provision_shared_infrastructure
+
+    - name: Verify shared infrastructure was created
+      block:
+        - name: Check resource group exists
+          azure.azcollection.azure_rm_resourcegroup_info:
+            name: "{{ azure_ml_platform_shared_rg }}"
+          register: _rg_check
+
+        - name: Assert resource group exists
+          ansible.builtin.assert:
+            that:
+              - _rg_check.resourcegroups | length == 1
+            fail_msg: "Shared resource group was not created"
+
+        - name: Check Key Vault exists
+          azure.azcollection.azure_rm_keyvault_info:
+            resource_group: "{{ azure_ml_platform_shared_rg }}"
+            name: "{{ azure_ml_platform_keyvault }}"
+          register: _kv_check
+
+        - name: Assert Key Vault exists with RBAC
+          ansible.builtin.assert:
+            that:
+              - _kv_check.keyvaults | length == 1
+              - _kv_check.keyvaults[0].enable_rbac_authorization == true
+            fail_msg: "Key Vault not created or RBAC not enabled"
+
+        - name: Check ACR exists
+          azure.azcollection.azure_rm_containerregistry_info:
+            resource_group: "{{ azure_ml_platform_shared_rg }}"
+            name: "{{ azure_ml_platform_acr }}"
+          register: _acr_check
+
+        - name: Assert ACR exists with admin disabled
+          ansible.builtin.assert:
+            that:
+              - _acr_check.registries | length == 1
+              - _acr_check.registries[0].admin_user_enabled == false
+            fail_msg: "ACR not created or admin user enabled"
+
+    # ── Test 2: Provision Team Workspace (Team 1) ───────────────────────
+    - name: Test provision team workspace (team 1)
+      ansible.builtin.include_role:
+        name: cloud.azure_ops
+        tasks_from: playbooks/self_service_ml_platform.yml
+      vars:
+        operation: provision_team_workspace
+        azure_ml_team_name: "{{ azure_ml_team_name_1 }}"
+        azure_ml_team_contact_email: "{{ azure_ml_team_contact_email_1 }}"
+        azure_ml_team_budget_limit: "{{ azure_ml_team_budget_limit_1 }}"
+
+    - name: Verify team 1 workspace was created
+      block:
+        - name: Check ML workspace exists
+          azure.azcollection.azure_rm_ml_workspace_info:
+            resource_group: "{{ azure_ml_platform_shared_rg }}"
+            name: "{{ azure_ml_team_name_1 }}-ml-workspace"
+          register: _ws_check
+
+        - name: Assert workspace exists with managed identity
+          ansible.builtin.assert:
+            that:
+              - _ws_check.workspaces | length == 1
+              - _ws_check.workspaces[0].identity.type == "SystemAssigned"
+            fail_msg: "ML workspace not created or missing managed identity"
+
+        - name: Check compute cluster exists
+          azure.azcollection.azure_rm_ml_compute_info:
+            resource_group: "{{ azure_ml_platform_shared_rg }}"
+            ml_workspace: "{{ azure_ml_team_name_1 }}-ml-workspace"
+            name: "{{ azure_ml_team_name_1 }}-compute"
+          register: _compute_check
+
+        - name: Assert compute has scale-to-zero
+          ansible.builtin.assert:
+            that:
+              - _compute_check.computes | length == 1
+              - _compute_check.computes[0].min_instances == 0
+            fail_msg: "Compute cluster missing or not configured for scale-to-zero"
+
+    # ── Test 3: Provision Second Team (Multi-Team Isolation) ────────────
+    - name: Test provision team workspace (team 2)
+      ansible.builtin.include_role:
+        name: cloud.azure_ops
+        tasks_from: playbooks/self_service_ml_platform.yml
+      vars:
+        operation: provision_team_workspace
+        azure_ml_team_name: "{{ azure_ml_team_name_2 }}"
+        azure_ml_team_contact_email: "{{ azure_ml_team_contact_email_2 }}"
+        azure_ml_team_budget_limit: "{{ azure_ml_team_budget_limit_2 }}"
+
+    - name: Verify both teams exist independently
+      block:
+        - name: Check team 2 workspace exists
+          azure.azcollection.azure_rm_ml_workspace_info:
+            resource_group: "{{ azure_ml_platform_shared_rg }}"
+            name: "{{ azure_ml_team_name_2 }}-ml-workspace"
+          register: _ws2_check
+
+        - name: Assert both workspaces exist
+          ansible.builtin.assert:
+            that:
+              - _ws2_check.workspaces | length == 1
+            fail_msg: "Second team workspace not created"
+
+    # ── Test 4: Delete Team Workspace ───────────────────────────────────
+    - name: Test delete team workspace (team 1)
+      ansible.builtin.include_role:
+        name: cloud.azure_ops
+        tasks_from: playbooks/self_service_ml_platform.yml
+      vars:
+        operation: delete_team_workspace
+        azure_ml_team_name: "{{ azure_ml_team_name_1 }}"
+
+    - name: Verify team 1 deleted but team 2 and shared infra remain
+      block:
+        - name: Check team 1 workspace deleted
+          azure.azcollection.azure_rm_ml_workspace_info:
+            resource_group: "{{ azure_ml_platform_shared_rg }}"
+            name: "{{ azure_ml_team_name_1 }}-ml-workspace"
+          register: _ws1_deleted
+          failed_when: false
+
+        - name: Assert team 1 workspace is gone
+          ansible.builtin.assert:
+            that:
+              - _ws1_deleted.workspaces | length == 0
+            fail_msg: "Team 1 workspace still exists after deletion"
+
+        - name: Check team 2 workspace still exists
+          azure.azcollection.azure_rm_ml_workspace_info:
+            resource_group: "{{ azure_ml_platform_shared_rg }}"
+            name: "{{ azure_ml_team_name_2 }}-ml-workspace"
+          register: _ws2_still_exists
+
+        - name: Assert team 2 unaffected
+          ansible.builtin.assert:
+            that:
+              - _ws2_still_exists.workspaces | length == 1
+            fail_msg: "Team 2 workspace was incorrectly deleted"
+
+  always:
+    # ── Cleanup ─────────────────────────────────────────────────────────
+    - name: Delete all test resources
+      ansible.builtin.include_role:
+        name: cloud.azure_ops
+        tasks_from: playbooks/self_service_ml_platform.yml
+      vars:
+        operation: delete_shared_infrastructure

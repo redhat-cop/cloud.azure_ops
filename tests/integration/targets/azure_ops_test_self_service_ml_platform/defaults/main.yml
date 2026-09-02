@@ -1,0 +1,20 @@
+---
+resource_group: "ansible-test-ml-{{ 999999999999999999999 | random }}"
+azure_region: "eastus"
+
+# Shared infrastructure
+azure_ml_platform_shared_rg: "{{ resource_group }}"
+azure_ml_platform_keyvault: "mltest{{ 999999 | random }}"
+azure_ml_platform_acr: "mltest{{ 999999 | random }}acr"
+azure_ml_platform_appinsights: "ml-test-insights"
+azure_ml_platform_admin_email: "admin@example.com"
+
+# Team 1
+azure_ml_team_name_1: "team-test-alpha"
+azure_ml_team_contact_email_1: "team-alpha@example.com"
+azure_ml_team_budget_limit_1: 2500
+
+# Team 2
+azure_ml_team_name_2: "team-test-beta"
+azure_ml_team_contact_email_2: "team-beta@example.com"
+azure_ml_team_budget_limit_2: 5000
