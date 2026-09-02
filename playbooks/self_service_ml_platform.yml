@@ -245,6 +245,80 @@
               image: mcr.microsoft.com/azureml/curated/sklearn-1.5-ubuntu22.04
               description: Base environment with scikit-learn, pandas, numpy
 
+        # ── Phase 9: Budget Alerts ──────────────────────────────────────
+        - name: Create budget alert action group
+          azure.azcollection.azure_rm_resource:
+            resource_group: "{{ azure_ml_platform_shared_rg }}"
+            provider: insights
+            resource_type: actionGroups
+            resource_name: "{{ azure_ml_team_name }}-budget-alerts"
+            api_version: "2023-01-01"
+            idempotency: true
+            body:
+              location: global
+              properties:
+                groupShortName: "{{ azure_ml_team_name[:12] }}"
+                enabled: true
+                emailReceivers:
+                  - name: "TeamContact"
+                    emailAddress: "{{ azure_ml_team_contact_email }}"
+                    useCommonAlertSchema: true
+                  - name: "PlatformAdmin"
+                    emailAddress: "{{ azure_ml_platform_admin_email }}"
+                    useCommonAlertSchema: true
+              tags:
+                team: "{{ azure_ml_team_name }}"
+                cost_center: "ml-platform"
+
+        - name: Get current date for budget period
+          ansible.builtin.set_fact:
+            _budget_start_date: "{{ lookup('pipe', 'date +%Y-%m-01') }}"
+
+        - name: Create monthly budget with alerts at 50%, 80%, 100%
+          azure.azcollection.azure_rm_resource:
+            resource_group: "{{ azure_ml_platform_shared_rg }}"
+            provider: Microsoft.Consumption
+            resource_type: budgets
+            resource_name: "{{ azure_ml_team_name }}-monthly-budget"
+            api_version: "2023-11-01"
+            idempotency: true
+            body:
+              properties:
+                category: Cost
+                amount: "{{ azure_ml_team_budget_limit }}"
+                timeGrain: Monthly
+                timePeriod:
+                  startDate: "{{ _budget_start_date }}"
+                filter:
+                  tags:
+                    name: team
+                    values:
+                      - "{{ azure_ml_team_name }}"
+                notifications:
+                  Actual_50_Percent:
+                    enabled: true
+                    operator: GreaterThan
+                    threshold: 50
+                    thresholdType: Actual
+                    contactEmails:
+                      - "{{ azure_ml_team_contact_email }}"
+                  Actual_80_Percent:
+                    enabled: true
+                    operator: GreaterThan
+                    threshold: 80
+                    thresholdType: Actual
+                    contactEmails:
+                      - "{{ azure_ml_team_contact_email }}"
+                      - "{{ azure_ml_platform_admin_email }}"
+                  Actual_100_Percent:
+                    enabled: true
+                    operator: GreaterThan
+                    threshold: 100
+                    thresholdType: Actual
+                    contactEmails:
+                      - "{{ azure_ml_team_contact_email }}"
+                      - "{{ azure_ml_platform_admin_email }}"
+
         # ── Output ──────────────────────────────────────────────────────
         - name: Display team workspace details
           ansible.builtin.debug:
@@ -255,8 +329,13 @@
               - "  Storage Account: {{ azure_ml_team_storage_account }}"
               - "  Compute Cluster: {{ azure_ml_team_compute_name }} ({{ azure_ml_team_compute_vm_size }}, 0-{{ azure_ml_team_compute_max_nodes }} nodes)"
               - "  Budget Limit: ${{ azure_ml_team_budget_limit }}/month"
+              - "  Budget Alerts: 50%, 80%, 100% thresholds configured"
+              - ""
+              - "Cost controls:"
+              - "  - Budget alerts sent to {{ azure_ml_team_contact_email }}"
+              - "  - All resources tagged with team={{ azure_ml_team_name }}"
+              - "  - Compute scales to zero after 5 minutes idle"
               - ""
               - "Next steps:"
               - "  1. Platform admin must assign team members AzureML Data Scientist role"
               - "  2. Team can access workspace at https://ml.azure.com"
-              - "  3. Configure budget alerts (see AAP workflow or run manually)"
