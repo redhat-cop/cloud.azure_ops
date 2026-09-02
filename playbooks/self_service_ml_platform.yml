@@ -269,6 +269,7 @@
               tags:
                 team: "{{ azure_ml_team_name }}"
                 cost_center: "ml-platform"
+                environment: "{{ azure_ml_platform_environment }}"
 
         - name: Get current date for budget period
           ansible.builtin.set_fact:
@@ -318,6 +319,10 @@
                     contactEmails:
                       - "{{ azure_ml_team_contact_email }}"
                       - "{{ azure_ml_platform_admin_email }}"
+              tags:
+                team: "{{ azure_ml_team_name }}"
+                cost_center: "ml-platform"
+                environment: "{{ azure_ml_platform_environment }}"
 
         # ── Output ──────────────────────────────────────────────────────
         - name: Display team workspace details
