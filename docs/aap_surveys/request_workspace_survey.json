@@ -1,0 +1,78 @@
+{
+  "name": "Request ML Workspace",
+  "description": "Self-service provisioning of isolated ML workspace for your team",
+  "spec": [
+    {
+      "question_name": "Team Name",
+      "question_description": "Team name (lowercase, alphanumeric, hyphens only, 3-20 chars). Example: datascience-alpha",
+      "required": true,
+      "type": "text",
+      "variable": "azure_ml_team_name",
+      "min": 3,
+      "max": 20,
+      "default": "",
+      "choices": "",
+      "new_question": true
+    },
+    {
+      "question_name": "Team Contact Email",
+      "question_description": "Team contact email for budget alerts",
+      "required": true,
+      "type": "text",
+      "variable": "azure_ml_team_contact_email",
+      "min": null,
+      "max": null,
+      "default": "",
+      "choices": "",
+      "new_question": true
+    },
+    {
+      "question_name": "Monthly Budget Limit",
+      "question_description": "Monthly budget limit (USD)",
+      "required": true,
+      "type": "multiplechoice",
+      "variable": "azure_ml_team_budget_limit",
+      "min": null,
+      "max": null,
+      "default": "2500",
+      "choices": "1000\n2500\n5000\n10000",
+      "new_question": true
+    },
+    {
+      "question_name": "Compute VM Size",
+      "question_description": "Primary compute VM size",
+      "required": true,
+      "type": "multiplechoice",
+      "variable": "azure_ml_team_compute_vm_size",
+      "min": null,
+      "max": null,
+      "default": "Standard_DS3_v2",
+      "choices": "Standard_DS3_v2\nStandard_DS4_v2\nStandard_NC6s_v3\nStandard_NC12s_v3",
+      "new_question": true
+    },
+    {
+      "question_name": "Maximum Compute Nodes",
+      "question_description": "Maximum compute cluster nodes",
+      "required": true,
+      "type": "multiplechoice",
+      "variable": "azure_ml_team_compute_max_nodes",
+      "min": null,
+      "max": null,
+      "default": "4",
+      "choices": "2\n4\n8\n16",
+      "new_question": true
+    },
+    {
+      "question_name": "Data Access Scope",
+      "question_description": "Data access requirements",
+      "required": true,
+      "type": "multiplechoice",
+      "variable": "azure_ml_team_data_access_scope",
+      "min": null,
+      "max": null,
+      "default": "restricted",
+      "choices": "restricted\nshared\nexternal",
+      "new_question": true
+    }
+  ]
+}
