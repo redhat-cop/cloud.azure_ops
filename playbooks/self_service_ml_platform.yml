@@ -122,8 +122,7 @@
           ansible.builtin.set_fact:
             _subscription_id: "{{ _sub_info.subscriptions[0].subscription_id }}"
             _tenant_id: "{{ _sub_info.subscriptions[0].tenant_id }}"
-            _arm_prefix_shared: "/subscriptions/{{ _sub_info.subscriptions[0].subscription_id }}/resourceGroups/{{ azure_ml_platform_shared_rg }}/providers"
-            _arm_prefix_team: "/subscriptions/{{ _sub_info.subscriptions[0].subscription_id }}/resourceGroups/{{ azure_ml_platform_shared_rg }}/providers"
+            _arm_prefix: "/subscriptions/{{ _sub_info.subscriptions[0].subscription_id }}/resourceGroups/{{ azure_ml_platform_shared_rg }}/providers"
 
         # ── Phase 2: Verify Shared Infrastructure Exists ────────────────
         - name: Check if shared Key Vault exists
@@ -163,11 +162,13 @@
             name: "{{ azure_ml_team_workspace_name }}"
             location: "{{ azure_region }}"
             display_name: "{{ azure_ml_team_name | title }} ML Workspace"
-            storage_account: "{{ _arm_prefix_team }}/Microsoft.Storage/storageAccounts/{{ azure_ml_team_storage_account }}"
-            key_vault: "{{ _arm_prefix_shared }}/Microsoft.KeyVault/vaults/{{ azure_ml_platform_keyvault }}"
-            application_insights: "{{ _arm_prefix_shared }}/Microsoft.Insights/components/{{ azure_ml_platform_appinsights }}"
-            container_registry: "{{ _arm_prefix_shared }}/Microsoft.ContainerRegistry/registries/{{ azure_ml_platform_acr }}"
+            storage_account: "{{ _arm_prefix }}/Microsoft.Storage/storageAccounts/{{ azure_ml_team_storage_account }}"
+            key_vault: "{{ _arm_prefix }}/Microsoft.KeyVault/vaults/{{ azure_ml_platform_keyvault }}"
+            application_insights: "{{ _arm_prefix }}/Microsoft.Insights/components/{{ azure_ml_platform_appinsights }}"
+            container_registry: "{{ _arm_prefix }}/Microsoft.ContainerRegistry/registries/{{ azure_ml_platform_acr }}"
             public_network_access: Enabled
+            identity:
+              type: SystemAssigned
             tags:
               team: "{{ azure_ml_team_name }}"
               budget_limit: "{{ azure_ml_team_budget_limit }}"
@@ -183,19 +184,19 @@
         # ── Phase 5: RBAC for Workspace Managed Identity ────────────────
         - name: Grant workspace identity AcrPull on shared ACR
           azure.azcollection.azure_rm_roleassignment:
-            scope: "{{ _arm_prefix_shared }}/Microsoft.ContainerRegistry/registries/{{ azure_ml_platform_acr }}"
+            scope: "{{ _arm_prefix }}/Microsoft.ContainerRegistry/registries/{{ azure_ml_platform_acr }}"
             assignee_object_id: "{{ _workspace_identity_principal_id }}"
             role_definition: "AcrPull"
 
         - name: Grant workspace identity Key Vault Secrets User
           azure.azcollection.azure_rm_roleassignment:
-            scope: "{{ _arm_prefix_shared }}/Microsoft.KeyVault/vaults/{{ azure_ml_platform_keyvault }}"
+            scope: "{{ _arm_prefix }}/Microsoft.KeyVault/vaults/{{ azure_ml_platform_keyvault }}"
             assignee_object_id: "{{ _workspace_identity_principal_id }}"
             role_definition: "Key Vault Secrets User"
 
         - name: Grant workspace identity Storage Blob Data Contributor on team storage
           azure.azcollection.azure_rm_roleassignment:
-            scope: "{{ _arm_prefix_team }}/Microsoft.Storage/storageAccounts/{{ azure_ml_team_storage_account }}"
+            scope: "{{ _arm_prefix }}/Microsoft.Storage/storageAccounts/{{ azure_ml_team_storage_account }}"
             assignee_object_id: "{{ _workspace_identity_principal_id }}"
             role_definition: "Storage Blob Data Contributor"
 
@@ -213,11 +214,12 @@
             idle_time_before_scale_down: 300
 
         # ── Phase 7: Datastore ──────────────────────────────────────────
-        - name: Retrieve team storage account info
-          azure.azcollection.azure_rm_storageaccount_info:
+        - name: Create datasets blob container in team storage account
+          azure.azcollection.azure_rm_storageblob:
             resource_group: "{{ azure_ml_platform_shared_rg }}"
-            name: "{{ azure_ml_team_storage_account }}"
-          register: _team_storage_info
+            storage_account_name: "{{ azure_ml_team_storage_account }}"
+            container: datasets
+            state: present
 
         - name: Register blob datastore in team workspace
           azure.azcollection.azure_rm_ml_datastore:
