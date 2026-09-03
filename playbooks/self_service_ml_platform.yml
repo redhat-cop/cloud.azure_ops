@@ -153,7 +153,7 @@
               budget_limit: "{{ azure_ml_team_budget_limit }}"
               cost_center: "ml-platform"
               environment: "production"
-              provisioned_date: "{{ ansible_date_time.iso8601 }}"
+              provisioned_date: "{{ lookup('pipe', 'date -u +%Y-%m-%dT%H:%M:%SZ') }}"
 
         # ── Phase 4: ML Workspace ───────────────────────────────────────
         - name: Create team ML workspace
@@ -174,12 +174,12 @@
               budget_limit: "{{ azure_ml_team_budget_limit }}"
               cost_center: "ml-platform"
               environment: "production"
-              provisioned_date: "{{ ansible_date_time.iso8601 }}"
+              provisioned_date: "{{ lookup('pipe', 'date -u +%Y-%m-%dT%H:%M:%SZ') }}"
           register: _workspace_result
 
         - name: Get workspace managed identity
           ansible.builtin.set_fact:
-            _workspace_identity_principal_id: "{{ _workspace_result.workspaces[0].identity.principal_id }}"
+            _workspace_identity_principal_id: "{{ _workspace_result.ml_workspace.identity.principal_id }}"
 
         # ── Phase 5: RBAC for Workspace Managed Identity ────────────────
         - name: Grant workspace identity AcrPull on shared ACR
