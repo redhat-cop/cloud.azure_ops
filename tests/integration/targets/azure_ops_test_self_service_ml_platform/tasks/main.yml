@@ -5,7 +5,7 @@
     - name: Test provision shared infrastructure
       ansible.builtin.command:
         cmd: >
-          ansible-playbook playbooks/self_service_ml_platform.yml
+          ansible-playbook cloud.azure_ops.self_service_ml_platform
           -e operation=provision_shared_infrastructure
           -e azure_ml_platform_shared_rg="{{ test_resource_group }}"
           -e azure_ml_platform_keyvault="{{ test_keyvault }}"
@@ -57,7 +57,7 @@
     - name: Test provision team workspace (team 1)
       ansible.builtin.command:
         cmd: >
-          ansible-playbook playbooks/self_service_ml_platform.yml
+          ansible-playbook cloud.azure_ops.self_service_ml_platform
           -e operation=provision_team_workspace
           -e azure_ml_platform_shared_rg="{{ test_resource_group }}"
           -e azure_ml_platform_keyvault="{{ test_keyvault }}"
@@ -102,7 +102,7 @@
     - name: Test provision team workspace (team 2)
       ansible.builtin.command:
         cmd: >
-          ansible-playbook playbooks/self_service_ml_platform.yml
+          ansible-playbook cloud.azure_ops.self_service_ml_platform
           -e operation=provision_team_workspace
           -e azure_ml_platform_shared_rg="{{ test_resource_group }}"
           -e azure_ml_platform_keyvault="{{ test_keyvault }}"
@@ -132,7 +132,7 @@
     - name: Test delete team workspace (team 1)
       ansible.builtin.command:
         cmd: >
-          ansible-playbook playbooks/self_service_ml_platform.yml
+          ansible-playbook cloud.azure_ops.self_service_ml_platform
           -e operation=delete_team_workspace
           -e azure_ml_platform_shared_rg="{{ test_resource_group }}"
           -e azure_ml_team_name="{{ azure_ml_team_name_1 }}"
@@ -170,7 +170,7 @@
     - name: Delete all test resources
       ansible.builtin.command:
         cmd: >
-          ansible-playbook playbooks/self_service_ml_platform.yml
+          ansible-playbook cloud.azure_ops.self_service_ml_platform
           -e operation=delete_shared_infrastructure
           -e azure_ml_platform_shared_rg="{{ test_resource_group }}"
       delegate_to: localhost
