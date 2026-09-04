@@ -7,10 +7,10 @@
         cmd: >
           ansible-playbook cloud.azure_ops.self_service_ml_platform
           -e operation=provision_shared_infrastructure
-          -e azure_ml_platform_shared_rg="{{ test_resource_group }}"
-          -e azure_ml_platform_keyvault="{{ test_keyvault }}"
-          -e azure_ml_platform_acr="{{ test_acr }}"
-          -e azure_ml_platform_appinsights="{{ test_appinsights }}"
+          -e azure_ml_platform_shared_rg="{{ azure_ml_platform_shared_rg }}"
+          -e azure_ml_platform_keyvault="{{ azure_ml_platform_keyvault }}"
+          -e azure_ml_platform_acr="{{ azure_ml_platform_acr }}"
+          -e azure_ml_platform_appinsights="{{ azure_ml_platform_appinsights }}"
           -e azure_region="{{ azure_region }}"
       delegate_to: localhost
 
@@ -59,10 +59,10 @@
         cmd: >
           ansible-playbook cloud.azure_ops.self_service_ml_platform
           -e operation=provision_team_workspace
-          -e azure_ml_platform_shared_rg="{{ test_resource_group }}"
-          -e azure_ml_platform_keyvault="{{ test_keyvault }}"
-          -e azure_ml_platform_acr="{{ test_acr }}"
-          -e azure_ml_platform_appinsights="{{ test_appinsights }}"
+          -e azure_ml_platform_shared_rg="{{ azure_ml_platform_shared_rg }}"
+          -e azure_ml_platform_keyvault="{{ azure_ml_platform_keyvault }}"
+          -e azure_ml_platform_acr="{{ azure_ml_platform_acr }}"
+          -e azure_ml_platform_appinsights="{{ azure_ml_platform_appinsights }}"
           -e azure_region="{{ azure_region }}"
           -e azure_ml_team_name="{{ azure_ml_team_name_1 }}"
           -e azure_ml_team_contact_email="{{ azure_ml_team_contact_email_1 }}"
@@ -104,10 +104,10 @@
         cmd: >
           ansible-playbook cloud.azure_ops.self_service_ml_platform
           -e operation=provision_team_workspace
-          -e azure_ml_platform_shared_rg="{{ test_resource_group }}"
-          -e azure_ml_platform_keyvault="{{ test_keyvault }}"
-          -e azure_ml_platform_acr="{{ test_acr }}"
-          -e azure_ml_platform_appinsights="{{ test_appinsights }}"
+          -e azure_ml_platform_shared_rg="{{ azure_ml_platform_shared_rg }}"
+          -e azure_ml_platform_keyvault="{{ azure_ml_platform_keyvault }}"
+          -e azure_ml_platform_acr="{{ azure_ml_platform_acr }}"
+          -e azure_ml_platform_appinsights="{{ azure_ml_platform_appinsights }}"
           -e azure_region="{{ azure_region }}"
           -e azure_ml_team_name="{{ azure_ml_team_name_2 }}"
           -e azure_ml_team_contact_email="{{ azure_ml_team_contact_email_2 }}"
@@ -134,7 +134,7 @@
         cmd: >
           ansible-playbook cloud.azure_ops.self_service_ml_platform
           -e operation=delete_team_workspace
-          -e azure_ml_platform_shared_rg="{{ test_resource_group }}"
+          -e azure_ml_platform_shared_rg="{{ azure_ml_platform_shared_rg }}"
           -e azure_ml_team_name="{{ azure_ml_team_name_1 }}"
       delegate_to: localhost
 
@@ -172,5 +172,5 @@
         cmd: >
           ansible-playbook cloud.azure_ops.self_service_ml_platform
           -e operation=delete_shared_infrastructure
-          -e azure_ml_platform_shared_rg="{{ test_resource_group }}"
+          -e azure_ml_platform_shared_rg="{{ azure_ml_platform_shared_rg }}"
       delegate_to: localhost
