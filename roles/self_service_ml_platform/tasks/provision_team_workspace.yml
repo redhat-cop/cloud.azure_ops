@@ -47,7 +47,7 @@
     azure_manage_storage_account_region: "{{ azure_region }}"
     azure_manage_storage_account_tags:
       team: "{{ azure_ml_team_name }}"
-      budget_limit: "{{ azure_ml_team_budget_limit }}"
+      budget_limit: "{{ azure_ml_team_budget_limit | string }}"
       cost_center: "ml-platform"
       environment: "production"
       provisioned_date: "{{ lookup('pipe', 'date -u +%Y-%m-%dT%H:%M:%SZ') }}"
@@ -68,7 +68,7 @@
       type: SystemAssigned
     tags:
       team: "{{ azure_ml_team_name }}"
-      budget_limit: "{{ azure_ml_team_budget_limit }}"
+      budget_limit: "{{ azure_ml_team_budget_limit | string }}"
       cost_center: "ml-platform"
       environment: "production"
       provisioned_date: "{{ lookup('pipe', 'date -u +%Y-%m-%dT%H:%M:%SZ') }}"
