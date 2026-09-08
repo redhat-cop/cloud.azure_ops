@@ -14,7 +14,7 @@
     resource_name: "{{ azure_ml_team_name }}-monthly-budget"
     api_version: "2023-11-01"
     state: absent
-  ignore_errors: true
+  failed_when: false
 
 - name: Delete budget alert action group
   azure.azcollection.azure_rm_resource:
@@ -24,7 +24,7 @@
     resource_name: "{{ azure_ml_team_name }}-budget-alerts"
     api_version: "2023-01-01"
     state: absent
-  ignore_errors: true
+  failed_when: false
 
 # ── Phase 2: Delete Compute Cluster ─────────────────────────────
 - name: Delete compute cluster
@@ -33,7 +33,7 @@
     ml_workspace: "{{ azure_ml_team_workspace_name }}"
     name: "{{ azure_ml_team_compute_name }}"
     state: absent
-  ignore_errors: true
+  failed_when: false
 
 # ── Phase 3: Delete ML Workspace ────────────────────────────────
 - name: Delete ML workspace
@@ -41,7 +41,7 @@
     resource_group: "{{ azure_ml_platform_shared_rg }}"
     name: "{{ azure_ml_team_workspace_name }}"
     state: absent
-  ignore_errors: true
+  failed_when: false
 
 # ── Phase 4: Delete Storage Account ─────────────────────────────
 - name: Delete team storage account

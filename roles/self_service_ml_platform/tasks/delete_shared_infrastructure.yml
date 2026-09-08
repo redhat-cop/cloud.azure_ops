@@ -5,7 +5,7 @@
     resource_group: "{{ azure_ml_platform_shared_rg }}"
     name: "{{ azure_ml_platform_acr }}"
     state: absent
-  ignore_errors: true
+  failed_when: false
 
 # ── Phase 2: Delete Application Insights ────────────────────────
 - name: Delete Application Insights
@@ -16,7 +16,7 @@
     resource_name: "{{ azure_ml_platform_appinsights }}"
     api_version: "2020-02-02"
     state: absent
-  ignore_errors: true
+  failed_when: false
 
 # ── Phase 3: Delete Key Vault ───────────────────────────────────
 - name: Delete Key Vault
@@ -24,7 +24,7 @@
     resource_group: "{{ azure_ml_platform_shared_rg }}"
     vault_name: "{{ azure_ml_platform_keyvault }}"
     state: absent
-  ignore_errors: true
+  failed_when: false
 
 # ── Phase 4: Delete Resource Group ──────────────────────────────
 - name: Delete shared resource group
