@@ -81,19 +81,19 @@
   azure.azcollection.azure_rm_roleassignment:
     scope: "{{ _arm_prefix }}/Microsoft.ContainerRegistry/registries/{{ azure_ml_platform_acr }}"
     assignee_object_id: "{{ _workspace_identity_principal_id }}"
-    role_definition_id: "AcrPull"
+    role_definition_id: "/subscriptions/{{ _subscription_id }}/providers/Microsoft.Authorization/roleDefinitions/7f951dda-4ed3-4680-a7ca-43fe172d538d"
 
 - name: Grant workspace identity Key Vault Secrets User
   azure.azcollection.azure_rm_roleassignment:
     scope: "{{ _arm_prefix }}/Microsoft.KeyVault/vaults/{{ azure_ml_platform_keyvault }}"
     assignee_object_id: "{{ _workspace_identity_principal_id }}"
-    role_definition_id: "Key Vault Secrets User"
+    role_definition_id: "/subscriptions/{{ _subscription_id }}/providers/Microsoft.Authorization/roleDefinitions/4633458b-17de-408a-b874-0445c86b69e6"
 
 - name: Grant workspace identity Storage Blob Data Contributor on team storage
   azure.azcollection.azure_rm_roleassignment:
     scope: "{{ _arm_prefix }}/Microsoft.Storage/storageAccounts/{{ azure_ml_team_storage_account }}"
     assignee_object_id: "{{ _workspace_identity_principal_id }}"
-    role_definition_id: "Storage Blob Data Contributor"
+    role_definition_id: "/subscriptions/{{ _subscription_id }}/providers/Microsoft.Authorization/roleDefinitions/ba92f5b4-2d11-453d-a403-e96b0029c9fe"
 
 # ── Phase 6: Compute Cluster ────────────────────────────────────
 - name: Create compute cluster in team workspace
