@@ -37,6 +37,7 @@ Name | Description
 [cloud.azure_ops.vmss_migrate](https://github.com/redhat-cop/cloud.azure_ops/blob/main/playbooks/VMSS_MIGRATE.md)|A playbook to migrate virtual machines of a web application from one azure region to another region.
 [cloud.azure_ops.validate_deployment](https://github.com/redhat-cop/cloud.azure_ops/blob/main/playbooks/VALIDATE_DEPLOYMENT.md)|A playbook to validate successful deployment of web application URL.
 [cloud.azure_ops.mlops_lifecycle](https://github.com/redhat-cop/cloud.azure_ops/blob/main/playbooks/MLOPS_LIFECYCLE.md)|A playbook to automate the full MLOps lifecycle on Azure, including workspace provisioning, model training, registry-based cross-workspace sharing, and blue/green deployment.
+[cloud.azure_ops.self_service_ml_platform](https://github.com/redhat-cop/cloud.azure_ops/blob/main/playbooks/SELF_SERVICE_ML_PLATFORM.md)|A playbook to enable self-service ML workspace provisioning through AAP with hub-and-spoke architecture, cost controls, and multi-team isolation.
 <!--end collection content-->
 
 ## Installation and Usage

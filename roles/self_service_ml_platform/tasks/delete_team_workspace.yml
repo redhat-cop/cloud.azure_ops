@@ -1,0 +1,64 @@
+---
+- name: Validate required team variables for deletion
+  ansible.builtin.assert:
+    that:
+      - azure_ml_team_name is defined
+    fail_msg: "Team name required for deletion"
+
+# ── Phase 1: Delete Budget and Alerts ───────────────────────────
+- name: Delete budget
+  azure.azcollection.azure_rm_resource:
+    resource_group: "{{ azure_ml_platform_shared_rg }}"
+    provider: Consumption
+    resource_type: budgets
+    resource_name: "{{ azure_ml_team_name }}-monthly-budget"
+    api_version: "2023-11-01"
+    state: absent
+  failed_when: false
+
+- name: Delete budget alert action group
+  azure.azcollection.azure_rm_resource:
+    resource_group: "{{ azure_ml_platform_shared_rg }}"
+    provider: insights
+    resource_type: actionGroups
+    resource_name: "{{ azure_ml_team_name }}-budget-alerts"
+    api_version: "2023-01-01"
+    state: absent
+  failed_when: false
+
+# ── Phase 2: Delete Compute Cluster ─────────────────────────────
+- name: Delete compute cluster
+  azure.azcollection.azure_rm_ml_compute:
+    resource_group: "{{ azure_ml_platform_shared_rg }}"
+    ml_workspace: "{{ azure_ml_team_workspace_name }}"
+    name: "{{ azure_ml_team_compute_name }}"
+    state: absent
+  failed_when: false
+
+# ── Phase 3: Delete ML Workspace ────────────────────────────────
+- name: Delete ML workspace
+  azure.azcollection.azure_rm_ml_workspace:
+    resource_group: "{{ azure_ml_platform_shared_rg }}"
+    name: "{{ azure_ml_team_workspace_name }}"
+    state: absent
+  failed_when: false
+
+# ── Phase 4: Delete Storage Account ─────────────────────────────
+- name: Delete team storage account
+  ansible.builtin.include_role:
+    name: cloud.azure_ops.azure_manage_storage_account
+  vars:
+    azure_manage_storage_account_operation: delete
+    azure_manage_storage_account_name: "{{ azure_ml_team_storage_account }}"
+    azure_manage_storage_account_resource_group: "{{ azure_ml_platform_shared_rg }}"
+
+# ── Output ──────────────────────────────────────────────────────
+- name: Display deletion confirmation
+  ansible.builtin.debug:
+    msg:
+      - "Team workspace deleted successfully:"
+      - "  Team: {{ azure_ml_team_name }}"
+      - "  Workspace: {{ azure_ml_team_workspace_name }}"
+      - "  Storage: {{ azure_ml_team_storage_account }}"
+      - ""
+      - "Shared infrastructure (Key Vault, ACR, App Insights) remains available for other teams."

@@ -1,0 +1,66 @@
+{
+  "name": "ML Platform - Shared Infrastructure Setup",
+  "description": "One-time setup of shared ML platform resources (Key Vault, ACR, App Insights)",
+  "spec": [
+    {
+      "question_name": "Azure Region",
+      "question_description": "Azure region for shared resources",
+      "required": true,
+      "type": "multiplechoice",
+      "variable": "azure_region",
+      "min": null,
+      "max": null,
+      "default": "eastus",
+      "choices": "eastus\nwestus2\nwesteurope\ncentralus",
+      "new_question": true
+    },
+    {
+      "question_name": "Resource Group Name",
+      "question_description": "Resource group name for shared infrastructure",
+      "required": true,
+      "type": "text",
+      "variable": "azure_ml_platform_shared_rg",
+      "min": 3,
+      "max": 64,
+      "default": "ml-platform-shared",
+      "choices": "",
+      "new_question": true
+    },
+    {
+      "question_name": "Key Vault Name",
+      "question_description": "Key Vault name (globally unique, 3-24 chars, alphanumeric and hyphens)",
+      "required": true,
+      "type": "text",
+      "variable": "azure_ml_platform_keyvault",
+      "min": 3,
+      "max": 24,
+      "default": "",
+      "choices": "",
+      "new_question": true
+    },
+    {
+      "question_name": "Container Registry Name",
+      "question_description": "Container Registry name (globally unique, 5-50 chars, alphanumeric only)",
+      "required": true,
+      "type": "text",
+      "variable": "azure_ml_platform_acr",
+      "min": 5,
+      "max": 50,
+      "default": "",
+      "choices": "",
+      "new_question": true
+    },
+    {
+      "question_name": "Platform Admin Email",
+      "question_description": "Platform admin email for alerts",
+      "required": true,
+      "type": "text",
+      "variable": "azure_ml_platform_admin_email",
+      "min": null,
+      "max": null,
+      "default": "",
+      "choices": "",
+      "new_question": true
+    }
+  ]
+}

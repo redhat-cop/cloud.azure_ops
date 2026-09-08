@@ -1,0 +1,7 @@
+---
+- name: Self-service ML platform automation with Azure Machine Learning
+  hosts: localhost
+  gather_facts: false
+
+  roles:
+    - role: self_service_ml_platform

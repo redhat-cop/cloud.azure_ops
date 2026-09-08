@@ -2,3 +2,6 @@ profile: shared
 
 exclude_paths:
   - tests/integration/
+
+skip_list:
+  - var-naming[no-role-prefix]  # Variables are designed to be set by playbook users
