@@ -1,18 +1,17 @@
 ---
-- name: Test self-service ML platform playbook
+- name: Test self-service ML platform role
   block:
     # ── Test 1: Provision Shared Infrastructure ─────────────────────────
     - name: Test provision shared infrastructure
-      ansible.builtin.command:
-        cmd: >
-          ansible-playbook cloud.azure_ops.self_service_ml_platform
-          -e operation=provision_shared_infrastructure
-          -e azure_ml_platform_shared_rg="{{ azure_ml_platform_shared_rg }}"
-          -e azure_ml_platform_keyvault="{{ azure_ml_platform_keyvault }}"
-          -e azure_ml_platform_acr="{{ azure_ml_platform_acr }}"
-          -e azure_ml_platform_appinsights="{{ azure_ml_platform_appinsights }}"
-          -e azure_region="{{ azure_region }}"
-      delegate_to: localhost
+      ansible.builtin.include_role:
+        name: self_service_ml_platform
+      vars:
+        operation: provision_shared_infrastructure
+        azure_ml_platform_shared_rg: "{{ azure_ml_platform_shared_rg }}"
+        azure_ml_platform_keyvault: "{{ azure_ml_platform_keyvault }}"
+        azure_ml_platform_acr: "{{ azure_ml_platform_acr }}"
+        azure_ml_platform_appinsights: "{{ azure_ml_platform_appinsights }}"
+        azure_region: "{{ azure_region }}"
 
     - name: Verify shared infrastructure was created
       block:
@@ -55,19 +54,18 @@
 
     # ── Test 2: Provision Team Workspace (Team 1) ───────────────────────
     - name: Test provision team workspace (team 1)
-      ansible.builtin.command:
-        cmd: >
-          ansible-playbook cloud.azure_ops.self_service_ml_platform
-          -e operation=provision_team_workspace
-          -e azure_ml_platform_shared_rg="{{ azure_ml_platform_shared_rg }}"
-          -e azure_ml_platform_keyvault="{{ azure_ml_platform_keyvault }}"
-          -e azure_ml_platform_acr="{{ azure_ml_platform_acr }}"
-          -e azure_ml_platform_appinsights="{{ azure_ml_platform_appinsights }}"
-          -e azure_region="{{ azure_region }}"
-          -e azure_ml_team_name="{{ azure_ml_team_name_1 }}"
-          -e azure_ml_team_contact_email="{{ azure_ml_team_contact_email_1 }}"
-          -e azure_ml_team_budget_limit="{{ azure_ml_team_budget_limit_1 }}"
-      delegate_to: localhost
+      ansible.builtin.include_role:
+        name: self_service_ml_platform
+      vars:
+        operation: provision_team_workspace
+        azure_ml_platform_shared_rg: "{{ azure_ml_platform_shared_rg }}"
+        azure_ml_platform_keyvault: "{{ azure_ml_platform_keyvault }}"
+        azure_ml_platform_acr: "{{ azure_ml_platform_acr }}"
+        azure_ml_platform_appinsights: "{{ azure_ml_platform_appinsights }}"
+        azure_region: "{{ azure_region }}"
+        azure_ml_team_name: "{{ azure_ml_team_name_1 }}"
+        azure_ml_team_contact_email: "{{ azure_ml_team_contact_email_1 }}"
+        azure_ml_team_budget_limit: "{{ azure_ml_team_budget_limit_1 }}"
 
     - name: Verify team 1 workspace was created
       block:
@@ -100,19 +98,18 @@
 
     # ── Test 3: Provision Second Team (Multi-Team Isolation) ────────────
     - name: Test provision team workspace (team 2)
-      ansible.builtin.command:
-        cmd: >
-          ansible-playbook cloud.azure_ops.self_service_ml_platform
-          -e operation=provision_team_workspace
-          -e azure_ml_platform_shared_rg="{{ azure_ml_platform_shared_rg }}"
-          -e azure_ml_platform_keyvault="{{ azure_ml_platform_keyvault }}"
-          -e azure_ml_platform_acr="{{ azure_ml_platform_acr }}"
-          -e azure_ml_platform_appinsights="{{ azure_ml_platform_appinsights }}"
-          -e azure_region="{{ azure_region }}"
-          -e azure_ml_team_name="{{ azure_ml_team_name_2 }}"
-          -e azure_ml_team_contact_email="{{ azure_ml_team_contact_email_2 }}"
-          -e azure_ml_team_budget_limit="{{ azure_ml_team_budget_limit_2 }}"
-      delegate_to: localhost
+      ansible.builtin.include_role:
+        name: self_service_ml_platform
+      vars:
+        operation: provision_team_workspace
+        azure_ml_platform_shared_rg: "{{ azure_ml_platform_shared_rg }}"
+        azure_ml_platform_keyvault: "{{ azure_ml_platform_keyvault }}"
+        azure_ml_platform_acr: "{{ azure_ml_platform_acr }}"
+        azure_ml_platform_appinsights: "{{ azure_ml_platform_appinsights }}"
+        azure_region: "{{ azure_region }}"
+        azure_ml_team_name: "{{ azure_ml_team_name_2 }}"
+        azure_ml_team_contact_email: "{{ azure_ml_team_contact_email_2 }}"
+        azure_ml_team_budget_limit: "{{ azure_ml_team_budget_limit_2 }}"
 
     - name: Verify both teams exist independently
       block:
@@ -130,13 +127,12 @@
 
     # ── Test 4: Delete Team Workspace ───────────────────────────────────
     - name: Test delete team workspace (team 1)
-      ansible.builtin.command:
-        cmd: >
-          ansible-playbook cloud.azure_ops.self_service_ml_platform
-          -e operation=delete_team_workspace
-          -e azure_ml_platform_shared_rg="{{ azure_ml_platform_shared_rg }}"
-          -e azure_ml_team_name="{{ azure_ml_team_name_1 }}"
-      delegate_to: localhost
+      ansible.builtin.include_role:
+        name: self_service_ml_platform
+      vars:
+        operation: delete_team_workspace
+        azure_ml_platform_shared_rg: "{{ azure_ml_platform_shared_rg }}"
+        azure_ml_team_name: "{{ azure_ml_team_name_1 }}"
 
     - name: Verify team 1 deleted but team 2 and shared infra remain
       block:
@@ -168,9 +164,8 @@
   always:
     # ── Cleanup ─────────────────────────────────────────────────────────
     - name: Delete all test resources
-      ansible.builtin.command:
-        cmd: >
-          ansible-playbook cloud.azure_ops.self_service_ml_platform
-          -e operation=delete_shared_infrastructure
-          -e azure_ml_platform_shared_rg="{{ azure_ml_platform_shared_rg }}"
-      delegate_to: localhost
+      ansible.builtin.include_role:
+        name: self_service_ml_platform
+      vars:
+        operation: delete_shared_infrastructure
+        azure_ml_platform_shared_rg: "{{ azure_ml_platform_shared_rg }}"

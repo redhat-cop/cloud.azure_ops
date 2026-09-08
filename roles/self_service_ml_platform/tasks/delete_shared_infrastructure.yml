@@ -1,0 +1,46 @@
+---
+# ── Phase 1: Delete Container Registry ──────────────────────────
+- name: Delete Container Registry
+  azure.azcollection.azure_rm_containerregistry:
+    resource_group: "{{ azure_ml_platform_shared_rg }}"
+    name: "{{ azure_ml_platform_acr }}"
+    state: absent
+  ignore_errors: true
+
+# ── Phase 2: Delete Application Insights ────────────────────────
+- name: Delete Application Insights
+  azure.azcollection.azure_rm_resource:
+    resource_group: "{{ azure_ml_platform_shared_rg }}"
+    provider: Insights
+    resource_type: components
+    resource_name: "{{ azure_ml_platform_appinsights }}"
+    api_version: "2020-02-02"
+    state: absent
+  ignore_errors: true
+
+# ── Phase 3: Delete Key Vault ───────────────────────────────────
+- name: Delete Key Vault
+  azure.azcollection.azure_rm_keyvault:
+    resource_group: "{{ azure_ml_platform_shared_rg }}"
+    vault_name: "{{ azure_ml_platform_keyvault }}"
+    state: absent
+  ignore_errors: true
+
+# ── Phase 4: Delete Resource Group ──────────────────────────────
+- name: Delete shared resource group
+  ansible.builtin.include_role:
+    name: cloud.azure_ops.azure_manage_resource_group
+  vars:
+    azure_manage_resource_group_operation: delete
+    azure_manage_resource_group_name: "{{ azure_ml_platform_shared_rg }}"
+    azure_manage_resource_group_force_delete_nonempty: true
+
+# ── Output ──────────────────────────────────────────────────────
+- name: Display deletion confirmation
+  ansible.builtin.debug:
+    msg:
+      - "Shared infrastructure deleted successfully:"
+      - "  Resource Group: {{ azure_ml_platform_shared_rg }}"
+      - "  Key Vault: {{ azure_ml_platform_keyvault }} (soft-deleted, 90-day recovery window)"
+      - "  Container Registry: {{ azure_ml_platform_acr }}"
+      - "  Application Insights: {{ azure_ml_platform_appinsights }}"
