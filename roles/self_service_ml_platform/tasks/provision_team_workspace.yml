@@ -186,6 +186,7 @@
         filter:
           tags:
             name: team
+            operator: In
             values:
               - "{{ azure_ml_team_name }}"
         notifications:
