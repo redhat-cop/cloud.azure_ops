@@ -9,7 +9,7 @@
 - name: Delete budget
   azure.azcollection.azure_rm_resource:
     resource_group: "{{ azure_ml_platform_shared_rg }}"
-    provider: Microsoft.Consumption
+    provider: Consumption
     resource_type: budgets
     resource_name: "{{ azure_ml_team_name }}-monthly-budget"
     api_version: "2023-11-01"
