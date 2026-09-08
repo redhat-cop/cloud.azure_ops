@@ -15,7 +15,7 @@ This role automates the deployment and management of an Azure Machine Learning p
 
 - Ansible >= 2.15
 - Python >= 3.9
-- Azure collection: `azure.azcollection >= 2.3.0`
+- Azure collection: `azure.azcollection >= 3.20.0`
 - Azure CLI configured with valid credentials
 - Azure subscription with appropriate permissions
 

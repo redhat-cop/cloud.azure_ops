@@ -36,7 +36,7 @@ This reference architecture demonstrates how AAP orchestrates multi-team ML envi
 ### Prerequisites
 
 * Azure subscription with sufficient quota for ML workspaces and compute
-* `azure.azcollection` >= 3.19.0 installed (for ML workspace support)
+* `azure.azcollection` >= 3.20.0 installed (for ML workspace support)
 * Azure credentials configured (service principal with Contributor + User Access Administrator roles)
 * The following Azure resource providers must be registered on the subscription:
   - `Microsoft.MachineLearningServices`
