@@ -64,8 +64,6 @@
     application_insights: "{{ _arm_prefix }}/Microsoft.Insights/components/{{ azure_ml_platform_appinsights }}"
     container_registry: "{{ _arm_prefix }}/Microsoft.ContainerRegistry/registries/{{ azure_ml_platform_acr }}"
     public_network_access: Enabled
-    identity:
-      type: SystemAssigned
     tags:
       team: "{{ azure_ml_team_name }}"
       budget_limit: "{{ azure_ml_team_budget_limit | string }}"
