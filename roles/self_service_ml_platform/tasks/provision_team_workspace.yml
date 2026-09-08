@@ -22,19 +22,8 @@
     _arm_prefix: "/subscriptions/{{ _sub_info.subscriptions[0].subscription_id }}/resourceGroups/{{ azure_ml_platform_shared_rg }}/providers"
 
 # ── Phase 2: Verify Shared Infrastructure Exists ────────────────
-- name: Check if shared Key Vault exists
-  azure.azcollection.azure_rm_keyvault_info:
-    resource_group: "{{ azure_ml_platform_shared_rg }}"
-    name: "{{ azure_ml_platform_keyvault }}"
-  register: _kv_check
-  failed_when: _kv_check.keyvaults | length == 0
-
-- name: Check if shared ACR exists
-  azure.azcollection.azure_rm_containerregistry_info:
-    resource_group: "{{ azure_ml_platform_shared_rg }}"
-    name: "{{ azure_ml_platform_acr }}"
-  register: _acr_check
-  failed_when: _acr_check.registries | length == 0
+# Note: Prerequisite checks removed - workspace creation will fail with clear
+# error if shared infrastructure doesn't exist
 
 # ── Phase 3: Team Storage Account ───────────────────────────────
 - name: Create team storage account
