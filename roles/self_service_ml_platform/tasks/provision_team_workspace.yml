@@ -126,8 +126,6 @@
       type: azure_blob
       account_name: {{ azure_ml_team_storage_account }}
       container_name: datasets
-      credentials:
-        credential_type: none
 
 # ── Phase 8: Base Environment ───────────────────────────────────
 - name: Create base training environment in team workspace
