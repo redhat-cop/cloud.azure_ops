@@ -1,17 +1,26 @@
 ---
 - name: Test self-service ML platform role
   block:
+    # ── Setup: Generate random values once ──────────────────────────────
+    - name: Set test resource names with random suffixes
+      ansible.builtin.set_fact:
+        test_random_suffix: "{{ 999999 | random(seed=inventory_hostname) }}"
+        test_rg_random: "{{ 999999999999999999999 | random(seed=inventory_hostname) }}"
+      run_once: true
+
+    - name: Set test infrastructure variables
+      ansible.builtin.set_fact:
+        azure_ml_platform_shared_rg: "ansible-test-ml-{{ test_rg_random }}"
+        azure_ml_platform_keyvault: "mltest{{ test_random_suffix }}"
+        azure_ml_platform_acr: "mltest{{ test_random_suffix }}acr"
+      run_once: true
+
     # ── Test 1: Provision Shared Infrastructure ─────────────────────────
     - name: Test provision shared infrastructure
       ansible.builtin.include_role:
         name: self_service_ml_platform
       vars:
         operation: provision_shared_infrastructure
-        azure_ml_platform_shared_rg: "{{ azure_ml_platform_shared_rg }}"
-        azure_ml_platform_keyvault: "{{ azure_ml_platform_keyvault }}"
-        azure_ml_platform_acr: "{{ azure_ml_platform_acr }}"
-        azure_ml_platform_appinsights: "{{ azure_ml_platform_appinsights }}"
-        azure_region: "{{ azure_region }}"
 
     - name: Verify shared infrastructure was created
       block:
@@ -58,11 +67,6 @@
         name: self_service_ml_platform
       vars:
         operation: provision_team_workspace
-        azure_ml_platform_shared_rg: "{{ azure_ml_platform_shared_rg }}"
-        azure_ml_platform_keyvault: "{{ azure_ml_platform_keyvault }}"
-        azure_ml_platform_acr: "{{ azure_ml_platform_acr }}"
-        azure_ml_platform_appinsights: "{{ azure_ml_platform_appinsights }}"
-        azure_region: "{{ azure_region }}"
         azure_ml_team_name: "{{ azure_ml_team_name_1 }}"
         azure_ml_team_contact_email: "{{ azure_ml_team_contact_email_1 }}"
         azure_ml_team_budget_limit: "{{ azure_ml_team_budget_limit_1 }}"
@@ -102,11 +106,6 @@
         name: self_service_ml_platform
       vars:
         operation: provision_team_workspace
-        azure_ml_platform_shared_rg: "{{ azure_ml_platform_shared_rg }}"
-        azure_ml_platform_keyvault: "{{ azure_ml_platform_keyvault }}"
-        azure_ml_platform_acr: "{{ azure_ml_platform_acr }}"
-        azure_ml_platform_appinsights: "{{ azure_ml_platform_appinsights }}"
-        azure_region: "{{ azure_region }}"
         azure_ml_team_name: "{{ azure_ml_team_name_2 }}"
         azure_ml_team_contact_email: "{{ azure_ml_team_contact_email_2 }}"
         azure_ml_team_budget_limit: "{{ azure_ml_team_budget_limit_2 }}"
@@ -131,7 +130,6 @@
         name: self_service_ml_platform
       vars:
         operation: delete_team_workspace
-        azure_ml_platform_shared_rg: "{{ azure_ml_platform_shared_rg }}"
         azure_ml_team_name: "{{ azure_ml_team_name_1 }}"
 
     - name: Verify team 1 deleted but team 2 and shared infra remain
@@ -168,4 +166,3 @@
         name: self_service_ml_platform
       vars:
         operation: delete_shared_infrastructure
-        azure_ml_platform_shared_rg: "{{ azure_ml_platform_shared_rg }}"
