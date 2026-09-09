@@ -1,0 +1,197 @@
+---
+# Manage Azure OpenAI PTU capacity based on utilization
+
+- name: Get all Azure OpenAI accounts in resource group
+  azure.azcollection.azure_rm_resource_info:
+    resource_group: "{{ azure_resource_group }}"
+    provider: CognitiveServices
+    resource_type: accounts
+    api_version: "2023-05-01"
+  register: _cognitive_accounts
+
+- name: Filter OpenAI accounts
+  ansible.builtin.set_fact:
+    _openai_accounts: "{{ _cognitive_accounts.response | selectattr('kind', 'equalto', 'OpenAI') | list }}"
+
+- name: Filter specific accounts if list provided
+  ansible.builtin.set_fact:
+    _target_accounts: "{{ _openai_accounts | selectattr('name', 'in', azure_ml_cost_optimization_openai_accounts) | list }}"
+  when: azure_ml_cost_optimization_openai_accounts | length > 0
+
+- name: Use all OpenAI accounts if no filter provided
+  ansible.builtin.set_fact:
+    _target_accounts: "{{ _openai_accounts }}"
+  when: azure_ml_cost_optimization_openai_accounts | length == 0
+
+- name: Initialize PTU management tracking
+  ansible.builtin.set_fact:
+    _ptu_report: []
+    _total_monthly_savings: 0
+
+- name: Define PTU pricing (monthly USD)
+  ansible.builtin.set_fact:
+    _ptu_monthly_cost:
+      50: 2500
+      100: 5000
+      300: 15000
+
+- name: Process each OpenAI account
+  block:
+    - name: Get account deployments
+      azure.azcollection.azure_rm_resource_info:
+        resource_group: "{{ azure_resource_group }}"
+        provider: CognitiveServices
+        resource_type: accounts/deployments
+        parent_path: "{{ item.name }}"
+        api_version: "2023-05-01"
+      register: _deployments
+
+    - name: Find PTU deployments
+      ansible.builtin.set_fact:
+        _ptu_deployments: "{{ _deployments.response | selectattr('sku.name', 'defined') | selectattr('sku.name', 'search', 'ProvisionedManaged') | list }}"
+
+    - name: Skip account if no PTU deployments
+      ansible.builtin.debug:
+        msg: "Skipping {{ item.name }}: no PTU deployments found"
+      when: _ptu_deployments | length == 0
+
+    - name: Process PTU deployment
+      block:
+        - name: Get current PTU capacity
+          ansible.builtin.set_fact:
+            _current_ptu: "{{ deployment.sku.capacity }}"
+
+        - name: Build resource ID for metrics
+          ansible.builtin.set_fact:
+            _deployment_resource_id: "/subscriptions/{{ _subscription_id }}/resourceGroups/{{ azure_resource_group }}/providers/Microsoft.CognitiveServices/accounts/{{ item.name }}/deployments/{{ deployment.name }}"
+
+        - name: Set metrics time range (7 days)
+          ansible.builtin.set_fact:
+            _metrics_start_time: "{{ '%Y-%m-%dT%H:%M:%SZ' | strftime(ansible_date_time.epoch | int - (7 * 86400)) }}"
+            _metrics_end_time: "{{ ansible_date_time.iso8601 }}"
+
+        - name: Query Azure Monitor for PTU utilization metrics
+          azure.azcollection.azure_rm_resource:
+            url: "https://management.azure.com{{ _deployment_resource_id }}/providers/Microsoft.Insights/metrics"
+            api_version: "2023-10-01"
+            method: GET
+            query_parameters:
+              timespan: "{{ _metrics_start_time }}/{{ _metrics_end_time }}"
+              interval: "PT1H"
+              metricnames: "ProvisionedManagedUtilizationV2"
+              aggregation: "Average"
+          register: _ptu_metrics
+          ignore_errors: true
+
+        - name: Parse PTU metrics
+          ansible.builtin.set_fact:
+            _utilization_values: "{{ _ptu_metrics.response.value[0].timeseries[0].data | default([]) | map(attribute='average') | select('defined') | list }}"
+          when:
+            - _ptu_metrics is succeeded
+            - _ptu_metrics.response.value | length > 0
+
+        - name: Calculate average utilization
+          ansible.builtin.set_fact:
+            _avg_utilization: "{{ (_utilization_values | map('float') | sum / _utilization_values | length) | round(2) }}"
+          when:
+            - _utilization_values is defined
+            - _utilization_values | length > 0
+
+        - name: Determine if scale down needed
+          ansible.builtin.set_fact:
+            _should_scale_down: "{{ _avg_utilization | float < azure_ml_cost_optimization_ptu_scale_down_threshold }}"
+          when: _avg_utilization is defined
+
+        - name: Determine new PTU capacity
+          ansible.builtin.set_fact:
+            _new_ptu: "{{ 50 if _current_ptu | int == 100 else (_current_ptu | int) }}"
+          when:
+            - _should_scale_down
+            - _current_ptu | int > 50
+
+        - name: Skip if already at minimum PTU
+          ansible.builtin.debug:
+            msg: "Skipping {{ item.name }}/{{ deployment.name }}: already at minimum PTU ({{ _current_ptu }})"
+          when:
+            - _should_scale_down
+            - _current_ptu | int <= 50
+
+        - name: Calculate cost savings
+          ansible.builtin.set_fact:
+            _ptu_savings: "{{ _ptu_monthly_cost[_current_ptu | int] | default(0) - _ptu_monthly_cost[_new_ptu | int] | default(0) }}"
+          when:
+            - _new_ptu is defined
+            - _new_ptu | int < _current_ptu | int
+
+        - name: Scale down PTU
+          azure.azcollection.azure_rm_resource:
+            resource_group: "{{ azure_resource_group }}"
+            provider: CognitiveServices
+            resource_type: accounts/deployments
+            parent_path: "{{ item.name }}"
+            resource_name: "{{ deployment.name }}"
+            api_version: "2023-05-01"
+            body:
+              sku:
+                name: "{{ deployment.sku.name }}"
+                capacity: "{{ _new_ptu | int }}"
+          when:
+            - _new_ptu is defined
+            - _new_ptu | int < _current_ptu | int
+          register: _ptu_scale_result
+
+        - name: Add to PTU report
+          ansible.builtin.set_fact:
+            _ptu_report: "{{ _ptu_report + [_report_entry] }}"
+            _total_monthly_savings: "{{ _total_monthly_savings | float + _ptu_savings | float }}"
+          vars:
+            _report_entry:
+              account: "{{ item.name }}"
+              deployment: "{{ deployment.name }}"
+              current_ptu: "{{ _current_ptu }}"
+              new_ptu: "{{ _new_ptu }}"
+              avg_utilization: "{{ _avg_utilization }}"
+              monthly_savings: "{{ _ptu_savings }}"
+          when: _ptu_scale_result is changed
+
+        - name: Log recommendation for upsize
+          ansible.builtin.debug:
+            msg: "RECOMMENDATION: {{ item.name }}/{{ deployment.name }} utilization {{ _avg_utilization }}% exceeds target {{ azure_ml_cost_optimization_ptu_target_utilization }}%. Consider increasing PTU capacity (requires manual approval)."
+          when:
+            - _avg_utilization is defined
+            - _avg_utilization | float > azure_ml_cost_optimization_ptu_target_utilization
+
+        - name: Record PTU action in audit log
+          ansible.builtin.set_fact:
+            _audit_log: "{{ _audit_log + [_audit_entry] }}"
+          vars:
+            _audit_entry:
+              timestamp: "{{ ansible_date_time.iso8601 }}"
+              operation: "manage_ptu"
+              account: "{{ item.name }}"
+              deployment: "{{ deployment.name }}"
+              action: "{{ 'scaled_down' if _ptu_scale_result is changed else 'no_action' }}"
+              current_ptu: "{{ _current_ptu }}"
+              new_ptu: "{{ _new_ptu if _new_ptu is defined else _current_ptu }}"
+              avg_utilization: "{{ _avg_utilization if _avg_utilization is defined else 0 }}"
+              monthly_savings: "{{ _ptu_savings if _ptu_scale_result is changed else 0 }}"
+          when: _ptu_scale_result is defined or _avg_utilization is defined
+
+      loop: "{{ _ptu_deployments }}"
+      loop_control:
+        loop_var: deployment
+        label: "{{ deployment.name }}"
+      when: _ptu_deployments | length > 0
+
+  loop: "{{ _target_accounts }}"
+  loop_control:
+    label: "{{ item.name }}"
+
+- name: Display PTU management summary
+  ansible.builtin.debug:
+    msg: |
+      PTU management complete:
+      - Accounts analyzed: {{ _target_accounts | length }}
+      - PTU deployments optimized: {{ _ptu_report | length }}
+      - Total monthly savings: ${{ _total_monthly_savings | round(2) }}
+      - Total annual savings: ${{ (_total_monthly_savings | float * 12) | round(2) }}
