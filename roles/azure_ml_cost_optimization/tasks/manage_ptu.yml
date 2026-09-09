@@ -104,7 +104,7 @@
 
         - name: Determine new PTU capacity
           ansible.builtin.set_fact:
-            _new_ptu: "{{ 50 if _current_ptu | int == 100 else (_current_ptu | int) }}"
+            _new_ptu: "{{ 50 if _current_ptu | int == 100 else (100 if _current_ptu | int == 300 else _current_ptu | int) }}"
           when:
             - _should_scale_down
             - _current_ptu | int > 50
