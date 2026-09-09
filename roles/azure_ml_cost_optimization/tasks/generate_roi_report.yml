@@ -1,0 +1,95 @@
+---
+# Generate ROI report comparing current costs to baseline
+
+- name: Fail if baseline cost not set
+  ansible.builtin.fail:
+    msg: "azure_ml_cost_optimization_roi_baseline_monthly_cost must be set (current value: {{ azure_ml_cost_optimization_roi_baseline_monthly_cost }})"
+  when: azure_ml_cost_optimization_roi_baseline_monthly_cost | float == 0
+
+- name: Set current month start date
+  ansible.builtin.set_fact:
+    _current_month_start: "{{ '%Y-%m-01' | strftime(ansible_date_time.epoch | int) }}"
+
+- name: Query Azure Cost Management API for current month costs
+  azure.azcollection.azure_rm_resource:
+    url: "https://management.azure.com/subscriptions/{{ _subscription_id }}/resourceGroups/{{ azure_resource_group }}/providers/Microsoft.CostManagement/query"
+    api_version: "2023-03-01"
+    method: POST
+    body:
+      type: "ActualCost"
+      timeframe: "Custom"
+      timePeriod:
+        from: "{{ _current_month_start }}T00:00:00Z"
+        to: "{{ ansible_date_time.iso8601 }}"
+      dataset:
+        granularity: "None"
+        aggregation:
+          totalCost:
+            name: "Cost"
+            function: "Sum"
+        grouping:
+          - type: "Dimension"
+            name: "ResourceType"
+  register: _cost_query
+  ignore_errors: true
+
+- name: Parse cost data
+  ansible.builtin.set_fact:
+    _current_month_cost: "{{ _cost_query.response.properties.rows | map('last') | sum | float | round(2) }}"
+    _cost_by_type: "{{ _cost_query.response.properties.rows | items2dict(key_name=0, value_name=1) }}"
+  when:
+    - _cost_query is succeeded
+    - _cost_query.response.properties.rows | length > 0
+
+- name: Use zero if cost query failed
+  ansible.builtin.set_fact:
+    _current_month_cost: 0
+    _cost_by_type: {}
+  when: _cost_query is failed or _cost_query.response.properties.rows | default([]) | length == 0
+
+- name: Calculate savings metrics
+  ansible.builtin.set_fact:
+    _monthly_savings: "{{ (azure_ml_cost_optimization_roi_baseline_monthly_cost | float - _current_month_cost | float) | round(2) }}"
+    _savings_percent: "{{ ((azure_ml_cost_optimization_roi_baseline_monthly_cost | float - _current_month_cost | float) / azure_ml_cost_optimization_roi_baseline_monthly_cost | float * 100) | round(2) }}"
+    _projected_annual_savings: "{{ ((azure_ml_cost_optimization_roi_baseline_monthly_cost | float - _current_month_cost | float) * 12) | round(2) }}"
+
+- name: Count actions from audit log
+  ansible.builtin.set_fact:
+    _shutdown_count: "{{ _audit_log | selectattr('operation', 'equalto', 'shutdown_compute') | selectattr('action', 'equalto', 'shutdown') | list | length }}"
+    _rightsize_count: "{{ _audit_log | selectattr('operation', 'equalto', 'analyze_and_rightsize') | selectattr('action', 'equalto', 'resized') | list | length }}"
+    _ptu_count: "{{ _audit_log | selectattr('operation', 'equalto', 'manage_ptu') | selectattr('action', 'equalto', 'scaled_down') | list | length }}"
+
+- name: Generate ROI report markdown
+  ansible.builtin.template:
+    src: roi_report.md.j2
+    dest: "{{ azure_ml_cost_optimization_roi_report_path }}"
+  vars:
+    report_date: "{{ ansible_date_time.date }}"
+    baseline_cost: "{{ azure_ml_cost_optimization_roi_baseline_monthly_cost }}"
+    current_cost: "{{ _current_month_cost }}"
+    monthly_savings: "{{ _monthly_savings }}"
+    savings_percent: "{{ _savings_percent }}"
+    annual_savings: "{{ _projected_annual_savings }}"
+    cost_breakdown: "{{ _cost_by_type }}"
+    shutdown_events: "{{ _shutdown_count }}"
+    rightsize_events: "{{ _rightsize_count }}"
+    ptu_events: "{{ _ptu_count }}"
+
+- name: Set ROI metrics fact
+  ansible.builtin.set_fact:
+    _roi_metrics:
+      baseline_monthly_cost: "{{ azure_ml_cost_optimization_roi_baseline_monthly_cost }}"
+      current_month_cost: "{{ _current_month_cost }}"
+      monthly_savings: "{{ _monthly_savings }}"
+      savings_percent: "{{ _savings_percent }}"
+      projected_annual_savings: "{{ _projected_annual_savings }}"
+
+- name: Display ROI summary
+  ansible.builtin.debug:
+    msg: |
+      ROI Report Generated:
+      - Report saved to: {{ azure_ml_cost_optimization_roi_report_path }}
+      - Baseline monthly cost: ${{ azure_ml_cost_optimization_roi_baseline_monthly_cost }}
+      - Current month-to-date cost: ${{ _current_month_cost }}
+      - Monthly savings: ${{ _monthly_savings }} ({{ _savings_percent }}%)
+      - Projected annual savings: ${{ _projected_annual_savings }}
