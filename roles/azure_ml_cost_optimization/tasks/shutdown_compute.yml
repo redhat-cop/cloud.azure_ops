@@ -1,0 +1,49 @@
+---
+# Shutdown Azure ML compute clusters
+
+- name: Get all ML workspaces in resource group
+  azure.azcollection.azure_rm_resource_info:
+    resource_group: "{{ azure_resource_group }}"
+    provider: MachineLearningServices
+    resource_type: workspaces
+    api_version: "2023-04-01"
+  register: _workspaces
+
+- name: Filter workspaces if specific list provided
+  ansible.builtin.set_fact:
+    _target_workspaces: "{{ _workspaces.response | selectattr('name', 'in', azure_ml_cost_optimization_workspaces) | list }}"
+  when: azure_ml_cost_optimization_workspaces | length > 0
+
+- name: Use all workspaces if no filter provided
+  ansible.builtin.set_fact:
+    _target_workspaces: "{{ _workspaces.response }}"
+  when: azure_ml_cost_optimization_workspaces | length == 0
+
+- name: Initialize shutdown tracking
+  ansible.builtin.set_fact:
+    _clusters_stopped: 0
+    _clusters_skipped: 0
+    _shutdown_reasons: []
+
+- name: Process each workspace
+  ansible.builtin.include_tasks: utils/shutdown_workspace_clusters.yml
+  loop: "{{ _target_workspaces }}"
+  loop_control:
+    loop_var: workspace
+
+- name: Set shutdown summary
+  ansible.builtin.set_fact:
+    _shutdown_summary:
+      clusters_stopped: "{{ _clusters_stopped | int }}"
+      clusters_skipped: "{{ _clusters_skipped | int }}"
+      reasons: "{{ _shutdown_reasons }}"
+
+- name: Display shutdown summary
+  ansible.builtin.debug:
+    msg: |
+      Shutdown complete:
+      - Clusters stopped: {{ _shutdown_summary.clusters_stopped }}
+      - Clusters skipped: {{ _shutdown_summary.clusters_skipped }}
+      {% if _shutdown_summary.reasons | length > 0 %}
+      - Skip reasons: {{ _shutdown_summary.reasons | join(', ') }}
+      {% endif %}

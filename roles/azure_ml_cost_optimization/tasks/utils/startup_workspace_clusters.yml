@@ -1,0 +1,86 @@
+---
+# Startup clusters in a specific workspace
+
+- name: Get compute clusters in workspace
+  azure.azcollection.azure_rm_resource_info:
+    resource_group: "{{ azure_resource_group }}"
+    provider: MachineLearningServices
+    resource_type: workspaces/computes
+    parent_path: "{{ workspace.name }}"
+    api_version: "2023-04-01"
+  register: _clusters
+
+- name: Filter clusters if specific list provided
+  ansible.builtin.set_fact:
+    _target_clusters: "{{ _clusters.response | selectattr('name', 'in', azure_ml_cost_optimization_compute_targets) | list }}"
+  when: azure_ml_cost_optimization_compute_targets | length > 0
+
+- name: Use all clusters if no filter provided
+  ansible.builtin.set_fact:
+    _target_clusters: "{{ _clusters.response }}"
+  when: azure_ml_cost_optimization_compute_targets | length == 0
+
+- name: Process each cluster
+  block:
+    - name: Check if cluster is AmlCompute and stopped
+      ansible.builtin.set_fact:
+        _cluster_compute_type: "{{ item.properties.computeType | default('Unknown') }}"
+        _current_min_nodes: "{{ item.properties.properties.scaleSettings.minNodeCount | default(0) }}"
+
+    - name: Skip if not AmlCompute
+      ansible.builtin.debug:
+        msg: "Skipping {{ item.name }}: not AmlCompute type"
+      when: _cluster_compute_type != 'AmlCompute'
+
+    - name: Skip if already running
+      ansible.builtin.debug:
+        msg: "Skipping {{ item.name }}: already running (min_nodes={{ _current_min_nodes }})"
+      when:
+        - _cluster_compute_type == 'AmlCompute'
+        - _current_min_nodes | int > 0
+
+    - name: Startup cluster by restoring min_nodes
+      azure.azcollection.azure_rm_resource:
+        resource_group: "{{ azure_resource_group }}"
+        provider: MachineLearningServices
+        resource_type: workspaces/computes
+        parent_path: "{{ workspace.name }}"
+        resource_name: "{{ item.name }}"
+        api_version: "2023-04-01"
+        body:
+          properties:
+            properties:
+              scaleSettings:
+                # Note: minNodeCount set to 1 intentionally (not original pre-shutdown value).
+                # If restoring original minNodeCount is needed, audit log can be consulted.
+                minNodeCount: 1
+                maxNodeCount: "{{ item.properties.properties.scaleSettings.maxNodeCount }}"
+                nodeIdleTimeBeforeScaleDown: "{{ item.properties.properties.scaleSettings.nodeIdleTimeBeforeScaleDown | default('PT300S') }}"
+      when:
+        - _cluster_compute_type == 'AmlCompute'
+        - _current_min_nodes | int == 0
+      register: _startup_result
+
+    - name: Increment started counter
+      ansible.builtin.set_fact:
+        _clusters_started: "{{ _clusters_started | int + 1 }}"
+      when: _startup_result is changed
+
+    - name: Record startup in audit log
+      ansible.builtin.set_fact:
+        _audit_log: "{{ _audit_log + [_audit_entry] }}"
+      vars:
+        _audit_entry:
+          timestamp: "{{ ansible_date_time.iso8601 }}"
+          operation: "startup_compute"
+          workspace: "{{ workspace.name }}"
+          cluster: "{{ item.name }}"
+          action: "{{ 'startup' if _startup_result is changed else 'skipped' }}"
+          previous_min_nodes: "{{ _current_min_nodes }}"
+          new_min_nodes: "{{ 1 if _startup_result is changed else _current_min_nodes }}"
+          emergency_mode: "{{ azure_ml_cost_optimization_emergency_mode }}"
+      when: _startup_result is defined
+
+  loop: "{{ _target_clusters }}"
+  loop_control:
+    label: "{{ item.name }}"
