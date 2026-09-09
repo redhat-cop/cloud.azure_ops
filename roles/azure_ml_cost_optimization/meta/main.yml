@@ -1,0 +1,21 @@
+---
+galaxy_info:
+  author: Red Hat
+  description: A role to optimize Azure ML/AI infrastructure costs through automated lifecycle management
+  company: Red Hat
+  license: GPL-3.0-or-later
+  min_ansible_version: "2.14"
+  platforms:
+    - name: Fedora
+      versions:
+        - all
+    - name: EL
+      versions:
+        - all
+  galaxy_tags:
+    - azure
+    - cloud
+    - machinelearning
+    - cost_optimization
+
+dependencies: []

@@ -1,0 +1,39 @@
+---
+# Core configuration
+azure_ml_cost_optimization_operation: ""  # Required: shutdown_compute | startup_compute | analyze_and_rightsize | manage_ptu | generate_roi_report
+
+# Target resources (empty = all in resource group)
+azure_ml_cost_optimization_workspaces: []  # List of workspace names
+azure_ml_cost_optimization_compute_targets: []  # List of compute cluster names
+azure_ml_cost_optimization_openai_accounts: []  # List of OpenAI account names
+
+# Shutdown/Startup behavior
+azure_ml_cost_optimization_shutdown_mode: "graceful"  # graceful | immediate
+azure_ml_cost_optimization_preserve_running_jobs: true  # If true, skip clusters with active jobs
+
+# Right-sizing configuration
+azure_ml_cost_optimization_rightsize_enabled: true
+azure_ml_cost_optimization_rightsize_cpu_threshold: 30  # % - downsize if avg CPU < this
+azure_ml_cost_optimization_rightsize_analysis_days: 7  # Days of metrics to analyze
+azure_ml_cost_optimization_rightsize_allowed_sizes:
+  - Standard_DS3_v2
+  - Standard_DS4_v2
+  - Standard_DS5_v2
+azure_ml_cost_optimization_rightsize_min_size: "Standard_DS3_v2"
+
+# PTU management (Azure OpenAI)
+azure_ml_cost_optimization_ptu_target_utilization: 80  # %
+azure_ml_cost_optimization_ptu_scale_down_threshold: 50  # %
+
+# EDA override behavior
+azure_ml_cost_optimization_emergency_mode: false
+azure_ml_cost_optimization_budget_alert_action: "shutdown_non_critical"  # shutdown_all | shutdown_non_critical | alert_only
+
+# ROI tracking
+azure_ml_cost_optimization_roi_baseline_monthly_cost: 0  # USD
+azure_ml_cost_optimization_roi_tracking_start_date: ""  # ISO 8601
+azure_ml_cost_optimization_roi_report_path: "/tmp/roi_report_{{ ansible_date_time.date }}.md"
+
+# Audit logging
+azure_ml_cost_optimization_enable_audit_log: false
+azure_ml_cost_optimization_audit_log_path: "/tmp/azure_ml_cost_optimization_{{ ansible_date_time.date }}.yml"
