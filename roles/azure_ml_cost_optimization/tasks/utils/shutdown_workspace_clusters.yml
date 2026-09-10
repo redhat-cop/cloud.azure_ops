@@ -1,0 +1,142 @@
+---
+# Shutdown clusters in a specific workspace
+
+- name: Get compute clusters in workspace
+  azure.azcollection.azure_rm_resource_info:
+    resource_group: "{{ azure_resource_group }}"
+    provider: MachineLearningServices
+    resource_type: workspaces/computes
+    parent_path: "{{ workspace.name }}"
+    api_version: "2023-04-01"
+  register: _clusters
+
+- name: Filter clusters if specific list provided
+  ansible.builtin.set_fact:
+    _target_clusters: "{{ _clusters.response | selectattr('name', 'in', azure_ml_cost_optimization_compute_targets) | list }}"
+  when: azure_ml_cost_optimization_compute_targets | length > 0
+
+- name: Use all clusters if no filter provided
+  ansible.builtin.set_fact:
+    _target_clusters: "{{ _clusters.response }}"
+  when: azure_ml_cost_optimization_compute_targets | length == 0
+
+- name: Process each cluster
+  block:
+    - name: Check cluster provisioning state
+      ansible.builtin.set_fact:
+        _cluster_compute_type: "{{ item.properties.computeType | default('Unknown') }}"
+
+    - name: Skip if cluster is not AmlCompute type
+      ansible.builtin.set_fact:
+        _clusters_skipped: "{{ _clusters_skipped | int + 1 }}"
+        _shutdown_reasons: "{{ _shutdown_reasons + ['not AmlCompute: ' + item.name] }}"
+      when: _cluster_compute_type != 'AmlCompute'
+
+    - name: Skip if cluster already stopped
+      ansible.builtin.set_fact:
+        _clusters_skipped: "{{ _clusters_skipped | int + 1 }}"
+        _shutdown_reasons: "{{ _shutdown_reasons + ['already stopped: ' + item.name] }}"
+      when:
+        - _cluster_compute_type == 'AmlCompute'
+        - item.properties.properties.scaleSettings.minNodeCount | default(0) == 0
+
+    - name: Check for running jobs if preserve_running_jobs enabled
+      azure.azcollection.azure_rm_resource_info:
+        url: "https://management.azure.com/subscriptions/{{ _subscription_id }}/resourceGroups/{{ azure_resource_group }}/providers/Microsoft.MachineLearningServices/workspaces/{{ workspace.name }}/jobs"
+        api_version: "2023-04-01"
+      register: _jobs
+      when:
+        - azure_ml_cost_optimization_preserve_running_jobs
+        - _cluster_compute_type == 'AmlCompute'
+        - item.properties.properties.scaleSettings.minNodeCount | default(0) > 0
+
+    - name: Filter running jobs on this cluster
+      ansible.builtin.set_fact:
+        _running_jobs: "{{ _jobs.response | default([]) | selectattr('properties.status', 'in', ['Running', 'Preparing']) | selectattr('properties.computeId', 'search', item.name) | list }}"
+      when:
+        - azure_ml_cost_optimization_preserve_running_jobs
+        - _jobs is defined
+      # Note: This filter assumes Azure's computeId contains the cluster name as a substring.
+      # Azure job-to-cluster mapping may vary; monitor actual job.computeId values in logs if filtering seems inaccurate.
+
+    - name: Skip if jobs are running
+      ansible.builtin.set_fact:
+        _clusters_skipped: "{{ _clusters_skipped | int + 1 }}"
+        _shutdown_reasons: "{{ _shutdown_reasons + ['active jobs: ' + item.name] }}"
+      when:
+        - azure_ml_cost_optimization_preserve_running_jobs
+        - _running_jobs is defined
+        - _running_jobs | length > 0
+
+    - name: Determine if cluster is a protected critical workload
+      ansible.builtin.set_fact:
+        _is_critical_workload: >-
+          {{
+            azure_ml_cost_optimization_budget_alert_action == 'shutdown_non_critical'
+            and ((item.tags | default({}, true)).critical | default('') | string | lower == 'true')
+          }}
+      # When budget_alert_action is 'shutdown_non_critical', clusters tagged
+      # critical=true are preserved during emergency/budget-triggered shutdown.
+
+    - name: Skip critical workload during emergency shutdown
+      ansible.builtin.set_fact:
+        _clusters_skipped: "{{ _clusters_skipped | int + 1 }}"
+        _shutdown_reasons: "{{ _shutdown_reasons + ['Critical workload - preserved during emergency shutdown: ' + item.name] }}"
+      when:
+        - _cluster_compute_type == 'AmlCompute'
+        - _is_critical_workload | bool
+
+    - name: Determine if shutdown should be skipped
+      ansible.builtin.set_fact:
+        _should_skip_shutdown: >-
+          {{
+            (azure_ml_cost_optimization_preserve_running_jobs
+             and _running_jobs is defined and _running_jobs | length > 0)
+            or (_is_critical_workload | bool)
+          }}
+
+    - name: Shutdown cluster by scaling to 0
+      azure.azcollection.azure_rm_resource:
+        resource_group: "{{ azure_resource_group }}"
+        provider: MachineLearningServices
+        resource_type: workspaces/computes
+        parent_path: "{{ workspace.name }}"
+        resource_name: "{{ item.name }}"
+        api_version: "2023-04-01"
+        body:
+          properties:
+            properties:
+              scaleSettings:
+                minNodeCount: 0
+                maxNodeCount: "{{ item.properties.properties.scaleSettings.maxNodeCount }}"
+                nodeIdleTimeBeforeScaleDown: "{{ item.properties.properties.scaleSettings.nodeIdleTimeBeforeScaleDown | default('PT300S') }}"
+      when:
+        - _cluster_compute_type == 'AmlCompute'
+        - item.properties.properties.scaleSettings.minNodeCount | default(0) > 0
+        - not _should_skip_shutdown
+      register: _shutdown_result
+
+    - name: Increment stopped counter
+      ansible.builtin.set_fact:
+        _clusters_stopped: "{{ _clusters_stopped | int + 1 }}"
+      when: _shutdown_result is changed
+
+    - name: Record shutdown in audit log
+      ansible.builtin.set_fact:
+        _audit_log: "{{ _audit_log + [_audit_entry] }}"
+      vars:
+        _audit_entry:
+          timestamp: "{{ ansible_date_time.iso8601 }}"
+          operation: "shutdown_compute"
+          workspace: "{{ workspace.name }}"
+          cluster: "{{ item.name }}"
+          action: "{{ 'shutdown' if _shutdown_result is changed else 'skipped' }}"
+          reason: "{{ 'Critical workload - preserved during emergency shutdown' if (_is_critical_workload | default(false) | bool) else '' }}"
+          previous_min_nodes: "{{ item.properties.properties.scaleSettings.minNodeCount | default(0) }}"
+          new_min_nodes: "{{ 0 if _shutdown_result is changed else item.properties.properties.scaleSettings.minNodeCount | default(0) }}"
+          emergency_mode: "{{ azure_ml_cost_optimization_emergency_mode }}"
+      when: _shutdown_result is defined
+
+  loop: "{{ _target_clusters }}"
+  loop_control:
+    label: "{{ item.name }}"

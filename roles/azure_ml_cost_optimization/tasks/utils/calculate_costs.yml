@@ -1,0 +1,28 @@
+---
+# Calculate cost savings for VM size changes
+
+- name: Define VM size hourly rates (USD)
+  ansible.builtin.set_fact:
+    _vm_hourly_rates:
+      Standard_DS3_v2: 0.27
+      Standard_DS4_v2: 0.54
+      Standard_DS5_v2: 1.08
+      Standard_NC6s_v3: 3.06
+      Standard_NC12s_v3: 6.12
+      Standard_NC24s_v3: 12.24
+
+- name: Get old size hourly rate
+  ansible.builtin.set_fact:
+    _old_hourly_rate: "{{ _vm_hourly_rates[_old_vm_size] | default(0) }}"
+
+- name: Get new size hourly rate
+  ansible.builtin.set_fact:
+    _new_hourly_rate: "{{ _vm_hourly_rates[_new_vm_size] | default(0) }}"
+
+- name: Calculate monthly savings
+  ansible.builtin.set_fact:
+    _monthly_savings: "{{ ((_old_hourly_rate | float - _new_hourly_rate | float) * 730) | round(2) }}"
+
+- name: Calculate annual savings
+  ansible.builtin.set_fact:
+    _annual_savings: "{{ (_monthly_savings | float * 12) | round(2) }}"

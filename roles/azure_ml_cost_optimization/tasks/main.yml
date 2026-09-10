@@ -1,0 +1,30 @@
+---
+# Main dispatcher for cost optimization operations
+
+- name: Fail when operation is not defined
+  ansible.builtin.fail:
+    msg: "azure_ml_cost_optimization_operation must be set to one of: shutdown_compute, startup_compute, analyze_and_rightsize, manage_ptu, generate_roi_report"
+  when: azure_ml_cost_optimization_operation == ""
+
+- name: Fail when resource group is not defined
+  ansible.builtin.fail:
+    msg: "azure_resource_group must be defined"
+  when: azure_resource_group is not defined
+
+- name: Fail when region is not defined
+  ansible.builtin.fail:
+    msg: "azure_region must be defined"
+  when: azure_region is not defined
+
+- name: Validate prerequisites
+  ansible.builtin.include_tasks: utils/validate_prerequisites.yml
+
+- name: Dispatch to operation-specific task file
+  ansible.builtin.include_tasks: "{{ azure_ml_cost_optimization_operation }}.yml"
+
+- name: Write audit log to file
+  ansible.builtin.copy:
+    content: "{{ _audit_log | to_nice_yaml }}"
+    dest: "{{ azure_ml_cost_optimization_audit_log_path }}"
+    mode: '0644'
+  when: azure_ml_cost_optimization_enable_audit_log | default(false)

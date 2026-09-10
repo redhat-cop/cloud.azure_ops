@@ -1,0 +1,29 @@
+---
+# Validate Azure credentials and required resources
+#
+# PREREQUISITE: Azure credentials must be configured via one of:
+# - Azure CLI authentication (az login)
+# - Environment variables: AZURE_SUBSCRIPTION_ID, AZURE_CLIENT_ID, AZURE_CLIENT_SECRET, AZURE_TENANT_ID
+# - Ansible variables: azure_subscription_id, azure_client_id, azure_secret, azure_tenant
+# See: https://docs.microsoft.com/en-us/ansible/ansible/latest/scenario_guides/cloud_guide_azure.html
+
+- name: Validate Azure credentials by querying subscription info
+  azure.azcollection.azure_rm_subscription_info:
+  register: _subscription_info
+  failed_when: _subscription_info.subscriptions | length == 0
+
+- name: Verify resource group exists
+  azure.azcollection.azure_rm_resourcegroup_info:
+    name: "{{ azure_resource_group }}"
+  register: _rg_info
+  failed_when: _rg_info.resourcegroups | length == 0
+
+- name: Set subscription and region facts
+  ansible.builtin.set_fact:
+    _subscription_id: "{{ _subscription_info.subscriptions[0].subscription_id }}"
+    _tenant_id: "{{ _subscription_info.subscriptions[0].tenant_id }}"
+    _azure_region: "{{ azure_region }}"
+
+- name: Initialize audit log
+  ansible.builtin.set_fact:
+    _audit_log: []

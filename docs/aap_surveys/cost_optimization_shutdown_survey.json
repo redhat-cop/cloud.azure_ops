@@ -1,0 +1,30 @@
+{
+  "name": "ML Cost Optimization - Shutdown",
+  "description": "Shutdown Azure ML compute clusters to reduce idle costs",
+  "spec": [
+    {
+      "question_name": "Resource Group",
+      "question_description": "Azure resource group containing ML resources",
+      "required": true,
+      "type": "text",
+      "variable": "azure_resource_group",
+      "min": 0,
+      "max": 1024,
+      "default": "",
+      "choices": "",
+      "new_question": true
+    },
+    {
+      "question_name": "Preserve Running Jobs",
+      "question_description": "Skip clusters with active jobs?",
+      "required": true,
+      "type": "multiplechoice",
+      "variable": "preserve_running_jobs",
+      "min": 0,
+      "max": 1024,
+      "default": "true",
+      "choices": "true (skip clusters with active jobs)\nfalse (shutdown all clusters)",
+      "new_question": true
+    }
+  ]
+}

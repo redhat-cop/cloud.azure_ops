@@ -1,0 +1,202 @@
+---
+# Analyze utilization metrics and rightsize underutilized clusters
+
+- name: Initialize audit log
+  ansible.builtin.set_fact:
+    _audit_log: []
+  when: _audit_log is not defined
+
+- name: Get all ML workspaces in resource group
+  azure.azcollection.azure_rm_resource_info:
+    resource_group: "{{ azure_resource_group }}"
+    provider: MachineLearningServices
+    resource_type: workspaces
+    api_version: "2023-04-01"
+  register: _workspaces
+
+- name: Filter workspaces if specific list provided
+  ansible.builtin.set_fact:
+    _target_workspaces: "{{ _workspaces.response | selectattr('name', 'in', azure_ml_cost_optimization_workspaces) | list }}"
+  when: azure_ml_cost_optimization_workspaces | length > 0
+
+- name: Use all workspaces if no filter provided
+  ansible.builtin.set_fact:
+    _target_workspaces: "{{ _workspaces.response }}"
+  when: azure_ml_cost_optimization_workspaces | length == 0
+
+- name: Build cluster list for metrics collection
+  ansible.builtin.set_fact:
+    _clusters_to_analyze: []
+
+- name: Gather clusters from all workspaces
+  block:
+    - name: Get compute clusters in workspace
+      azure.azcollection.azure_rm_resource_info:
+        resource_group: "{{ azure_resource_group }}"
+        provider: MachineLearningServices
+        resource_type: workspaces/computes
+        parent_path: "{{ item.name }}"
+        api_version: "2023-04-01"
+      register: _workspace_clusters
+
+    - name: Add AmlCompute clusters to analysis list
+      ansible.builtin.set_fact:
+        _clusters_to_analyze: "{{ _clusters_to_analyze + [{'cluster_name': cluster.name, 'workspace_name': item.name, 'vm_size': cluster.properties.properties.vmSize, 'max_nodes': cluster.properties.properties.scaleSettings.maxNodeCount}] }}"
+      loop: "{{ _workspace_clusters.response | selectattr('properties.computeType', 'equalto', 'AmlCompute') | list }}"
+      loop_control:
+        loop_var: cluster
+        label: "{{ cluster.name }}"
+
+  loop: "{{ _target_workspaces }}"
+  loop_control:
+    label: "{{ item.name }}"
+
+- name: Collect metrics for clusters
+  ansible.builtin.include_tasks: utils/collect_metrics.yml
+
+- name: Initialize rightsizing report
+  ansible.builtin.set_fact:
+    _rightsize_report: []
+    _total_monthly_savings: 0
+
+- name: Analyze and rightsize underutilized clusters
+  block:
+    - name: Check if CPU utilization below threshold
+      ansible.builtin.set_fact:
+        _is_underutilized: "{{ item.avg_cpu_percent < azure_ml_cost_optimization_rightsize_cpu_threshold }}"
+        _has_data: "{{ item.has_sufficient_data }}"
+
+    - name: Skip if insufficient data
+      ansible.builtin.debug:
+        msg: "Skipping {{ item.cluster_name }}: insufficient metrics data"
+      when: not _has_data
+
+    - name: Skip if utilization above threshold
+      ansible.builtin.debug:
+        msg: "Skipping {{ item.cluster_name }}: CPU {{ item.avg_cpu_percent }}% above threshold {{ azure_ml_cost_optimization_rightsize_cpu_threshold }}%"
+      when:
+        - _has_data
+        - not _is_underutilized
+
+    - name: Find current cluster in analysis list
+      ansible.builtin.set_fact:
+        _current_cluster: "{{ _clusters_to_analyze | selectattr('cluster_name', 'equalto', item.cluster_name) | selectattr('workspace_name', 'equalto', item.workspace_name) | first }}"
+      when:
+        - _has_data
+        - _is_underutilized
+
+    - name: Determine next smaller VM size
+      ansible.builtin.set_fact:
+        _current_size_index: "{{ azure_ml_cost_optimization_rightsize_allowed_sizes.index(_current_cluster.vm_size) }}"
+      when:
+        - _has_data
+        - _is_underutilized
+        - _current_cluster.vm_size in azure_ml_cost_optimization_rightsize_allowed_sizes
+      failed_when: false
+
+    - name: Calculate new size
+      ansible.builtin.set_fact:
+        _new_size: "{{ azure_ml_cost_optimization_rightsize_allowed_sizes[_current_size_index | int - 1] if (_current_size_index | int > 0) else _current_cluster.vm_size }}"
+      when:
+        - _current_size_index is defined
+        - _current_size_index | int > 0
+
+    - name: Validate new size not below minimum
+      ansible.builtin.set_fact:
+        _new_size_allowed: "{{ azure_ml_cost_optimization_rightsize_allowed_sizes.index(_new_size) >= azure_ml_cost_optimization_rightsize_allowed_sizes.index(azure_ml_cost_optimization_rightsize_min_size) }}"
+      when: _new_size is defined
+
+    - name: Skip if new size below minimum
+      ansible.builtin.debug:
+        msg: "Skipping {{ item.cluster_name }}: new size {{ _new_size }} below minimum {{ azure_ml_cost_optimization_rightsize_min_size }}"
+      when:
+        - _new_size is defined
+        - not _new_size_allowed
+
+    - name: Validate cluster data before cost calculation
+      ansible.builtin.assert:
+        that:
+          - _current_cluster is defined
+          - _current_cluster.vm_size is defined
+          - _new_size is defined
+        fail_msg: |
+          Cannot calculate costs: missing cluster data
+          _current_cluster: {{ _current_cluster | default('UNDEFINED') }}
+          _new_size: {{ _new_size | default('UNDEFINED') }}
+      when:
+        - _new_size is defined
+        - _new_size_allowed
+        - _new_size != _current_cluster.vm_size
+
+    - name: Calculate cost savings
+      ansible.builtin.include_tasks: utils/calculate_costs.yml
+      vars:
+        _old_vm_size: "{{ _current_cluster.vm_size }}"
+        _new_vm_size: "{{ _new_size }}"
+      when:
+        - _new_size is defined
+        - _new_size_allowed
+        - _new_size != _current_cluster.vm_size
+
+    - name: Resize cluster
+      azure.azcollection.azure_rm_resource:
+        resource_group: "{{ azure_resource_group }}"
+        provider: MachineLearningServices
+        resource_type: workspaces/computes
+        parent_path: "{{ item.workspace_name }}"
+        resource_name: "{{ item.cluster_name }}"
+        api_version: "2023-04-01"
+        body:
+          properties:
+            properties:
+              vmSize: "{{ _new_size }}"
+      when:
+        - _new_size is defined
+        - _new_size_allowed
+        - _new_size != _current_cluster.vm_size
+      register: _resize_result
+
+    - name: Add to rightsize report
+      ansible.builtin.set_fact:
+        _rightsize_report: "{{ _rightsize_report + [_report_entry] }}"
+        _total_monthly_savings: "{{ _total_monthly_savings | float + _monthly_savings | float }}"
+      vars:
+        _report_entry:
+          cluster: "{{ item.cluster_name }}"
+          workspace: "{{ item.workspace_name }}"
+          old_size: "{{ _current_cluster.vm_size }}"
+          new_size: "{{ _new_size }}"
+          avg_cpu: "{{ item.avg_cpu_percent }}"
+          monthly_savings: "{{ _monthly_savings }}"
+          annual_savings: "{{ _annual_savings }}"
+      when:
+        - _resize_result is changed
+
+    - name: Record resize in audit log
+      ansible.builtin.set_fact:
+        _audit_log: "{{ _audit_log + [_audit_entry] }}"
+      vars:
+        _audit_entry:
+          timestamp: "{{ ansible_date_time.iso8601 }}"
+          operation: "analyze_and_rightsize"
+          workspace: "{{ item.workspace_name }}"
+          cluster: "{{ item.cluster_name }}"
+          action: "{{ 'resized' if _resize_result is changed else 'skipped' }}"
+          old_vm_size: "{{ _current_cluster.vm_size if _current_cluster is defined else 'unknown' }}"
+          new_vm_size: "{{ _new_size if _new_size is defined else (_current_cluster.vm_size if _current_cluster is defined else 'unknown') }}"
+          avg_cpu_percent: "{{ item.avg_cpu_percent }}"
+          monthly_savings: "{{ _monthly_savings if _resize_result is changed else 0 }}"
+      when: _resize_result is defined
+
+  loop: "{{ _cluster_metrics }}"
+  loop_control:
+    label: "{{ item.cluster_name }}"
+
+- name: Display rightsizing summary
+  ansible.builtin.debug:
+    msg: |
+      Right-sizing analysis complete:
+      - Clusters analyzed: {{ _cluster_metrics | length }}
+      - Clusters resized: {{ _rightsize_report | length }}
+      - Total monthly savings: ${{ _total_monthly_savings | round(2) }}
+      - Total annual savings: ${{ (_total_monthly_savings | float * 12) | round(2) }}
