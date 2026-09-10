@@ -63,6 +63,7 @@
   ansible.builtin.template:
     src: roi_report.md.j2
     dest: "{{ azure_ml_cost_optimization_roi_report_path }}"
+    mode: '0644'
   vars:
     report_date: "{{ ansible_date_time.date }}"
     baseline_cost: "{{ azure_ml_cost_optimization_roi_baseline_monthly_cost }}"

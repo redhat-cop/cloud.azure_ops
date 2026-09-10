@@ -16,6 +16,6 @@ galaxy_info:
     - azure
     - cloud
     - machinelearning
-    - cost_optimization
+    - costoptimization
 
 dependencies: []

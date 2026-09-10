@@ -92,7 +92,7 @@
         - _has_data
         - _is_underutilized
         - _current_cluster.vm_size in azure_ml_cost_optimization_rightsize_allowed_sizes
-      ignore_errors: true
+      failed_when: false
 
     - name: Calculate new size
       ansible.builtin.set_fact:

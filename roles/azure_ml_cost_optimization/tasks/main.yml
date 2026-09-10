@@ -26,4 +26,5 @@
   ansible.builtin.copy:
     content: "{{ _audit_log | to_nice_yaml }}"
     dest: "{{ azure_ml_cost_optimization_audit_log_path }}"
+    mode: '0644'
   when: azure_ml_cost_optimization_enable_audit_log | default(false)
