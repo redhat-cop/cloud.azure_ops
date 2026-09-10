@@ -489,7 +489,7 @@ Job Templates:
     playbook: cloud.azure_ops.cost_optimization
     extra_vars:
       operation: analyze_and_rightsize
-      azure_ml_cost_optimization_analysis_days: 7
+      azure_ml_cost_optimization_rightsize_analysis_days: 7
     credentials: Azure Service Principal
     limit: localhost
     

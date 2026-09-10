@@ -22,6 +22,10 @@ azure_ml_cost_optimization_rightsize_min_size: "Standard_DS3_v2"
 azure_ml_cost_optimization_ptu_target_utilization: 80
 azure_ml_cost_optimization_ptu_scale_down_threshold: 50
 
+# EDA override configuration (set by rulebook when triggered by budget alerts)
+azure_ml_cost_optimization_emergency_mode: false
+azure_ml_cost_optimization_budget_alert_action: "alert_only"
+
 # ROI tracking configuration
 # IMPORTANT: Set your baseline monthly cost before automation
 azure_ml_cost_optimization_roi_baseline_monthly_cost: 0  # USD - UPDATE THIS
