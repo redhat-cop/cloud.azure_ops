@@ -42,14 +42,12 @@ This role reduces Azure ML infrastructure costs by 30-50% through:
 
 | Variable | Type | Required | Default | Description |
 |----------|------|----------|---------|-------------|
-| `azure_ml_cost_optimization_shutdown_mode` | string | No | `graceful` | `graceful` (wait for jobs) or `immediate` |
 | `azure_ml_cost_optimization_preserve_running_jobs` | boolean | No | `true` | Skip clusters with active jobs during shutdown |
 
 ### Right-Sizing Configuration
 
 | Variable | Type | Required | Default | Description |
 |----------|------|----------|---------|-------------|
-| `azure_ml_cost_optimization_rightsize_enabled` | boolean | No | `true` | Enable right-sizing analysis |
 | `azure_ml_cost_optimization_rightsize_cpu_threshold` | integer | No | `30` | CPU % threshold for downsizing |
 | `azure_ml_cost_optimization_rightsize_analysis_days` | integer | No | `7` | Days of metrics to analyze |
 | `azure_ml_cost_optimization_rightsize_allowed_sizes` | list | No | `[Standard_DS3_v2, Standard_DS4_v2, Standard_DS5_v2]` | VM sizes allowed for auto-resize |
@@ -94,11 +92,10 @@ The role supports five core operations, specified via the `azure_ml_cost_optimiz
 
 ### shutdown_compute
 
-Gracefully or immediately shuts down Azure ML compute clusters and scales down Azure OpenAI PTU.
+Shuts down Azure ML compute clusters and scales down Azure OpenAI PTU.
 
 **Key Features:**
-- Supports graceful shutdown (waits for running jobs) or immediate mode
-- Can preserve clusters with active jobs to prevent disruption
+- Can preserve clusters with active jobs to prevent disruption (`preserve_running_jobs`)
 - Scales down Azure OpenAI PTU allocation
 - Idempotent (safe to run repeatedly)
 
@@ -208,7 +205,6 @@ Generates comprehensive cost optimization ROI report.
         azure_ml_cost_optimization_operation: shutdown_compute
         azure_resource_group: ml-platform-prod
         azure_region: eastus
-        azure_ml_cost_optimization_shutdown_mode: graceful
         azure_ml_cost_optimization_preserve_running_jobs: true
 ```
 
@@ -376,7 +372,6 @@ Trigger emergency shutdown when budget is exceeded:
         azure_resource_group: ml-platform-prod
         azure_region: eastus
         azure_ml_cost_optimization_emergency_mode: true
-        azure_ml_cost_optimization_shutdown_mode: immediate
         azure_ml_cost_optimization_preserve_running_jobs: false
         azure_ml_cost_optimization_budget_alert_action: shutdown_non_critical
 ```
@@ -411,7 +406,7 @@ ansible-playbook playbooks/cost_optimization.yml \
   -e operation=shutdown_compute \
   -e azure_resource_group=ml-platform-prod \
   -e azure_region=eastus \
-  -e azure_ml_cost_optimization_shutdown_mode=graceful
+  -e azure_ml_cost_optimization_preserve_running_jobs=true
 ```
 
 **Morning Startup (8am, weekdays):**
@@ -455,7 +450,6 @@ EDA rulebook example for budget-threshold events:
           extra_vars:
             operation: shutdown_compute
             azure_ml_cost_optimization_emergency_mode: true
-            azure_ml_cost_optimization_shutdown_mode: immediate
             azure_ml_cost_optimization_preserve_running_jobs: false
 ```
 
@@ -472,10 +466,10 @@ Before running tests, ensure:
 ### Manual Testing
 
 ```bash
-# Test shutdown with graceful mode
+# Test shutdown (preserving running jobs)
 ansible-playbook test_playbook.yml \
   -e azure_ml_cost_optimization_operation=shutdown_compute \
-  -e azure_ml_cost_optimization_shutdown_mode=graceful \
+  -e azure_ml_cost_optimization_preserve_running_jobs=true \
   -e azure_resource_group=test-rg
 
 # Test startup
@@ -513,6 +507,10 @@ ansible-playbook test_playbook.yml \
 ```
 
 Expected behavior: Both runs complete successfully with unchanged status on the second run.
+
+## Known Limitations
+
+- **ROI action counts reflect a single playbook run.** Automation action counts in ROI reports reflect only the current playbook run. The audit log is held in memory for the duration of the run and is not persisted or read back across runs. To track monthly actions, either: (1) chain operations in a single playbook, or (2) implement persistent audit log storage.
 
 ## Troubleshooting
 
@@ -558,8 +556,7 @@ azure_ml_cost_optimization_rightsize_analysis_days: 3
 ### Issue: Right-sizing recommendations not generated
 
 **Troubleshooting:**
-1. Verify `azure_ml_cost_optimization_rightsize_enabled: true`
-2. Check that analysis period has sufficient metric data (min 7 days)
+1. Check that analysis period has sufficient metric data (min 7 days)
 3. Ensure clusters have CPU metrics available in Azure Monitor
 4. Verify clusters are in specified resource group
 

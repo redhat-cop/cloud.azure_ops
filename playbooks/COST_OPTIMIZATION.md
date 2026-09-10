@@ -47,7 +47,7 @@ This reference architecture demonstrates how Ansible Automation Platform (AAP) r
 
 | Pattern | Trigger | Action | Savings |
 |---------|---------|--------|---------|
-| Scheduled Lifecycle | 6pm/8am cron | Graceful shutdown/startup of idle compute | 12-16 hrs/day × clusters |
+| Scheduled Lifecycle | 6pm/8am cron | Shutdown/startup of idle compute | 12-16 hrs/day × clusters |
 | Event-Driven Override | Cost threshold breach | Emergency shutdown (EDA rulebook) | $5K-$20K per incident |
 | Continuous Right-Sizing | Weekly schedule | Auto-downsize underutilized clusters | 10-20% compute cost reduction |
 | PTU Optimization | Weekly schedule | Scale OpenAI PTU based on utilization | 20-50% if over-provisioned |
@@ -133,16 +133,14 @@ azure_ml_cost_optimization_openai_accounts: []  # Restrict to specific OpenAI ac
 
 ```yaml
 # Shutdown behavior
-azure_ml_cost_optimization_shutdown_mode: "graceful"  # graceful (wait for jobs) | immediate (force stop)
 azure_ml_cost_optimization_preserve_running_jobs: true  # If true, skip clusters with active jobs
 
-# Graceful shutdown waits up to 30 minutes for current job to complete before stopping cluster
-# Preserve running jobs: Prevents disruption to long-running training jobs
+# Preserve running jobs: Prevents disruption to long-running training jobs by
+# skipping clusters that have active (Running/Preparing) jobs.
 ```
 
 **Example: Emergency Shutdown (EDA)**
 ```yaml
--e azure_ml_cost_optimization_shutdown_mode=immediate \
 -e azure_ml_cost_optimization_preserve_running_jobs=false \
 -e azure_ml_cost_optimization_emergency_mode=true
 ```
@@ -150,9 +148,6 @@ azure_ml_cost_optimization_preserve_running_jobs: true  # If true, skip clusters
 #### Right-Sizing Configuration
 
 ```yaml
-# Enable/disable right-sizing
-azure_ml_cost_optimization_rightsize_enabled: true
-
 # CPU utilization threshold (%)
 azure_ml_cost_optimization_rightsize_cpu_threshold: 30
 # Downsize if average CPU < this for entire analysis window
@@ -213,7 +208,7 @@ azure_ml_cost_optimization_ptu_scale_down_threshold: 50
 ```yaml
 # Emergency mode (set by EDA rulebook on cost threshold breach)
 azure_ml_cost_optimization_emergency_mode: false
-# If true, skip graceful wait and preserve_running_jobs checks
+# Recorded on audit entries to flag budget-triggered runs
 
 # Budget alert action
 azure_ml_cost_optimization_budget_alert_action: "shutdown_non_critical"
@@ -317,7 +312,6 @@ ansible-playbook playbooks/cost_optimization.yml \
   -e operation=shutdown_compute \
   -e azure_resource_group=ml-platform-prod \
   -e azure_region=eastus \
-  -e azure_ml_cost_optimization_shutdown_mode=graceful \
   -e azure_ml_cost_optimization_preserve_running_jobs=true
 ```
 
@@ -433,7 +427,6 @@ ansible-playbook playbooks/cost_optimization.yml \
   -e operation=shutdown_compute \
   -e azure_resource_group=ml-platform-prod \
   -e azure_region=eastus \
-  -e azure_ml_cost_optimization_shutdown_mode=immediate \
   -e azure_ml_cost_optimization_preserve_running_jobs=false \
   -e azure_ml_cost_optimization_emergency_mode=true \
   -e azure_ml_cost_optimization_budget_alert_action=shutdown_non_critical
@@ -474,7 +467,7 @@ Job Templates:
     playbook: cloud.azure_ops.cost_optimization
     extra_vars:
       operation: shutdown_compute
-      azure_ml_cost_optimization_shutdown_mode: graceful
+      azure_ml_cost_optimization_preserve_running_jobs: true
     credentials: Azure Service Principal
     limit: localhost
     
@@ -572,17 +565,6 @@ survey:
     type: text
     required: true
     default: eastus
-  
-  - variable: azure_ml_cost_optimization_shutdown_mode
-    question: "Shutdown mode (shutdown_compute only)?"
-    type: multiple_choice
-    choices:
-      - graceful
-      - immediate
-    default: graceful
-    condition:
-      - variable: operation
-        value: shutdown_compute
   
   - variable: azure_ml_cost_optimization_preserve_running_jobs
     question: "Preserve running jobs? (shutdown_compute only)"
@@ -754,7 +736,7 @@ ansible-rulebook -i inventory.yml -r eda_cost_alerts.yml -v
 
 **Normal Operation (Scheduled):**
 ```
-6pm daily → AAP Scheduled Job → Shutdown playbook → Graceful shutdown
+6pm daily → AAP Scheduled Job → Shutdown playbook → Shutdown idle compute
 8am daily → AAP Scheduled Job → Startup playbook → Restore clusters
 2am Sunday → AAP Scheduled Job → Right-sizing playbook → Analyze metrics
 ```
@@ -766,8 +748,7 @@ ansible-rulebook -i inventory.yml -r eda_cost_alerts.yml -v
   → EDA rulebook receives event
   → Triggers AAP job: "Cost Optimization - Emergency Shutdown"
   → Playbook runs with emergency_mode=true
-  → Immediate shutdown, skip graceful wait
-  → Shutdown non-critical clusters only
+  → Shutdown non-critical clusters only (clusters tagged critical=true are preserved)
 6pm (scheduled) → Shutdown playbook runs
   → No-op (clusters already stopped)
 ```

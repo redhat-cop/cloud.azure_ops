@@ -5,11 +5,9 @@
 azure_region: "eastus"
 
 # Shutdown/startup configuration
-azure_ml_cost_optimization_shutdown_mode: "graceful"
 azure_ml_cost_optimization_preserve_running_jobs: true
 
 # Right-sizing configuration
-azure_ml_cost_optimization_rightsize_enabled: true
 azure_ml_cost_optimization_rightsize_cpu_threshold: 30
 azure_ml_cost_optimization_rightsize_analysis_days: 7
 azure_ml_cost_optimization_rightsize_allowed_sizes:

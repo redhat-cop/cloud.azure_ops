@@ -15,18 +15,6 @@
       "new_question": true
     },
     {
-      "question_name": "Shutdown Mode",
-      "question_description": "How should clusters be shutdown?",
-      "required": true,
-      "type": "multiplechoice",
-      "variable": "shutdown_mode",
-      "min": 0,
-      "max": 1024,
-      "default": "graceful",
-      "choices": "graceful (wait for jobs, max 30 min)\nimmediate (may interrupt jobs)",
-      "new_question": true
-    },
-    {
       "question_name": "Preserve Running Jobs",
       "question_description": "Skip clusters with active jobs?",
       "required": true,

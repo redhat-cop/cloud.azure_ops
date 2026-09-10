@@ -68,9 +68,32 @@
         - _running_jobs is defined
         - _running_jobs | length > 0
 
-    - name: Determine if shutdown should be skipped due to running jobs
+    - name: Determine if cluster is a protected critical workload
       ansible.builtin.set_fact:
-        _should_skip_shutdown: "{{ azure_ml_cost_optimization_preserve_running_jobs and _running_jobs is defined and _running_jobs | length > 0 }}"
+        _is_critical_workload: >-
+          {{
+            azure_ml_cost_optimization_budget_alert_action == 'shutdown_non_critical'
+            and ((item.tags | default({}, true)).critical | default('') | string | lower == 'true')
+          }}
+      # When budget_alert_action is 'shutdown_non_critical', clusters tagged
+      # critical=true are preserved during emergency/budget-triggered shutdown.
+
+    - name: Skip critical workload during emergency shutdown
+      ansible.builtin.set_fact:
+        _clusters_skipped: "{{ _clusters_skipped | int + 1 }}"
+        _shutdown_reasons: "{{ _shutdown_reasons + ['Critical workload - preserved during emergency shutdown: ' + item.name] }}"
+      when:
+        - _cluster_compute_type == 'AmlCompute'
+        - _is_critical_workload | bool
+
+    - name: Determine if shutdown should be skipped
+      ansible.builtin.set_fact:
+        _should_skip_shutdown: >-
+          {{
+            (azure_ml_cost_optimization_preserve_running_jobs
+             and _running_jobs is defined and _running_jobs | length > 0)
+            or (_is_critical_workload | bool)
+          }}
 
     - name: Shutdown cluster by scaling to 0
       azure.azcollection.azure_rm_resource:
@@ -108,6 +131,7 @@
           workspace: "{{ workspace.name }}"
           cluster: "{{ item.name }}"
           action: "{{ 'shutdown' if _shutdown_result is changed else 'skipped' }}"
+          reason: "{{ 'Critical workload - preserved during emergency shutdown' if (_is_critical_workload | default(false) | bool) else '' }}"
           previous_min_nodes: "{{ item.properties.properties.scaleSettings.minNodeCount | default(0) }}"
           new_min_nodes: "{{ 0 if _shutdown_result is changed else item.properties.properties.scaleSettings.minNodeCount | default(0) }}"
           emergency_mode: "{{ azure_ml_cost_optimization_emergency_mode }}"

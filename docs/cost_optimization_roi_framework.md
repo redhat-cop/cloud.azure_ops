@@ -475,6 +475,14 @@ monthly_trend:
 | Trend Report | Quarterly | Leadership, CFO | Strategic planning, cost forecasting |
 | Ad-hoc Alert | On-demand (EDA trigger) | Operations team | Budget threshold alerts, emergency response |
 
+### Known Limitations
+
+Automation action counts in ROI reports reflect only the current playbook run. The audit log
+is held in memory for the duration of a single run and is not persisted or read back across runs,
+so standalone `generate_roi_report` executions will show zero prior actions. To track monthly
+actions, either: (1) chain operations in a single playbook, or (2) implement persistent audit
+log storage.
+
 ---
 
 ## Cost Calculator Template
