@@ -1,0 +1,89 @@
+---
+# ── Phase 1: Shared Resource Group ──────────────────────────────
+- name: Create shared resource group
+  ansible.builtin.include_role:
+    name: cloud.azure_ops.azure_manage_resource_group
+  vars:
+    azure_manage_resource_group_operation: create
+    azure_manage_resource_group_name: "{{ azure_ml_platform_shared_rg }}"
+    azure_manage_resource_group_region: "{{ azure_region }}"
+
+# ── Phase 2: Retrieve Subscription Info ─────────────────────────
+- name: Retrieve subscription and tenant info
+  azure.azcollection.azure_rm_subscription_info:
+  register: _sub_info
+
+- name: Validate subscription info is available
+  ansible.builtin.fail:
+    msg: "No Azure subscriptions found. Ensure Azure credentials are configured."
+  when: _sub_info.subscriptions | length == 0
+
+- name: Set subscription and tenant ID facts
+  ansible.builtin.set_fact:
+    _subscription_id: "{{ _sub_info.subscriptions[0].subscription_id }}"
+    _tenant_id: "{{ _sub_info.subscriptions[0].tenant_id }}"
+    _arm_prefix: "/subscriptions/{{ _sub_info.subscriptions[0].subscription_id }}/resourceGroups/{{ azure_ml_platform_shared_rg }}/providers"
+
+# ── Phase 3: Key Vault (RBAC-enabled) ───────────────────────────
+- name: Create or update Key Vault with RBAC authorization
+  azure.azcollection.azure_rm_keyvault:
+    resource_group: "{{ azure_ml_platform_shared_rg }}"
+    vault_name: "{{ azure_ml_platform_keyvault }}"
+    vault_tenant: "{{ _tenant_id }}"
+    location: "{{ azure_region }}"
+    enable_rbac_authorization: true
+    sku:
+      name: standard
+      family: A
+    tags:
+      team: "{{ azure_ml_platform_team }}"
+      cost_center: "{{ azure_ml_platform_cost_center }}"
+      environment: "{{ azure_ml_platform_environment }}"
+      managed_by: "ansible"
+
+# ── Phase 4: Application Insights ───────────────────────────────
+- name: Create Application Insights
+  azure.azcollection.azure_rm_resource:
+    resource_group: "{{ azure_ml_platform_shared_rg }}"
+    provider: Insights
+    resource_type: components
+    resource_name: "{{ azure_ml_platform_appinsights }}"
+    api_version: "2020-02-02"
+    idempotency: true
+    body:
+      location: "{{ azure_region }}"
+      kind: web
+      properties:
+        Application_Type: web
+      tags:
+        team: "{{ azure_ml_platform_team }}"
+        cost_center: "{{ azure_ml_platform_cost_center }}"
+        environment: "{{ azure_ml_platform_environment }}"
+        managed_by: "ansible"
+
+# ── Phase 5: Container Registry ─────────────────────────────────
+- name: Create Container Registry
+  azure.azcollection.azure_rm_containerregistry:
+    resource_group: "{{ azure_ml_platform_shared_rg }}"
+    name: "{{ azure_ml_platform_acr }}"
+    location: "{{ azure_region }}"
+    sku: Standard
+    admin_user_enabled: false
+    tags:
+      team: "{{ azure_ml_platform_team }}"
+      cost_center: "{{ azure_ml_platform_cost_center }}"
+      environment: "{{ azure_ml_platform_environment }}"
+      managed_by: "ansible"
+
+# ── Output ──────────────────────────────────────────────────────
+- name: Display shared infrastructure details
+  ansible.builtin.debug:
+    msg:
+      - "Shared infrastructure provisioned successfully:"
+      - "  Resource Group: {{ azure_ml_platform_shared_rg }}"
+      - "  Region: {{ azure_region }}"
+      - "  Key Vault: {{ azure_ml_platform_keyvault }}"
+      - "  Container Registry: {{ azure_ml_platform_acr }}"
+      - "  Application Insights: {{ azure_ml_platform_appinsights }}"
+      - ""
+      - "Teams can now request workspaces via AAP catalog."

@@ -1,0 +1,4 @@
+---
+- name: Include operation-specific tasks
+  ansible.builtin.include_tasks: "{{ operation }}.yml"
+  when: operation is defined
