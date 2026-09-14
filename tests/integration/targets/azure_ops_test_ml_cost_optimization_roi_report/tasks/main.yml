@@ -1,0 +1,171 @@
+---
+# Test ML Cost Optimization ROI Report Generation
+
+- name: Include generate_roi_report task
+  block:
+    - name: Create temporary directory for test report
+      ansible.builtin.file:
+        path: /tmp/roi_report_test
+        state: directory
+
+    - name: Set test variables
+      ansible.builtin.set_fact:
+        azure_ml_cost_optimization_operation: generate_roi_report
+        azure_ml_cost_optimization_roi_baseline_monthly_cost: 5000
+        azure_ml_cost_optimization_roi_tracking_start_date: "2026-01-01"
+        azure_ml_cost_optimization_roi_report_path: /tmp/roi_report_test/roi_report.md
+        azure_ml_cost_optimization_enable_audit_log: false
+        azure_resource_group: test-rg
+        azure_region: eastus
+
+    - name: Initialize audit log for test
+      ansible.builtin.set_fact:
+        _audit_log:
+          - operation: shutdown_compute
+            action: shutdown
+            resource: test-cluster-1
+            timestamp: "2026-09-01T10:00:00Z"
+          - operation: analyze_and_rightsize
+            action: resized
+            resource: test-cluster-2
+            timestamp: "2026-09-02T11:00:00Z"
+          - operation: manage_ptu
+            action: scaled_down
+            resource: test-openai-1
+            timestamp: "2026-09-03T12:00:00Z"
+
+    - name: Set mock subscription and region facts
+      ansible.builtin.set_fact:
+        _subscription_id: "test-subscription-id"
+        _azure_region: eastus
+
+    - name: Test with baseline cost of zero (should fail)
+      block:
+        - name: Include generate_roi_report with zero baseline
+          ansible.builtin.set_fact:
+            azure_ml_cost_optimization_roi_baseline_monthly_cost: 0
+
+        - name: Try to generate report with zero baseline (should fail)
+          ansible.builtin.include_tasks: "{{ role_path }}/tasks/generate_roi_report.yml"
+          register: zero_baseline_result
+          ignore_errors: true
+
+        - name: Verify failure occurred
+          ansible.builtin.assert:
+            that:
+              - zero_baseline_result is failed
+            fail_msg: "Task should fail when baseline cost is zero"
+
+    - name: Test with valid baseline cost
+      block:
+        - name: Reset baseline cost to valid value
+          ansible.builtin.set_fact:
+            azure_ml_cost_optimization_roi_baseline_monthly_cost: 5000
+
+        - name: Set current month start date
+          ansible.builtin.set_fact:
+            _current_month_start: "{{ '%Y-%m-01' | strftime(ansible_date_time.epoch | int) }}"
+
+        - name: Mock cost query response
+          ansible.builtin.set_fact:
+            _cost_query:
+              response:
+                properties:
+                  rows:
+                    - ["AmlCompute", 2500]
+                    - ["VirtualMachines", 1000]
+              succeeded: true
+
+        - name: Parse cost data
+          ansible.builtin.set_fact:
+            _current_month_cost: "{{ _cost_query.response.properties.rows | map('last') | sum | float | round(2) }}"
+            _cost_by_type: "{{ _cost_query.response.properties.rows | items2dict(key_name=0, value_name=1) }}"
+
+        - name: Calculate savings metrics
+          ansible.builtin.set_fact:
+            _monthly_savings: "{{ (azure_ml_cost_optimization_roi_baseline_monthly_cost | float - _current_month_cost | float) | round(2) }}"
+            _savings_percent: "{{ ((azure_ml_cost_optimization_roi_baseline_monthly_cost | float - _current_month_cost | float) / azure_ml_cost_optimization_roi_baseline_monthly_cost | float * 100) | round(2) }}"
+            _projected_annual_savings: "{{ ((azure_ml_cost_optimization_roi_baseline_monthly_cost | float - _current_month_cost | float) * 12) | round(2) }}"
+
+        - name: Count actions from audit log
+          ansible.builtin.set_fact:
+            _shutdown_count: "{{ _audit_log | selectattr('operation', 'equalto', 'shutdown_compute') | selectattr('action', 'equalto', 'shutdown') | list | length }}"
+            _rightsize_count: "{{ _audit_log | selectattr('operation', 'equalto', 'analyze_and_rightsize') | selectattr('action', 'equalto', 'resized') | list | length }}"
+            _ptu_count: "{{ _audit_log | selectattr('operation', 'equalto', 'manage_ptu') | selectattr('action', 'equalto', 'scaled_down') | list | length }}"
+
+        - name: Generate ROI report markdown
+          ansible.builtin.template:
+            src: "{{ role_path }}/templates/roi_report.md.j2"
+            dest: "{{ azure_ml_cost_optimization_roi_report_path }}"
+          vars:
+            report_date: "{{ ansible_date_time.date }}"
+            baseline_cost: "{{ azure_ml_cost_optimization_roi_baseline_monthly_cost }}"
+            current_cost: "{{ _current_month_cost }}"
+            monthly_savings: "{{ _monthly_savings }}"
+            savings_percent: "{{ _savings_percent }}"
+            annual_savings: "{{ _projected_annual_savings }}"
+            cost_breakdown: "{{ _cost_by_type }}"
+            shutdown_events: "{{ _shutdown_count }}"
+            rightsize_events: "{{ _rightsize_count }}"
+            ptu_events: "{{ _ptu_count }}"
+
+        - name: Verify report was created
+          ansible.builtin.stat:
+            path: "{{ azure_ml_cost_optimization_roi_report_path }}"
+          register: report_stat
+
+        - name: Assert report file exists
+          ansible.builtin.assert:
+            that:
+              - report_stat.stat.exists
+            fail_msg: "ROI report file was not created"
+
+        - name: Read report content
+          ansible.builtin.slurp:
+            src: "{{ azure_ml_cost_optimization_roi_report_path }}"
+          register: report_content
+
+        - name: Verify report contains expected sections
+          ansible.builtin.assert:
+            that:
+              - "'ML Platform Cost Optimization - ROI Report' in report_content.content | b64decode"
+              - "'Executive Summary' in report_content.content | b64decode"
+              - "'Cost Breakdown by Resource Type' in report_content.content | b64decode"
+              - "'Automation Actions This Month' in report_content.content | b64decode"
+            fail_msg: "Report missing expected sections"
+
+        - name: Verify calculations
+          ansible.builtin.assert:
+            that:
+              - _current_month_cost == 3500
+              - _monthly_savings == 1500
+              - _savings_percent == 30.0
+              - _projected_annual_savings == 18000
+              - _shutdown_count == 1
+              - _rightsize_count == 1
+              - _ptu_count == 1
+            fail_msg: "Calculations are incorrect"
+
+        - name: Set ROI metrics fact
+          ansible.builtin.set_fact:
+            _roi_metrics:
+              baseline_monthly_cost: "{{ azure_ml_cost_optimization_roi_baseline_monthly_cost }}"
+              current_month_cost: "{{ _current_month_cost }}"
+              monthly_savings: "{{ _monthly_savings }}"
+              savings_percent: "{{ _savings_percent }}"
+              projected_annual_savings: "{{ _projected_annual_savings }}"
+
+        - name: Verify ROI metrics fact was set
+          ansible.builtin.assert:
+            that:
+              - _roi_metrics is defined
+              - _roi_metrics.baseline_monthly_cost == 5000
+              - _roi_metrics.current_month_cost == 3500
+              - _roi_metrics.monthly_savings == 1500
+            fail_msg: "ROI metrics fact not properly set"
+
+  always:
+    - name: Clean up test files
+      ansible.builtin.file:
+        path: /tmp/roi_report_test
+        state: absent

@@ -1,0 +1,4 @@
+---
+# Test defaults
+azure_resource_group: test-resource-group
+azure_region: eastus

@@ -1,0 +1,41 @@
+---
+# Startup Azure ML compute clusters
+
+- name: Get all ML workspaces in resource group
+  azure.azcollection.azure_rm_resource_info:
+    resource_group: "{{ azure_resource_group }}"
+    provider: MachineLearningServices
+    resource_type: workspaces
+    api_version: "2023-04-01"
+  register: _workspaces
+
+- name: Filter workspaces if specific list provided
+  ansible.builtin.set_fact:
+    _target_workspaces: "{{ _workspaces.response | selectattr('name', 'in', azure_ml_cost_optimization_workspaces) | list }}"
+  when: azure_ml_cost_optimization_workspaces | length > 0
+
+- name: Use all workspaces if no filter provided
+  ansible.builtin.set_fact:
+    _target_workspaces: "{{ _workspaces.response }}"
+  when: azure_ml_cost_optimization_workspaces | length == 0
+
+- name: Initialize startup tracking
+  ansible.builtin.set_fact:
+    _clusters_started: 0
+
+- name: Process each workspace
+  ansible.builtin.include_tasks: utils/startup_workspace_clusters.yml
+  loop: "{{ _target_workspaces }}"
+  loop_control:
+    loop_var: workspace
+
+- name: Set startup summary
+  ansible.builtin.set_fact:
+    _startup_summary:
+      clusters_started: "{{ _clusters_started | int }}"
+
+- name: Display startup summary
+  ansible.builtin.debug:
+    msg: |
+      Startup complete:
+      - Clusters started: {{ _startup_summary.clusters_started }}
