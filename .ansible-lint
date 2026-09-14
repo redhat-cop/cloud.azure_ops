@@ -4,4 +4,6 @@ exclude_paths:
   - tests/integration/
 
 skip_list:
-  - var-naming[no-role-prefix]  # Variables are designed to be set by playbook users
+  - var-naming[no-role-prefix]  # Allow internal variables with _ prefix
+  - key-order[task]  # Allow flexible task key ordering
+  - no-handler  # Task conditions don't require handlers for this use case

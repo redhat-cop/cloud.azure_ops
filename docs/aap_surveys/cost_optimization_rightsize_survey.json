@@ -1,0 +1,42 @@
+{
+  "name": "ML Cost Optimization - Right-Sizing",
+  "description": "Analyze utilization and rightsize underutilized clusters",
+  "spec": [
+    {
+      "question_name": "Resource Group",
+      "question_description": "Azure resource group containing ML resources",
+      "required": true,
+      "type": "text",
+      "variable": "azure_resource_group",
+      "min": 0,
+      "max": 1024,
+      "default": "",
+      "choices": "",
+      "new_question": true
+    },
+    {
+      "question_name": "CPU Utilization Threshold",
+      "question_description": "CPU threshold % for downsizing",
+      "required": true,
+      "type": "multiplechoice",
+      "variable": "rightsize_cpu_threshold",
+      "min": 0,
+      "max": 1024,
+      "default": "30",
+      "choices": "20 (aggressive downsizing)\n30 (recommended)\n40 (conservative)",
+      "new_question": true
+    },
+    {
+      "question_name": "Analysis Window",
+      "question_description": "Days of metrics to analyze",
+      "required": true,
+      "type": "multiplechoice",
+      "variable": "rightsize_analysis_days",
+      "min": 0,
+      "max": 1024,
+      "default": "7",
+      "choices": "7 (recommended)\n14 (conservative)",
+      "new_question": true
+    }
+  ]
+}

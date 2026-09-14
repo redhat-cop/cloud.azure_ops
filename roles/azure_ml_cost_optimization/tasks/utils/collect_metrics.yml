@@ -1,0 +1,100 @@
+---
+# Collect Azure Monitor metrics for compute clusters
+
+- name: Validate required inputs for metrics collection
+  ansible.builtin.assert:
+    that:
+      - _subscription_id is defined
+      - _subscription_id | length > 0
+      - azure_resource_group is defined
+      - azure_resource_group | length > 0
+      - azure_ml_cost_optimization_rightsize_analysis_days is defined
+      - azure_ml_cost_optimization_rightsize_analysis_days | int > 0
+      - _clusters_to_analyze is defined
+      - _clusters_to_analyze is iterable
+    fail_msg: |
+      Missing required inputs for metrics collection:
+      _subscription_id: {{ _subscription_id | default('UNDEFINED') }}
+      azure_resource_group: {{ azure_resource_group | default('UNDEFINED') }}
+      azure_ml_cost_optimization_rightsize_analysis_days: {{ azure_ml_cost_optimization_rightsize_analysis_days | default('UNDEFINED') }}
+      _clusters_to_analyze: {{ _clusters_to_analyze | default('UNDEFINED') }}
+
+- name: Set metrics collection parameters
+  ansible.builtin.set_fact:
+    _metrics_start_time: "{{ '%Y-%m-%dT%H:%M:%SZ' | strftime(ansible_date_time.epoch | int - (azure_ml_cost_optimization_rightsize_analysis_days * 86400)) }}"
+    _metrics_end_time: "{{ ansible_date_time.iso8601 }}"
+    _metrics_interval: "PT1H"  # 1 hour granularity
+
+- name: Initialize metrics collection
+  ansible.builtin.set_fact:
+    _cluster_metrics: []
+
+- name: Collect metrics for each cluster
+  block:
+    - name: Initialize loop variables
+      ansible.builtin.set_fact:
+        _cpu_values: []
+        _metrics_data_valid: false
+
+    - name: Build resource ID
+      ansible.builtin.set_fact:
+        _cluster_resource_id: "/subscriptions/{{ _subscription_id }}/resourceGroups/{{ azure_resource_group }}/providers/Microsoft.MachineLearningServices/workspaces/{{ item.workspace_name }}/computes/{{ item.cluster_name }}"
+
+    - name: Query Azure Monitor for CPU metrics
+      azure.azcollection.azure_rm_resource:
+        url: "https://management.azure.com{{ _cluster_resource_id }}/providers/Microsoft.Insights/metrics"
+        api_version: "2023-10-01"
+        method: GET
+        query_parameters:
+          timespan: "{{ _metrics_start_time }}/{{ _metrics_end_time }}"
+          interval: "{{ _metrics_interval }}"
+          metricnames: "CpuUtilization"
+          aggregation: "Average"
+      register: _metrics_response
+      ignore_errors: true
+
+    - name: Validate and parse metrics data
+      ansible.builtin.set_fact:
+        _cpu_values: "{{ _metrics_response.response.value[0].timeseries[0].data | map(attribute='average') | select('defined') | list }}"
+        _metrics_data_valid: true
+      when:
+        - _metrics_response is succeeded
+        - _metrics_response.response is defined
+        - _metrics_response.response.value | length > 0
+        - _metrics_response.response.value[0].timeseries | default([]) | length > 0
+
+    - name: Calculate average CPU
+      ansible.builtin.set_fact:
+        _avg_cpu: "{{ (_cpu_values | map('float') | sum / _cpu_values | length) | round(2) }}"
+      when:
+        - _cpu_values is defined
+        - _cpu_values | length > 0
+
+    - name: Add cluster metrics to collection
+      ansible.builtin.set_fact:
+        _cluster_metrics: "{{ _cluster_metrics + [_metric_entry] }}"
+      vars:
+        _metric_entry:
+          cluster_name: "{{ item.cluster_name }}"
+          workspace_name: "{{ item.workspace_name }}"
+          avg_cpu_percent: "{{ _avg_cpu | default(0) | float }}"
+          analysis_days: "{{ azure_ml_cost_optimization_rightsize_analysis_days }}"
+          data_points: "{{ _cpu_values | default([]) | length }}"
+          has_sufficient_data: "{{ (_cpu_values | default([]) | length) >= (azure_ml_cost_optimization_rightsize_analysis_days * 20) }}"  # At least 20 data points per day
+      when: _cpu_values is defined
+
+    - name: Log insufficient metrics data
+      ansible.builtin.debug:
+        msg: "Warning: Insufficient metrics data for {{ item.cluster_name }} in workspace {{ item.workspace_name }}"
+      when:
+        - not _metrics_data_valid or _cpu_values | length == 0
+
+  loop: "{{ _clusters_to_analyze }}"
+  loop_control:
+    label: "{{ item.cluster_name }}"
+
+- name: Display metrics collection summary
+  ansible.builtin.debug:
+    msg: |
+      Metrics collected for {{ _cluster_metrics | length }} clusters
+      Analysis period: {{ azure_ml_cost_optimization_rightsize_analysis_days }} days

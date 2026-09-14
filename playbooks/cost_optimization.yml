@@ -1,0 +1,23 @@
+---
+- name: Azure ML/AI cost optimization
+  hosts: localhost
+  gather_facts: true
+
+  vars_files:
+    - vars/cost_optimization_vars.yml
+
+  tasks:
+    - name: Fail when required variables not defined
+      ansible.builtin.fail:
+        msg: "Required variable {{ item }} not defined"
+      when: vars[item] is not defined
+      loop:
+        - operation
+        - azure_resource_group
+        - azure_region
+
+    - name: Run cost optimization operation
+      ansible.builtin.include_role:
+        name: cloud.azure_ops.azure_ml_cost_optimization
+      vars:
+        azure_ml_cost_optimization_operation: "{{ operation }}"
