@@ -1,1 +1,3 @@
-cloud_azure_ops
+cloud/azure
+role/azure_ml_cost_optimization
+time=10m

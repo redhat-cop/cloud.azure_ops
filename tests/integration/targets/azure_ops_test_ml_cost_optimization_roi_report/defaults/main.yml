@@ -1,4 +1,19 @@
 ---
-# Test defaults
-azure_resource_group: test-resource-group
-azure_region: eastus
+# Test defaults for the azure_ml_cost_optimization role (generate_roi_report)
+
+# Region the dedicated test resource group is created in.
+test_azure_region: eastus
+
+# Dedicated resource group created and torn down by this test. Named from the
+# ansible-test resource_prefix so it is unique per run and safe to delete.
+test_roi_resource_group: "{{ resource_prefix }}-mlcost"
+
+# Baseline monthly cost used to compute savings in the ROI report.
+test_roi_baseline_monthly_cost: 5000
+
+# ISO 8601 date the ROI tracking started.
+test_roi_tracking_start_date: "2026-01-01"
+
+# Local directory the generated report is written to (cleaned up after the run).
+test_roi_report_dir: /tmp/azure_ops_test_roi_report
+test_roi_report_path: "{{ test_roi_report_dir }}/roi_report.md"
