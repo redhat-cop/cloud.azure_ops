@@ -17,7 +17,7 @@
 - name: Add AmlCompute clusters to analysis list
   ansible.builtin.set_fact:
     _clusters_to_analyze: "{{ _clusters_to_analyze + [{'cluster_name': cluster.name, 'workspace_name': item.name, 'vm_size': cluster.properties.properties.vmSize, 'max_nodes': cluster.properties.properties.scaleSettings.maxNodeCount}] }}"
-  loop: "{{ _workspace_clusters.response | selectattr('properties.computeType', 'equalto', 'AmlCompute') | list }}"
+  loop: "{{ _workspace_clusters.response | selectattr('name', 'defined') | selectattr('properties.computeType', 'equalto', 'AmlCompute') | list }}"
   loop_control:
     loop_var: cluster
     label: "{{ cluster.name }}"

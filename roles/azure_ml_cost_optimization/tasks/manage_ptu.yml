@@ -11,7 +11,7 @@
 
 - name: Filter OpenAI accounts
   ansible.builtin.set_fact:
-    _openai_accounts: "{{ _cognitive_accounts.response | selectattr('kind', 'equalto', 'OpenAI') | list }}"
+    _openai_accounts: "{{ _cognitive_accounts.response | selectattr('name', 'defined') | selectattr('kind', 'equalto', 'OpenAI') | list }}"
 
 - name: Filter specific accounts if list provided
   ansible.builtin.set_fact:

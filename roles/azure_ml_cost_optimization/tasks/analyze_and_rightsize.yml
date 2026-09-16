@@ -16,12 +16,12 @@
 
 - name: Filter workspaces if specific list provided
   ansible.builtin.set_fact:
-    _target_workspaces: "{{ _workspaces.response | selectattr('name', 'in', azure_ml_cost_optimization_workspaces) | list }}"
+    _target_workspaces: "{{ _workspaces.response | selectattr('name', 'defined') | selectattr('name', 'in', azure_ml_cost_optimization_workspaces) | list }}"
   when: azure_ml_cost_optimization_workspaces | length > 0
 
 - name: Use all workspaces if no filter provided
   ansible.builtin.set_fact:
-    _target_workspaces: "{{ _workspaces.response }}"
+    _target_workspaces: "{{ _workspaces.response | selectattr('name', 'defined') | list }}"
   when: azure_ml_cost_optimization_workspaces | length == 0
 
 - name: Build cluster list for metrics collection

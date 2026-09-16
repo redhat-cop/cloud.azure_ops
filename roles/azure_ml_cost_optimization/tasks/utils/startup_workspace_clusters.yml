@@ -12,12 +12,12 @@
 
 - name: Filter clusters if specific list provided
   ansible.builtin.set_fact:
-    _target_clusters: "{{ _clusters.response | selectattr('name', 'in', azure_ml_cost_optimization_compute_targets) | list }}"
+    _target_clusters: "{{ _clusters.response | selectattr('name', 'defined') | selectattr('name', 'in', azure_ml_cost_optimization_compute_targets) | list }}"
   when: azure_ml_cost_optimization_compute_targets | length > 0
 
 - name: Use all clusters if no filter provided
   ansible.builtin.set_fact:
-    _target_clusters: "{{ _clusters.response }}"
+    _target_clusters: "{{ _clusters.response | selectattr('name', 'defined') | list }}"
   when: azure_ml_cost_optimization_compute_targets | length == 0
 
 - name: Process each cluster

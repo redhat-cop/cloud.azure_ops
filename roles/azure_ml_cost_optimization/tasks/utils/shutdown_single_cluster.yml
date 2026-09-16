@@ -35,7 +35,7 @@
 
 - name: Filter running jobs on this cluster
   ansible.builtin.set_fact:
-    _running_jobs: "{{ _jobs.response | default([]) | selectattr('properties.status', 'in', ['Running', 'Preparing']) | selectattr('properties.computeId', 'search', item.name) | list }}"
+    _running_jobs: "{{ _jobs.response | default([]) | selectattr('name', 'defined') | selectattr('properties.status', 'in', ['Running', 'Preparing']) | selectattr('properties.computeId', 'search', item.name) | list }}"
   when:
     - azure_ml_cost_optimization_preserve_running_jobs
     - _jobs is defined
