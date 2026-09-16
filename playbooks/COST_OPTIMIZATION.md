@@ -245,7 +245,7 @@ rules:
 ```yaml
 # Baseline monthly cost (USD) before automation
 azure_ml_cost_optimization_roi_baseline_monthly_cost: 0  # MUST UPDATE THIS
-# Recommended: Run `az costmanagement query` to measure average of past 3 months
+# Recommended: query the Cost Management API (see steps below) to measure the average of the past 3 months
 # This baseline is used to calculate ROI and savings percentage
 
 # Tracking start date (ISO 8601)
@@ -261,13 +261,21 @@ azure_ml_cost_optimization_roi_report_path: "/tmp/roi_report_{{ ansible_date_tim
 **Baseline Calculation Steps:**
 
 ```bash
-# Step 1: Query Azure Cost Management API for past 3 months
-az costmanagement query \
-  --type ActualCost \
-  --dataset-aggregation '{"totalCost":{"name":"Cost","function":"Sum"}}' \
-  --timeframe Custom \
-  --time-period from="2026-03-01" to="2026-05-31" \
-  --scope "/subscriptions/{subscription-id}"
+# Step 1: Query Azure Cost Management API for past 3 months.
+# The costmanagement CLI has no "query" command, so call the REST API directly
+# (this is the same Query API the role uses via azure_rm_resource).
+az rest --method post \
+  --url "https://management.azure.com/subscriptions/{subscription-id}/providers/Microsoft.CostManagement/query?api-version=2023-03-01" \
+  --headers "Content-Type=application/json" \
+  --body '{
+    "type": "ActualCost",
+    "timeframe": "Custom",
+    "timePeriod": {"from": "2026-03-01T00:00:00Z", "to": "2026-05-31T23:59:59Z"},
+    "dataset": {
+      "granularity": "Monthly",
+      "aggregation": {"totalCost": {"name": "Cost", "function": "Sum"}}
+    }
+  }'
 
 # Step 2: Calculate average
 baseline_monthly_cost = (march_cost + april_cost + may_cost) / 3
@@ -808,14 +816,21 @@ ansible-rulebook -i inventory.yml -r eda_cost_alerts.yml -v
 #### Baseline Establishment Process
 
 ```bash
-# Step 1: Query past 3 months costs
-az costmanagement query \
-  --type ActualCost \
-  --dataset-aggregation '{"totalCost":{"name":"Cost","function":"Sum"}}' \
-  --dataset-grouping name="ResourceGroup" type="Dimension" \
-  --timeframe Custom \
-  --time-period from="2026-03-01" to="2026-05-31" \
-  --scope "/subscriptions/{subscription-id}"
+# Step 1: Query past 3 months costs, grouped by resource group.
+# The costmanagement CLI has no "query" command, so call the REST API directly.
+az rest --method post \
+  --url "https://management.azure.com/subscriptions/{subscription-id}/providers/Microsoft.CostManagement/query?api-version=2023-03-01" \
+  --headers "Content-Type=application/json" \
+  --body '{
+    "type": "ActualCost",
+    "timeframe": "Custom",
+    "timePeriod": {"from": "2026-03-01T00:00:00Z", "to": "2026-05-31T23:59:59Z"},
+    "dataset": {
+      "granularity": "Monthly",
+      "aggregation": {"totalCost": {"name": "Cost", "function": "Sum"}},
+      "grouping": [{"type": "Dimension", "name": "ResourceGroup"}]
+    }
+  }'
 
 # Step 2: Calculate baseline
 # March: $32,000

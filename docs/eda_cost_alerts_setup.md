@@ -201,29 +201,30 @@ az eventgrid system-topic create \
 Cost Management events are triggered by budgets. Configure at least one budget:
 
 ```bash
-# Create budget for ML resource group
-az costmanagement budget create \
-  --scope "/subscriptions/$SUBSCRIPTION_ID/resourceGroups/$RESOURCE_GROUP" \
-  --name "ML-Platform-Monthly" \
-  --category Unblocked \
+# Create a budget for the ML resource group.
+# Budgets are managed with "az consumption budget", not "az costmanagement".
+az consumption budget create-with-rg \
+  --resource-group "$RESOURCE_GROUP" \
+  --budget-name "ML-Platform-Monthly" \
+  --category Cost \
   --amount 20000 \
   --time-grain Monthly \
-  --start-date "2026-09-01" \
-  --notifications '[
-    {
+  --time-period '{"startDate":"2026-09-01T00:00:00Z","endDate":"2027-09-01T00:00:00Z"}' \
+  --notifications '{
+    "Actual_GreaterThanOrEqualTo_80_Percent": {
       "enabled": true,
       "operator": "GreaterThanOrEqualTo",
       "threshold": 80,
-      "contact_emails": ["team@example.com"]
+      "contactEmails": ["team@example.com"]
     }
-  ]'
+  }'
 ```
 
 **Budget Configuration Options:**
 
 | Option | Value | Description |
 |--------|-------|-------------|
-| Category | Unblocked | Cost type (Unblocked = all resources) |
+| Category | Cost | Budget category (`Cost` or `Usage`) |
 | Amount (USD) | 20000 | Monthly budget threshold |
 | Time Grain | Monthly | Budget period |
 | Threshold | 80 | Trigger event at 80% of budget |
@@ -742,12 +743,19 @@ Generate actual cost by running temporary workloads:
 
 2. **Monitor costs:**
    ```bash
-   # Check costs in real-time
-   az costmanagement query create \
-     --scope "/subscriptions/$SUBSCRIPTION_ID" \
-     --timeframe MonthToDate \
-     --dataset-aggregation totalCost="{name: 'Cost', function: 'Sum'}" \
-     --type ActualCost
+   # Check costs in real-time. The costmanagement CLI has no "query" command,
+   # so call the Cost Management Query REST API directly.
+   az rest --method post \
+     --url "https://management.azure.com/subscriptions/$SUBSCRIPTION_ID/providers/Microsoft.CostManagement/query?api-version=2023-03-01" \
+     --headers "Content-Type=application/json" \
+     --body '{
+       "type": "ActualCost",
+       "timeframe": "MonthToDate",
+       "dataset": {
+         "granularity": "None",
+         "aggregation": {"totalCost": {"name": "Cost", "function": "Sum"}}
+       }
+     }'
    ```
 
 3. **Wait for budget threshold:**

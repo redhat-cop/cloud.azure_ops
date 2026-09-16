@@ -24,15 +24,22 @@ Before implementing automation, establish your current monthly infrastructure co
 # Get subscription ID
 SUBSCRIPTION_ID=$(az account show --query id -o tsv)
 
-# Query costs for past 3 months (adjust dates as needed)
-az costmanagement query create \
-  --scope "/subscriptions/$SUBSCRIPTION_ID" \
-  --timeframe Custom \
-  --time-period from="2026-03-01" to="2026-05-31" \
-  --dataset-aggregation totalCost="{name: 'Cost', function: 'Sum'}" \
-  --dataset-grouping name="ResourceGroup" type="Dimension" \
-  --dataset-granularity "Monthly" \
-  --type "ActualCost"
+# Query costs for past 3 months (adjust dates as needed).
+# The costmanagement CLI has no "query" command, so call the REST API directly
+# (this is the same Query API the role uses via azure_rm_resource).
+az rest --method post \
+  --url "https://management.azure.com/subscriptions/$SUBSCRIPTION_ID/providers/Microsoft.CostManagement/query?api-version=2023-03-01" \
+  --headers "Content-Type=application/json" \
+  --body '{
+    "type": "ActualCost",
+    "timeframe": "Custom",
+    "timePeriod": {"from": "2026-03-01T00:00:00Z", "to": "2026-05-31T23:59:59Z"},
+    "dataset": {
+      "granularity": "Monthly",
+      "aggregation": {"totalCost": {"name": "Cost", "function": "Sum"}},
+      "grouping": [{"type": "Dimension", "name": "ResourceGroup"}]
+    }
+  }'
 ```
 
 **Manual Cost Calculation:**
