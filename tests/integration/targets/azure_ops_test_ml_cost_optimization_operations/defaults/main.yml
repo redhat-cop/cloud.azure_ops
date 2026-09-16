@@ -1,0 +1,12 @@
+---
+# Test defaults for the azure_ml_cost_optimization role compute/PTU operations.
+
+# Region the dedicated test resource group is created in.
+test_azure_region: eastus
+
+# Dedicated, empty resource group created and torn down by this test. Named
+# from the ansible-test resource_prefix so it is unique per run and safe to
+# delete. The operations are exercised against an empty RG: every resource
+# query returns nothing, so the loops no-op and no billable ML/OpenAI
+# resources are ever created.
+test_ops_resource_group: "{{ resource_prefix }}-mlcostops"
