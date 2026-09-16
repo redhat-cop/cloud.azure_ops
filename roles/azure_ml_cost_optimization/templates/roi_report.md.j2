@@ -5,6 +5,13 @@
 
 ## Executive Summary
 
+{% if not (cost_data_available | default(true) | bool) %}
+> ⚠️ **Warning:** The current month-to-date cost could not be retrieved from the
+> Azure Cost Management API (the request was throttled or failed after all
+> retries). The figures below assume **$0** current cost and are **NOT reliable**.
+> Re-run this report once the API is available.
+
+{% endif %}
 | Metric | Value |
 |--------|-------|
 | **Baseline Monthly Cost** | ${{ baseline_cost | int | string | regex_replace('(\\d)(?=(\\d{3})+$)', '\\1,') }} |

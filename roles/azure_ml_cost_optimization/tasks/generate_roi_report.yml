@@ -31,21 +31,51 @@
           - type: "Dimension"
             name: "ResourceType"
   register: _cost_query
+  # The Cost Management API is heavily throttled and commonly returns HTTP 429
+  # ("Too many requests"). Retry only while the failure is a throttle, so a
+  # non-transient error (e.g. auth/permission) fails fast instead of burning
+  # the whole retry budget.
+  until: >-
+    _cost_query is succeeded
+    or ('429' not in (_cost_query.msg | default(''))
+        and 'Too many requests' not in (_cost_query.msg | default('')))
+  retries: "{{ azure_ml_cost_optimization_roi_query_retries | int }}"
+  delay: "{{ azure_ml_cost_optimization_roi_query_delay | int }}"
   ignore_errors: true
 
 - name: Parse cost data
   ansible.builtin.set_fact:
     _current_month_cost: "{{ _cost_query.response.properties.rows | map('last') | sum | float | round(2) }}"
     _cost_by_type: "{{ _cost_query.response.properties.rows | items2dict(key_name=0, value_name=1) }}"
+    _cost_data_available: true
   when:
     - _cost_query is succeeded
     - _cost_query.response.properties.rows | length > 0
 
-- name: Use zero if cost query failed
+- name: Use zero when cost query succeeded with no spend
   ansible.builtin.set_fact:
     _current_month_cost: 0
     _cost_by_type: {}
-  when: _cost_query is failed or _cost_query.response.properties.rows | default([]) | length == 0
+    _cost_data_available: true
+  when:
+    - _cost_query is succeeded
+    - _cost_query.response.properties.rows | default([]) | length == 0
+
+- name: Warn and degrade when cost query failed
+  ansible.builtin.set_fact:
+    _current_month_cost: 0
+    _cost_by_type: {}
+    _cost_data_available: false
+  when: _cost_query is failed
+
+- name: Warn that cost data is unavailable
+  ansible.builtin.debug:
+    msg: >-
+      WARNING: Could not retrieve current cost from the Azure Cost Management API
+      after {{ azure_ml_cost_optimization_roi_query_retries }} retries
+      ({{ (_cost_query.msg | default('unknown error')) | trim }}).
+      Savings figures in this report assume $0 current cost and are NOT reliable.
+  when: not _cost_data_available
 
 - name: Calculate savings metrics
   ansible.builtin.set_fact:
@@ -72,6 +102,7 @@
     savings_percent: "{{ _savings_percent }}"
     annual_savings: "{{ _projected_annual_savings }}"
     cost_breakdown: "{{ _cost_by_type }}"
+    cost_data_available: "{{ _cost_data_available }}"
     shutdown_events: "{{ _shutdown_count }}"
     rightsize_events: "{{ _rightsize_count }}"
     ptu_events: "{{ _ptu_count }}"
@@ -84,6 +115,7 @@
       monthly_savings: "{{ _monthly_savings }}"
       savings_percent: "{{ _savings_percent }}"
       projected_annual_savings: "{{ _projected_annual_savings }}"
+      cost_data_available: "{{ _cost_data_available }}"
 
 - name: Display ROI summary
   ansible.builtin.debug:
