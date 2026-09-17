@@ -4,83 +4,35 @@
 # Included once per cluster metric entry from analyze_and_rightsize.yml with
 # `item` set to the entry from _cluster_metrics. Extracted into its own file
 # because Ansible does not support `loop` on a `block`.
+#
+# The resize decision itself lives in utils/decide_rightsize.yml (pure, no API
+# calls) so it can be tested by fixtures; this file resolves inputs, then acts
+# on the decision (resize + report + audit).
 
-- name: Check if CPU utilization below threshold
-  ansible.builtin.set_fact:
-    _is_underutilized: "{{ item.avg_cpu_percent < azure_ml_cost_optimization_rightsize_cpu_threshold }}"
-    _has_data: "{{ item.has_sufficient_data }}"
-
-- name: Skip if insufficient data
-  ansible.builtin.debug:
-    msg: "Skipping {{ item.cluster_name }}: insufficient metrics data"
-  when: not _has_data
-
-- name: Skip if utilization above threshold
-  ansible.builtin.debug:
-    msg: "Skipping {{ item.cluster_name }}: CPU {{ item.avg_cpu_percent }}% above threshold {{ azure_ml_cost_optimization_rightsize_cpu_threshold }}%"
-  when:
-    - _has_data
-    - not _is_underutilized
-
-- name: Find current cluster in analysis list
+- name: Resolve current cluster record for this metric entry
   ansible.builtin.set_fact:
     _current_cluster: "{{ _clusters_to_analyze | selectattr('cluster_name', 'equalto', item.cluster_name) | selectattr('workspace_name', 'equalto', item.workspace_name) | first }}"
-  when:
-    - _has_data
-    - _is_underutilized
 
-- name: Determine next smaller VM size
-  ansible.builtin.set_fact:
-    _current_size_index: "{{ azure_ml_cost_optimization_rightsize_allowed_sizes.index(_current_cluster.vm_size) }}"
-  when:
-    - _has_data
-    - _is_underutilized
-    - _current_cluster.vm_size in azure_ml_cost_optimization_rightsize_allowed_sizes
-  failed_when: false
+- name: Decide whether to rightsize this cluster
+  ansible.builtin.include_tasks: utils/decide_rightsize.yml
+  vars:
+    _decide_avg_cpu: "{{ item.avg_cpu_percent }}"
+    _decide_has_data: "{{ item.has_sufficient_data }}"
+    _decide_vm_size: "{{ _current_cluster.vm_size }}"
 
-- name: Calculate new size
-  ansible.builtin.set_fact:
-    _new_size: "{{ azure_ml_cost_optimization_rightsize_allowed_sizes[_current_size_index | int - 1] if (_current_size_index | int > 0) else _current_cluster.vm_size }}"
-  when:
-    - _current_size_index is defined
-    - _current_size_index | int > 0
-
-- name: Validate new size not below minimum
-  ansible.builtin.set_fact:
-    _new_size_allowed: "{{ azure_ml_cost_optimization_rightsize_allowed_sizes.index(_new_size) >= azure_ml_cost_optimization_rightsize_allowed_sizes.index(azure_ml_cost_optimization_rightsize_min_size) }}"
-  when: _new_size is defined
-
-- name: Skip if new size below minimum
+- name: Log why a cluster was not resized
   ansible.builtin.debug:
-    msg: "Skipping {{ item.cluster_name }}: new size {{ _new_size }} below minimum {{ azure_ml_cost_optimization_rightsize_min_size }}"
-  when:
-    - _new_size is defined
-    - not _new_size_allowed
-
-- name: Validate cluster data before cost calculation
-  ansible.builtin.assert:
-    that:
-      - _current_cluster is defined
-      - _current_cluster.vm_size is defined
-      - _new_size is defined
-    fail_msg: |
-      Cannot calculate costs: missing cluster data
-      _current_cluster: {{ _current_cluster | default('UNDEFINED') }}
-      _new_size: {{ _new_size | default('UNDEFINED') }}
-  when:
-    - _new_size is defined
-    - _new_size_allowed
-    - _new_size != _current_cluster.vm_size
+    msg: >-
+      Skipping {{ item.cluster_name }} ({{ _current_cluster.vm_size }}, CPU
+      {{ item.avg_cpu_percent }}%): {{ _rightsize_decision.reason }}
+  when: _rightsize_decision.action == 'skip'
 
 - name: Calculate cost savings
   ansible.builtin.include_tasks: utils/calculate_costs.yml
   vars:
     _old_vm_size: "{{ _current_cluster.vm_size }}"
-    _new_vm_size: "{{ _new_size }}"
-  when:
-    - _new_size is defined
-    - _new_size_allowed
-    - _new_size != _current_cluster.vm_size
+    _new_vm_size: "{{ _rightsize_decision.new_size }}"
+  when: _rightsize_decision.action == 'resize'
 
 - name: Resize cluster
   azure.azcollection.azure_rm_resource:
@@ -93,11 +45,8 @@
     body:
       properties:
         properties:
-          vmSize: "{{ _new_size }}"
-  when:
-    - _new_size is defined
-    - _new_size_allowed
-    - _new_size != _current_cluster.vm_size
+          vmSize: "{{ _rightsize_decision.new_size }}"
+  when: _rightsize_decision.action == 'resize'
   register: _resize_result
 
 - name: Add to rightsize report
@@ -109,7 +58,7 @@
       cluster: "{{ item.cluster_name }}"
       workspace: "{{ item.workspace_name }}"
       old_size: "{{ _current_cluster.vm_size }}"
-      new_size: "{{ _new_size }}"
+      new_size: "{{ _rightsize_decision.new_size }}"
       avg_cpu: "{{ item.avg_cpu_percent }}"
       monthly_savings: "{{ _monthly_savings }}"
       annual_savings: "{{ _annual_savings }}"
@@ -126,8 +75,8 @@
       workspace: "{{ item.workspace_name }}"
       cluster: "{{ item.cluster_name }}"
       action: "{{ 'resized' if _resize_result is changed else 'skipped' }}"
-      old_vm_size: "{{ _current_cluster.vm_size if _current_cluster is defined else 'unknown' }}"
-      new_vm_size: "{{ _new_size if _new_size is defined else (_current_cluster.vm_size if _current_cluster is defined else 'unknown') }}"
+      old_vm_size: "{{ _current_cluster.vm_size }}"
+      new_vm_size: "{{ _rightsize_decision.new_size if _rightsize_decision.action == 'resize' else _current_cluster.vm_size }}"
       avg_cpu_percent: "{{ item.avg_cpu_percent }}"
       monthly_savings: "{{ _monthly_savings if _resize_result is changed else 0 }}"
   when: _resize_result is defined
