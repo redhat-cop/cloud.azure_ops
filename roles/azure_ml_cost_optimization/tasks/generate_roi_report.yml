@@ -10,38 +10,18 @@
   ansible.builtin.set_fact:
     _current_month_start: "{{ '%Y-%m-01' | strftime(ansible_date_time.epoch | int) }}"
 
-- name: Query Azure Cost Management API for current month costs
-  azure.azcollection.azure_rm_resource:
-    url: "https://management.azure.com/subscriptions/{{ _subscription_id }}/resourceGroups/{{ azure_resource_group }}/providers/Microsoft.CostManagement/query"
-    api_version: "2023-03-01"
-    method: POST
-    body:
-      type: "ActualCost"
-      timeframe: "Custom"
-      timePeriod:
-        from: "{{ _current_month_start }}T00:00:00Z"
-        to: "{{ ansible_date_time.iso8601 }}"
-      dataset:
-        granularity: "None"
-        aggregation:
-          totalCost:
-            name: "Cost"
-            function: "Sum"
-        grouping:
-          - type: "Dimension"
-            name: "ResourceType"
-  register: _cost_query
-  # The Cost Management API is heavily throttled and commonly returns HTTP 429
-  # ("Too many requests"). Retry only while the failure is a throttle, so a
-  # non-transient error (e.g. auth/permission) fails fast instead of burning
-  # the whole retry budget.
-  until: >-
-    _cost_query is succeeded
-    or ('429' not in (_cost_query.msg | default(''))
-        and 'Too many requests' not in (_cost_query.msg | default('')))
-  retries: "{{ azure_ml_cost_optimization_roi_query_retries | int }}"
-  delay: "{{ azure_ml_cost_optimization_roi_query_delay | int }}"
-  ignore_errors: true
+# The Cost Management API is heavily throttled and commonly returns HTTP 429
+# ("Too many requests"). azure_rm_resource does not translate that into a clean
+# module failure -- it raises an unhandled exception, and ansible-core does not
+# retry a crashed module via `until:`. So we drive the retry ourselves: loop the
+# query include (retries + 1) times, pausing between throttled attempts and
+# stopping early on success or on a non-throttle error.
+- name: Query Azure Cost Management API for current month costs (with throttle retry)
+  ansible.builtin.include_tasks: utils/query_cost_management.yml
+  loop: "{{ range(0, (azure_ml_cost_optimization_roi_query_retries | int) + 1) | list }}"
+  loop_control:
+    loop_var: _cost_query_attempt
+    label: "attempt {{ _cost_query_attempt + 1 }}"
 
 - name: Parse cost data
   ansible.builtin.set_fact:
