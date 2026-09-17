@@ -1,0 +1,28 @@
+---
+# Run the PTU decision for one fixture and assert the outcome.
+# `_fixture` and the config vars are provided by the caller.
+
+- name: "Decide: {{ _fixture.name }}"
+  ansible.builtin.include_role:
+    name: cloud.azure_ops.azure_ml_cost_optimization
+    tasks_from: utils/decide_ptu.yml
+  vars:
+    _decide_current_ptu: "{{ _fixture.current_ptu }}"
+    _decide_has_metrics: "{{ _fixture.has_metrics }}"
+    _decide_avg_utilization: "{{ _fixture.avg_utilization }}"
+
+- name: "Assert: {{ _fixture.name }}"
+  ansible.builtin.assert:
+    that:
+      - _ptu_decision.action == _fixture.expect_action
+      - _ptu_decision.reason == _fixture.expect_reason
+      - _ptu_decision.new_ptu | int == _fixture.expect_new_ptu | int
+      - _ptu_decision.savings | int == _fixture.expect_savings | int
+      - (_ptu_decision.recommend_upsize | bool) == (_fixture.expect_upsize | bool)
+    fail_msg: >-
+      {{ _fixture.name }}:
+      expected {action: {{ _fixture.expect_action }}, reason: {{ _fixture.expect_reason }},
+      new_ptu: {{ _fixture.expect_new_ptu }}, savings: {{ _fixture.expect_savings }},
+      upsize: {{ _fixture.expect_upsize }}}
+      but got {{ _ptu_decision }}
+    success_msg: "OK: {{ _fixture.name }} -> {{ _ptu_decision }}"

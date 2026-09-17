@@ -1,0 +1,112 @@
+---
+# Integration test for the azure_ml_cost_optimization role.
+#
+# Exercises the `generate_roi_report` operation end-to-end by invoking the
+# actual role (not a copy of its logic). The test is self-contained: it
+# creates a dedicated resource group, runs the read-only ROI report against
+# it, and tears the resource group down again. The operation only validates
+# credentials, queries the Cost Management API, and writes a local report,
+# so no billable ML resources are created.
+
+- name: Test azure_ml_cost_optimization generate_roi_report
+  block:
+    - name: Create a dedicated resource group for the test
+      azure.azcollection.azure_rm_resourcegroup:
+        name: "{{ test_roi_resource_group }}"
+        location: "{{ test_azure_region }}"
+        state: present
+
+    - name: Ensure a clean report directory exists
+      ansible.builtin.file:
+        path: "{{ test_roi_report_dir }}"
+        state: directory
+        mode: '0755'
+
+    # ── Guard check: baseline of zero must fail ─────────────────────
+    - name: Run role with a zero baseline (expected to fail)
+      block:
+        - name: Invoke role with zero baseline cost
+          ansible.builtin.include_role:
+            name: cloud.azure_ops.azure_ml_cost_optimization
+          vars:
+            azure_ml_cost_optimization_operation: generate_roi_report
+            azure_resource_group: "{{ test_roi_resource_group }}"
+            azure_region: "{{ test_azure_region }}"
+            azure_ml_cost_optimization_roi_baseline_monthly_cost: 0
+            azure_ml_cost_optimization_roi_report_path: "{{ test_roi_report_path }}"
+            azure_ml_cost_optimization_enable_audit_log: false
+
+        - name: Fail the test if the role did not reject a zero baseline
+          ansible.builtin.fail:
+            msg: "Role should fail when roi_baseline_monthly_cost is 0"
+      rescue:
+        - name: Confirm the role failed specifically on the baseline guard
+          ansible.builtin.assert:
+            that:
+              - "'baseline_monthly_cost' in (ansible_failed_result.msg | default(''))"
+            fail_msg: >-
+              Role failed for an unexpected reason:
+              {{ ansible_failed_result.msg | default('(no message)') }}
+            success_msg: "Role correctly rejected the zero baseline cost"
+
+    # ── Happy path: valid baseline generates a report ───────────────
+    - name: Invoke role with a valid baseline cost
+      ansible.builtin.include_role:
+        name: cloud.azure_ops.azure_ml_cost_optimization
+      vars:
+        azure_ml_cost_optimization_operation: generate_roi_report
+        azure_resource_group: "{{ test_roi_resource_group }}"
+        azure_region: "{{ test_azure_region }}"
+        azure_ml_cost_optimization_roi_baseline_monthly_cost: "{{ test_roi_baseline_monthly_cost }}"
+        azure_ml_cost_optimization_roi_tracking_start_date: "{{ test_roi_tracking_start_date }}"
+        azure_ml_cost_optimization_roi_report_path: "{{ test_roi_report_path }}"
+        azure_ml_cost_optimization_enable_audit_log: false
+
+    - name: Stat the generated report
+      ansible.builtin.stat:
+        path: "{{ test_roi_report_path }}"
+      register: _report_stat
+
+    - name: Assert the report file was created
+      ansible.builtin.assert:
+        that:
+          - _report_stat.stat.exists
+        fail_msg: "ROI report was not created at {{ test_roi_report_path }}"
+
+    - name: Read the generated report
+      ansible.builtin.slurp:
+        src: "{{ test_roi_report_path }}"
+      register: _report_content
+
+    - name: Assert the report contains the expected sections
+      ansible.builtin.assert:
+        that:
+          - "'ML Platform Cost Optimization - ROI Report' in _report"
+          - "'Executive Summary' in _report"
+          - "'Cost Breakdown by Resource Type' in _report"
+          - "'Automation Actions This Month' in _report"
+        fail_msg: "ROI report is missing one or more expected sections"
+      vars:
+        _report: "{{ _report_content.content | b64decode }}"
+
+    - name: Assert the role populated the ROI metrics fact
+      ansible.builtin.assert:
+        that:
+          - _roi_metrics is defined
+          - _roi_metrics.baseline_monthly_cost | float == (test_roi_baseline_monthly_cost | float)
+          - _roi_metrics.current_month_cost is defined
+          - (_roi_metrics.monthly_savings | float | round(2))
+              == ((test_roi_baseline_monthly_cost | float - _roi_metrics.current_month_cost | float) | round(2))
+        fail_msg: "Role did not set _roi_metrics correctly: {{ _roi_metrics | default('undefined') }}"
+
+  always:
+    - name: Remove the test report directory
+      ansible.builtin.file:
+        path: "{{ test_roi_report_dir }}"
+        state: absent
+
+    - name: Delete the dedicated test resource group
+      azure.azcollection.azure_rm_resourcegroup:
+        name: "{{ test_roi_resource_group }}"
+        state: absent
+        force_delete_nonempty: true

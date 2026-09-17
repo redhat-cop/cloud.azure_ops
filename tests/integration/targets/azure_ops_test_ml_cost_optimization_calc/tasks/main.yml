@@ -1,0 +1,44 @@
+---
+# Unit-style test for the azure_ml_cost_optimization cost math.
+#
+# Exercises utils/calculate_costs.yml in isolation by loading just that task
+# file from the role (tasks_from) with injected VM sizes. It makes no Azure
+# API calls and creates no resources: it only verifies the pure savings
+# arithmetic and the unknown-size fallback that the rightsize operation
+# relies on. Runs in the cloud/azure lane for consistency with the other
+# targets, but does not require any live resources.
+
+- name: A known-to-known downsize computes the expected savings
+  ansible.builtin.include_role:
+    name: cloud.azure_ops.azure_ml_cost_optimization
+    tasks_from: utils/calculate_costs.yml
+  vars:
+    _old_vm_size: Standard_DS4_v2   # 0.54 USD/hr
+    _new_vm_size: Standard_DS3_v2   # 0.27 USD/hr
+
+- name: Assert monthly and annual savings for a known downsize
+  ansible.builtin.assert:
+    that:
+      # (0.54 - 0.27) * 730 hours/month
+      - (_monthly_savings | float) == 197.1
+      # monthly * 12
+      - (_annual_savings | float) == 2365.2
+    fail_msg: >-
+      Unexpected savings: monthly={{ _monthly_savings }} annual={{ _annual_savings }}
+    success_msg: "Known downsize savings computed correctly"
+
+- name: An unknown target size falls back to a zero rate
+  ansible.builtin.include_role:
+    name: cloud.azure_ops.azure_ml_cost_optimization
+    tasks_from: utils/calculate_costs.yml
+  vars:
+    _old_vm_size: Standard_NC6s_v3   # 3.06 USD/hr
+    _new_vm_size: Not_A_Real_Size    # unknown -> rate 0
+
+- name: Assert an unknown size uses a zero rate (no crash, full old cost saved)
+  ansible.builtin.assert:
+    that:
+      # (3.06 - 0) * 730
+      - (_monthly_savings | float) == 2233.8
+    fail_msg: "Unknown VM size did not fall back to a zero rate: {{ _monthly_savings }}"
+    success_msg: "Unknown VM size correctly treated as a zero rate"

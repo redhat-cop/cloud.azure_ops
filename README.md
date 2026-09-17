@@ -38,6 +38,7 @@ Name | Description
 [cloud.azure_ops.validate_deployment](https://github.com/redhat-cop/cloud.azure_ops/blob/main/playbooks/VALIDATE_DEPLOYMENT.md)|A playbook to validate successful deployment of web application URL.
 [cloud.azure_ops.mlops_lifecycle](https://github.com/redhat-cop/cloud.azure_ops/blob/main/playbooks/MLOPS_LIFECYCLE.md)|A playbook to automate the full MLOps lifecycle on Azure, including workspace provisioning, model training, registry-based cross-workspace sharing, and blue/green deployment.
 [cloud.azure_ops.self_service_ml_platform](https://github.com/redhat-cop/cloud.azure_ops/blob/main/playbooks/SELF_SERVICE_ML_PLATFORM.md)|A playbook to enable self-service ML workspace provisioning through AAP with hub-and-spoke architecture, cost controls, and multi-team isolation.
+[cloud.azure_ops.cost_optimization](https://github.com/redhat-cop/cloud.azure_ops/blob/main/playbooks/COST_OPTIMIZATION.md)|A playbook to optimize Azure ML/AI costs, including compute shutdown/startup, right-sizing, Azure OpenAI PTU management, and ROI reporting.
 <!--end collection content-->
 
 ## Installation and Usage

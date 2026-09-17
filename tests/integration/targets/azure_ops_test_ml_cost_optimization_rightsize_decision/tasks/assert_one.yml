@@ -1,0 +1,25 @@
+---
+# Run the right-sizing decision for one fixture and assert the outcome.
+# `_fixture` and the config vars are provided by the caller.
+
+- name: "Decide: {{ _fixture.name }}"
+  ansible.builtin.include_role:
+    name: cloud.azure_ops.azure_ml_cost_optimization
+    tasks_from: utils/decide_rightsize.yml
+  vars:
+    _decide_avg_cpu: "{{ _fixture.avg_cpu }}"
+    _decide_has_data: "{{ _fixture.has_data }}"
+    _decide_vm_size: "{{ _fixture.vm_size }}"
+
+- name: "Assert: {{ _fixture.name }}"
+  ansible.builtin.assert:
+    that:
+      - _rightsize_decision.action == _fixture.expect_action
+      - _rightsize_decision.reason == _fixture.expect_reason
+      - _rightsize_decision.new_size == _fixture.expect_new_size
+    fail_msg: >-
+      {{ _fixture.name }}:
+      expected {action: {{ _fixture.expect_action }}, reason: {{ _fixture.expect_reason }},
+      new_size: '{{ _fixture.expect_new_size }}'}
+      but got {{ _rightsize_decision }}
+    success_msg: "OK: {{ _fixture.name }} -> {{ _rightsize_decision }}"

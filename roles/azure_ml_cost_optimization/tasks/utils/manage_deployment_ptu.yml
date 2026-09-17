@@ -1,0 +1,115 @@
+---
+# Manage PTU capacity for a single Azure OpenAI deployment.
+#
+# Included once per deployment from utils/manage_account_ptu.yml with `item`
+# set to the OpenAI account and `deployment` set to the current deployment.
+# Extracted into its own file because Ansible does not support `loop` on a
+# `block`.
+#
+# The scale-down decision itself lives in utils/decide_ptu.yml (pure, no API
+# calls) so it can be tested by fixtures; this file gathers utilization, then
+# acts on the decision (scale down + report + audit).
+
+- name: Get current PTU capacity
+  ansible.builtin.set_fact:
+    _current_ptu: "{{ deployment.sku.capacity }}"
+
+- name: Build resource ID for metrics
+  ansible.builtin.set_fact:
+    _deployment_resource_id: "/subscriptions/{{ _subscription_id }}/resourceGroups/{{ azure_resource_group }}/providers/Microsoft.CognitiveServices/accounts/{{ item.name }}/deployments/{{ deployment.name }}"
+
+- name: Set metrics time range (7 days)
+  ansible.builtin.set_fact:
+    _metrics_start_time: "{{ '%Y-%m-%dT%H:%M:%SZ' | strftime(ansible_date_time.epoch | int - (7 * 86400)) }}"
+    _metrics_end_time: "{{ ansible_date_time.iso8601 }}"
+
+- name: Query Azure Monitor for PTU utilization metrics
+  azure.azcollection.azure_rm_resource:
+    url: "https://management.azure.com{{ _deployment_resource_id }}/providers/Microsoft.Insights/metrics"
+    api_version: "2023-10-01"
+    method: GET
+    query_parameters:
+      timespan: "{{ _metrics_start_time }}/{{ _metrics_end_time }}"
+      interval: "PT1H"
+      metricnames: "ProvisionedManagedUtilizationV2"
+      aggregation: "Average"
+  register: _ptu_metrics
+  ignore_errors: true
+
+- name: Parse PTU metrics
+  ansible.builtin.set_fact:
+    _utilization_values: "{{ _ptu_metrics.response.value[0].timeseries[0].data | default([]) | map(attribute='average') | select('defined') | list }}"
+  when:
+    - _ptu_metrics is succeeded
+    - _ptu_metrics.response.value | length > 0
+
+- name: Calculate average utilization
+  ansible.builtin.set_fact:
+    _avg_utilization: "{{ (_utilization_values | map('float') | sum / _utilization_values | length) | round(2) }}"
+  when:
+    - _utilization_values is defined
+    - _utilization_values | length > 0
+
+- name: Decide whether to scale down this deployment
+  ansible.builtin.include_tasks: utils/decide_ptu.yml
+  vars:
+    _decide_current_ptu: "{{ _current_ptu }}"
+    _decide_has_metrics: "{{ _avg_utilization is defined }}"
+    _decide_avg_utilization: "{{ _avg_utilization | default(0) }}"
+
+- name: Log why a deployment was not scaled down
+  ansible.builtin.debug:
+    msg: >-
+      Skipping {{ item.name }}/{{ deployment.name }}
+      (PTU {{ _current_ptu }}, utilization {{ _avg_utilization | default('n/a') }}%):
+      {{ _ptu_decision.reason }}
+  when: _ptu_decision.action == 'no_action'
+
+- name: Scale down PTU
+  azure.azcollection.azure_rm_resource:
+    resource_group: "{{ azure_resource_group }}"
+    provider: CognitiveServices
+    resource_type: accounts/deployments
+    parent_path: "{{ item.name }}"
+    resource_name: "{{ deployment.name }}"
+    api_version: "2023-05-01"
+    body:
+      sku:
+        name: "{{ deployment.sku.name }}"
+        capacity: "{{ _ptu_decision.new_ptu | int }}"
+  when: _ptu_decision.action == 'scale_down'
+  register: _ptu_scale_result
+
+- name: Add to PTU report
+  ansible.builtin.set_fact:
+    _ptu_report: "{{ _ptu_report + [_report_entry] }}"
+    _total_monthly_savings: "{{ _total_monthly_savings | float + _ptu_decision.savings | float }}"
+  vars:
+    _report_entry:
+      account: "{{ item.name }}"
+      deployment: "{{ deployment.name }}"
+      current_ptu: "{{ _current_ptu }}"
+      new_ptu: "{{ _ptu_decision.new_ptu }}"
+      avg_utilization: "{{ _avg_utilization | default(0) }}"
+      monthly_savings: "{{ _ptu_decision.savings }}"
+  when: _ptu_scale_result is changed
+
+- name: Log recommendation for upsize
+  ansible.builtin.debug:
+    msg: "RECOMMENDATION: {{ item.name }}/{{ deployment.name }} utilization {{ _avg_utilization }}% exceeds target {{ azure_ml_cost_optimization_ptu_target_utilization }}%. Consider increasing PTU capacity (requires manual approval)."
+  when: _ptu_decision.recommend_upsize | bool
+
+- name: Record PTU action in audit log
+  ansible.builtin.set_fact:
+    _audit_log: "{{ _audit_log + [_audit_entry] }}"
+  vars:
+    _audit_entry:
+      timestamp: "{{ ansible_date_time.iso8601 }}"
+      operation: "manage_ptu"
+      account: "{{ item.name }}"
+      deployment: "{{ deployment.name }}"
+      action: "{{ 'scaled_down' if _ptu_scale_result is changed else 'no_action' }}"
+      current_ptu: "{{ _current_ptu }}"
+      new_ptu: "{{ _ptu_decision.new_ptu }}"
+      avg_utilization: "{{ _avg_utilization | default(0) }}"
+      monthly_savings: "{{ _ptu_decision.savings if _ptu_scale_result is changed else 0 }}"

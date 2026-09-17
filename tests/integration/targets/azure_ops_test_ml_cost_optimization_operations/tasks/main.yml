@@ -1,0 +1,112 @@
+---
+# Smoke test for the azure_ml_cost_optimization compute/PTU operations.
+#
+# Exercises shutdown_compute, startup_compute, analyze_and_rightsize and
+# manage_ptu end-to-end by invoking the actual role (not a copy of its
+# logic) against a dedicated, EMPTY resource group. With no ML workspaces
+# or OpenAI accounts present, every resource query returns an empty list,
+# the per-resource loops no-op, and each operation reports zero actions.
+#
+# This verifies operation dispatch, prerequisite validation, the resource
+# queries and empty-collection handling for all four operations without
+# creating any billable compute or PTU capacity. Decision-logic branches
+# (which require live resources or metric history) are covered separately
+# by the calculate_costs unit test and are out of scope here.
+
+- name: Test azure_ml_cost_optimization compute and PTU operations
+  block:
+    - name: Create a dedicated (empty) resource group for the test
+      azure.azcollection.azure_rm_resourcegroup:
+        name: "{{ test_ops_resource_group }}"
+        location: "{{ test_azure_region }}"
+        state: present
+
+    # ── shutdown_compute ────────────────────────────────────────────
+    - name: Run shutdown_compute against the empty resource group
+      ansible.builtin.include_role:
+        name: cloud.azure_ops.azure_ml_cost_optimization
+      vars:
+        azure_ml_cost_optimization_operation: shutdown_compute
+        azure_resource_group: "{{ test_ops_resource_group }}"
+        azure_region: "{{ test_azure_region }}"
+        azure_ml_cost_optimization_enable_audit_log: false
+
+    - name: Assert shutdown reported no clusters stopped or skipped
+      ansible.builtin.assert:
+        that:
+          - _shutdown_summary is defined
+          - (_shutdown_summary.clusters_stopped | int) == 0
+          - (_shutdown_summary.clusters_skipped | int) == 0
+        fail_msg: "shutdown_compute did not no-op on an empty RG: {{ _shutdown_summary | default('undefined') }}"
+        success_msg: "shutdown_compute correctly no-opped on an empty RG"
+
+    # ── startup_compute ─────────────────────────────────────────────
+    - name: Run startup_compute against the empty resource group
+      ansible.builtin.include_role:
+        name: cloud.azure_ops.azure_ml_cost_optimization
+      vars:
+        azure_ml_cost_optimization_operation: startup_compute
+        azure_resource_group: "{{ test_ops_resource_group }}"
+        azure_region: "{{ test_azure_region }}"
+        azure_ml_cost_optimization_enable_audit_log: false
+
+    - name: Assert startup reported no clusters started
+      ansible.builtin.assert:
+        that:
+          - _startup_summary is defined
+          - (_startup_summary.clusters_started | int) == 0
+        fail_msg: "startup_compute did not no-op on an empty RG: {{ _startup_summary | default('undefined') }}"
+        success_msg: "startup_compute correctly no-opped on an empty RG"
+
+    # ── analyze_and_rightsize ───────────────────────────────────────
+    - name: Run analyze_and_rightsize against the empty resource group
+      ansible.builtin.include_role:
+        name: cloud.azure_ops.azure_ml_cost_optimization
+      vars:
+        azure_ml_cost_optimization_operation: analyze_and_rightsize
+        azure_resource_group: "{{ test_ops_resource_group }}"
+        azure_region: "{{ test_azure_region }}"
+        azure_ml_cost_optimization_enable_audit_log: false
+
+    - name: Assert rightsize analysed and resized nothing
+      ansible.builtin.assert:
+        that:
+          - _cluster_metrics is defined
+          - (_cluster_metrics | length) == 0
+          - _rightsize_report is defined
+          - (_rightsize_report | length) == 0
+        fail_msg: >-
+          analyze_and_rightsize did not no-op on an empty RG:
+          metrics={{ _cluster_metrics | default('undefined') }}
+          report={{ _rightsize_report | default('undefined') }}
+        success_msg: "analyze_and_rightsize correctly no-opped on an empty RG"
+
+    # ── manage_ptu ──────────────────────────────────────────────────
+    - name: Run manage_ptu against the empty resource group
+      ansible.builtin.include_role:
+        name: cloud.azure_ops.azure_ml_cost_optimization
+      vars:
+        azure_ml_cost_optimization_operation: manage_ptu
+        azure_resource_group: "{{ test_ops_resource_group }}"
+        azure_region: "{{ test_azure_region }}"
+        azure_ml_cost_optimization_enable_audit_log: false
+
+    - name: Assert PTU management optimised nothing
+      ansible.builtin.assert:
+        that:
+          - _target_accounts is defined
+          - (_target_accounts | length) == 0
+          - _ptu_report is defined
+          - (_ptu_report | length) == 0
+        fail_msg: >-
+          manage_ptu did not no-op on an empty RG:
+          accounts={{ _target_accounts | default('undefined') }}
+          report={{ _ptu_report | default('undefined') }}
+        success_msg: "manage_ptu correctly no-opped on an empty RG"
+
+  always:
+    - name: Delete the dedicated test resource group
+      azure.azcollection.azure_rm_resourcegroup:
+        name: "{{ test_ops_resource_group }}"
+        state: absent
+        force_delete_nonempty: true

@@ -1,0 +1,112 @@
+---
+# Pure PTU (Provisioned Throughput Unit) decision -- no Azure calls, no side
+# effects.
+#
+# Given one deployment's current PTU capacity and its average utilization,
+# decide whether to scale it down and whether an upsize should be recommended.
+# Kept free of API calls so it can be exercised deterministically by fixtures
+# (see the *_ptu_decision test target).
+#
+# Every intermediate is recomputed unconditionally (sentinels rather than
+# `is defined`) so a value from a previous loop iteration can never leak in.
+#
+# Inputs (pass as vars):
+#   _decide_current_ptu     - current provisioned capacity (int)
+#   _decide_has_metrics     - whether utilization metrics were available (bool)
+#   _decide_avg_utilization - average utilization percent (number; ignored when
+#                             _decide_has_metrics is false)
+# Config used: azure_ml_cost_optimization_ptu_scale_down_threshold,
+#              azure_ml_cost_optimization_ptu_target_utilization,
+#              _ptu_monthly_cost (capacity -> monthly USD map)
+#
+# Output:
+#   _ptu_decision = {action: scale_down|no_action, reason: <str>,
+#                    new_ptu: <int>, savings: <number>, recommend_upsize: <bool>}
+#   reasons: no_metrics | above_threshold | at_minimum |
+#            unsupported_capacity | scale_down
+
+- name: Determine the supported smaller PTU capacity for the current size
+  ansible.builtin.set_fact:
+    _ptu_new: >-
+      {{ 50 if _decide_current_ptu | int == 100
+         else (100 if _decide_current_ptu | int == 300
+               else _decide_current_ptu | int) }}
+
+- name: Evaluate scale-down and upsize signals
+  ansible.builtin.set_fact:
+    _ptu_should_scale_down: >-
+      {{ (_decide_has_metrics | bool)
+         and (_decide_avg_utilization | float < azure_ml_cost_optimization_ptu_scale_down_threshold | float) }}
+    _ptu_recommend_upsize: >-
+      {{ (_decide_has_metrics | bool)
+         and (_decide_avg_utilization | float > azure_ml_cost_optimization_ptu_target_utilization | float) }}
+
+- name: Compute potential savings for the downsize target
+  ansible.builtin.set_fact:
+    _ptu_potential_savings: >-
+      {{ (_ptu_monthly_cost[_decide_current_ptu | int] | default(0))
+         - (_ptu_monthly_cost[_ptu_new | int] | default(0)) }}
+
+# Assemble the decision. Exactly one branch applies; the default (no_metrics)
+# stands only when no utilization data was available.
+- name: Default PTU decision - no metrics
+  ansible.builtin.set_fact:
+    _ptu_decision:
+      action: no_action
+      reason: no_metrics
+      new_ptu: "{{ _decide_current_ptu | int }}"
+      savings: 0
+      recommend_upsize: false
+
+- name: PTU decision - utilization not low enough to scale down
+  ansible.builtin.set_fact:
+    _ptu_decision:
+      action: no_action
+      reason: above_threshold
+      new_ptu: "{{ _decide_current_ptu | int }}"
+      savings: 0
+      recommend_upsize: "{{ _ptu_recommend_upsize | bool }}"
+  when:
+    - _decide_has_metrics | bool
+    - not (_ptu_should_scale_down | bool)
+
+- name: PTU decision - already at or below minimum capacity
+  ansible.builtin.set_fact:
+    _ptu_decision:
+      action: no_action
+      reason: at_minimum
+      new_ptu: "{{ _decide_current_ptu | int }}"
+      savings: 0
+      recommend_upsize: false
+  when:
+    - _decide_has_metrics | bool
+    - _ptu_should_scale_down | bool
+    - _decide_current_ptu | int <= 50
+
+- name: PTU decision - capacity has no supported smaller step
+  ansible.builtin.set_fact:
+    _ptu_decision:
+      action: no_action
+      reason: unsupported_capacity
+      new_ptu: "{{ _decide_current_ptu | int }}"
+      savings: 0
+      recommend_upsize: false
+  when:
+    - _decide_has_metrics | bool
+    - _ptu_should_scale_down | bool
+    - _decide_current_ptu | int > 50
+    - _ptu_new | int >= _decide_current_ptu | int
+
+- name: PTU decision - scale down to the next supported capacity
+  ansible.builtin.set_fact:
+    _ptu_decision:
+      action: scale_down
+      reason: scale_down
+      new_ptu: "{{ _ptu_new | int }}"
+      savings: "{{ _ptu_potential_savings }}"
+      recommend_upsize: false
+  when:
+    - _decide_has_metrics | bool
+    - _ptu_should_scale_down | bool
+    - _decide_current_ptu | int > 50
+    - _ptu_new | int < _decide_current_ptu | int

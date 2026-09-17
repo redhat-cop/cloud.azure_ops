@@ -1,0 +1,58 @@
+---
+# Analyze utilization metrics and rightsize underutilized clusters
+
+- name: Initialize audit log
+  ansible.builtin.set_fact:
+    _audit_log: []
+  when: _audit_log is not defined
+
+- name: Get all ML workspaces in resource group
+  azure.azcollection.azure_rm_resource_info:
+    resource_group: "{{ azure_resource_group }}"
+    provider: MachineLearningServices
+    resource_type: workspaces
+    api_version: "2023-04-01"
+  register: _workspaces
+
+- name: Filter workspaces if specific list provided
+  ansible.builtin.set_fact:
+    _target_workspaces: "{{ _workspaces.response | selectattr('name', 'defined') | selectattr('name', 'in', azure_ml_cost_optimization_workspaces) | list }}"
+  when: azure_ml_cost_optimization_workspaces | length > 0
+
+- name: Use all workspaces if no filter provided
+  ansible.builtin.set_fact:
+    _target_workspaces: "{{ _workspaces.response | selectattr('name', 'defined') | list }}"
+  when: azure_ml_cost_optimization_workspaces | length == 0
+
+- name: Build cluster list for metrics collection
+  ansible.builtin.set_fact:
+    _clusters_to_analyze: []
+
+- name: Gather clusters from all workspaces
+  ansible.builtin.include_tasks: utils/gather_workspace_clusters.yml
+  loop: "{{ _target_workspaces }}"
+  loop_control:
+    label: "{{ item.name }}"
+
+- name: Collect metrics for clusters
+  ansible.builtin.include_tasks: utils/collect_metrics.yml
+
+- name: Initialize rightsizing report
+  ansible.builtin.set_fact:
+    _rightsize_report: []
+    _total_monthly_savings: 0
+
+- name: Analyze and rightsize underutilized clusters
+  ansible.builtin.include_tasks: utils/rightsize_cluster.yml
+  loop: "{{ _cluster_metrics }}"
+  loop_control:
+    label: "{{ item.cluster_name }}"
+
+- name: Display rightsizing summary
+  ansible.builtin.debug:
+    msg: |
+      Right-sizing analysis complete:
+      - Clusters analyzed: {{ _cluster_metrics | length }}
+      - Clusters resized: {{ _rightsize_report | length }}
+      - Total monthly savings: ${{ _total_monthly_savings | round(2) }}
+      - Total annual savings: ${{ (_total_monthly_savings | float * 12) | round(2) }}

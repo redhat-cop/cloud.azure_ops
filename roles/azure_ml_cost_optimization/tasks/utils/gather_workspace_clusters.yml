@@ -1,0 +1,23 @@
+---
+# Gather AmlCompute clusters from a single workspace into _clusters_to_analyze.
+#
+# Included once per workspace from analyze_and_rightsize.yml with `item` set to
+# the workspace. Extracted into its own file because Ansible does not support
+# `loop` on a `block`.
+
+- name: Get compute clusters in workspace
+  azure.azcollection.azure_rm_resource_info:
+    resource_group: "{{ azure_resource_group }}"
+    provider: MachineLearningServices
+    resource_type: workspaces/computes
+    parent_path: "{{ item.name }}"
+    api_version: "2023-04-01"
+  register: _workspace_clusters
+
+- name: Add AmlCompute clusters to analysis list
+  ansible.builtin.set_fact:
+    _clusters_to_analyze: "{{ _clusters_to_analyze + [{'cluster_name': cluster.name, 'workspace_name': item.name, 'vm_size': cluster.properties.properties.vmSize, 'max_nodes': cluster.properties.properties.scaleSettings.maxNodeCount}] }}"
+  loop: "{{ _workspace_clusters.response | selectattr('name', 'defined') | selectattr('properties.computeType', 'equalto', 'AmlCompute') | list }}"
+  loop_control:
+    loop_var: cluster
+    label: "{{ cluster.name }}"
