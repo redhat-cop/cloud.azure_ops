@@ -200,11 +200,11 @@ This pattern is documented as guidance — the playbook provisions workspaces wi
 
 #### Shared Infrastructure (Hub)
 
-* **azure_ml_menv_keyvault_name**: Key Vault name (globally unique, 3-24 chars). Default: derived from `azure_resource_group` with `-mkv` suffix, truncated to 24 chars
-* **azure_ml_menv_acr_name**: Container Registry name (globally unique, 5-50 alphanumeric chars). Default: derived from `azure_resource_group` with `menvacr` suffix, truncated to 50 chars
+* **azure_ml_menv_keyvault_name**: Key Vault name (globally unique, 3-24 chars). Default: `{{ azure_resource_group[:19] }}-mkv` (max 23 chars)
+* **azure_ml_menv_acr_name**: Container Registry name (globally unique, 5-50 alphanumeric chars). Default: `{{ (azure_resource_group | regex_replace('[^a-z0-9]', ''))[:43] }}menvacr` (max 50 chars)
 * **azure_ml_menv_appinsights_name**: Application Insights name. Default: `{{ azure_resource_group }}-menv-ai`
-* **azure_ml_menv_registry_name**: ML registry name for cross-workspace model sharing (max 20 chars). Default: `{{ azure_resource_group[:20] }}-menvreg`
-* **azure_ml_menv_audit_storage_account**: Storage account for audit trail (max 24 chars, alphanumeric only). Default: derived from `azure_resource_group` with `auditml` suffix, truncated to 24 chars
+* **azure_ml_menv_registry_name**: ML registry name for cross-workspace model sharing. Default: `{{ azure_resource_group[:20] }}-menvreg` (max 28 chars)
+* **azure_ml_menv_audit_storage_account**: Storage account for audit trail (alphanumeric only). Default: `{{ (azure_resource_group | regex_replace('[^a-z0-9]', ''))[:15] }}auditml` (max 22 chars)
 * **azure_ml_menv_audit_container**: Blob container name for audit records. Default: `audit`
 * **azure_ml_menv_use_registry**: Whether to publish models to the ML registry (best-effort). Default: `true`
 

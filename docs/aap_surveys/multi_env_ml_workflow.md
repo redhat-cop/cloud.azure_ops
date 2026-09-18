@@ -181,7 +181,14 @@ Click **Visualizer** and add the following nodes in sequence:
 - **Convergence:** All (wait for Node 2a, 2b, 2c)
 - **Parent:** Node 2a, 2b, 2c (on success)
 
-#### Node 4: Promote to Staging
+#### Node 4: Approval - Staging Promotion
+- **Type:** Approval
+- **Name:** "Approve Staging Promotion"
+- **Timeout:** 3600 seconds (1 hour)
+- **Parent:** Node 3 (on success)
+- **Note:** The automated accuracy gate runs inside the promote job; this approval node gates entry to the promotion
+
+#### Node 5: Promote to Staging
 - **Type:** Job Template
 - **Job Template:** `Multi-Env ML - Promote Model`
 - **Extra Variables:**
@@ -190,16 +197,15 @@ Click **Visualizer** and add the following nodes in sequence:
   azure_ml_menv_promote_target: staging
   azure_ml_menv_promotion_approved: true
   ```
-- **Parent:** Node 3 (on success)
-- **Note:** Automated gate runs inside the job template; approval is granted via the approval node below
-
-#### Node 5: Approval - Staging Promotion
-- **Type:** Approval
-- **Name:** "Approve Staging Promotion"
-- **Timeout:** 3600 seconds (1 hour)
 - **Parent:** Node 4 (on success)
 
-#### Node 6: Promote to Prod
+#### Node 6: Approval - Prod Promotion
+- **Type:** Approval
+- **Name:** "Approve Prod Promotion"
+- **Timeout:** 3600 seconds (1 hour)
+- **Parent:** Node 5 (on success)
+
+#### Node 7: Promote to Prod
 - **Type:** Job Template
 - **Job Template:** `Multi-Env ML - Promote Model`
 - **Extra Variables:**
@@ -208,15 +214,7 @@ Click **Visualizer** and add the following nodes in sequence:
   azure_ml_menv_promote_target: prod
   azure_ml_menv_promotion_approved: true
   ```
-- **Parent:** Node 5 (on success)
-
-#### Node 7: Approval - Prod Promotion
-- **Type:** Approval
-- **Name:** "Approve Prod Promotion"
-- **Timeout:** 3600 seconds (1 hour)
 - **Parent:** Node 6 (on success)
-
-**Note:** In the workflow above, approval nodes follow each promotion. For tighter integration, place the approval node **before** the promotion job and pass `azure_ml_menv_promotion_approved=true` as an extra variable from the approval node's success path.
 
 ### Step 3: Create Survey for Workflow
 
@@ -267,6 +265,18 @@ Click **Visualizer** and add the following nodes in sequence:
 - **Required:** Yes
 - **Default:** `1`
 
+#### Survey Field 6: Promotion Approved
+- **Question:** Promotion Approved (set by approval workflow node)
+- **Answer Variable Name:** `azure_ml_menv_promotion_approved`
+- **Answer Type:** Multiple Choice (single select)
+- **Multiple Choice Options:**
+  ```
+  true
+  false
+  ```
+- **Required:** Yes
+- **Default:** `false`
+
 ### Step 4: Test Workflow
 
 1. Launch the workflow template
@@ -275,12 +285,10 @@ Click **Visualizer** and add the following nodes in sequence:
    - Hub provisioning completes
    - Three environment provisioning jobs run in parallel
    - Dev model registration completes
-   - First promotion job runs (dev → staging); automated gate checks accuracy
-   - Approval node pauses for manual approval
-   - Upon approval, model is promoted to staging
-   - Second promotion job runs (staging → prod); automated gate checks accuracy
-   - Second approval node pauses for manual approval
-   - Upon approval, model is promoted to prod
+   - Approval node pauses for staging promotion approval
+   - Upon approval, promote job runs (dev → staging); automated gate checks accuracy, then model is promoted
+   - Approval node pauses for prod promotion approval
+   - Upon approval, promote job runs (staging → prod); automated gate checks accuracy, then model is promoted
 4. Verify infrastructure in Azure portal
 5. Check audit trail in blob storage container `audit/`
 
@@ -341,6 +349,15 @@ For programmatic survey creation, use the following JSON structure:
       "min": 1,
       "max": 255,
       "default": "1"
+    },
+    {
+      "question_name": "Promotion Approved",
+      "question_description": "Manual approval gate (set by approval workflow node)",
+      "required": true,
+      "type": "multiplechoice",
+      "variable": "azure_ml_menv_promotion_approved",
+      "choices": ["true", "false"],
+      "default": "false"
     }
   ]
 }
