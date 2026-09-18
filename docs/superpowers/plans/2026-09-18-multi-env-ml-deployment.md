@@ -50,7 +50,7 @@ azure_ml_menv_tags:
 
 # Shared (hub) resource names
 azure_ml_menv_keyvault_name: "{{ azure_resource_group[:19] }}-mkv"
-azure_ml_menv_acr_name: "{{ (azure_resource_group | regex_replace('[^a-z0-9]', ''))[:44] }}menvacr"
+azure_ml_menv_acr_name: "{{ (azure_resource_group | regex_replace('[^a-z0-9]', ''))[:43] }}menvacr"
 azure_ml_menv_appinsights_name: "{{ azure_resource_group }}-menv-ai"
 azure_ml_menv_registry_name: "{{ azure_resource_group[:20] }}-menvreg"
 azure_ml_menv_audit_storage_account: "{{ (azure_resource_group | regex_replace('[^a-z0-9]', ''))[:15] }}auditml"
