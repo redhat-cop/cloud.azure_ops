@@ -23,6 +23,21 @@
   loop_control:
     loop_var: _env_item
 
+# Register from a LOCAL artifact directory (the module uploads it) rather than an
+# azureml:// datastore path, which requires blobs to already exist and otherwise
+# fails with ModelAssetPathNotFoundInStorage.
+- name: Create local artifact for initial model registration
+  ansible.builtin.tempfile:
+    state: directory
+    prefix: menv_model_
+  register: _init_model_tmpdir
+
+- name: Write initial model file
+  ansible.builtin.copy:
+    dest: "{{ _init_model_tmpdir.path }}/model.json"
+    content: '{"framework": "dummy", "accuracy": 0.95}'
+    mode: "0644"
+
 - name: Register initial model version in dev workspace
   azure.azcollection.azure_rm_ml_model:
     resource_group: "{{ test_azure_resource_group }}"
@@ -31,9 +46,15 @@
     version: "1"
     resource_definition: |
       type: custom_model
-      path: azureml://datastores/workspaceblobstore/paths/model
+      path: {{ _init_model_tmpdir.path }}
       tags:
         accuracy: "0.95"
+
+- name: Clean up initial model artifact directory
+  ansible.builtin.file:
+    path: "{{ _init_model_tmpdir.path | default('/nonexistent') }}"
+    state: absent
+  when: _init_model_tmpdir.path is defined
 
 - name: Promote dev -> staging (approval granted)
   ansible.builtin.include_role:

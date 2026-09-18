@@ -53,19 +53,42 @@
       when: _menv_op == 'provision_environment'
 
     - name: Register initial model version in dev workspace
-      azure.azcollection.azure_rm_ml_model:
-        resource_group: "{{ azure_resource_group }}"
-        ml_workspace: "{{ azure_resource_group[:22] }}-ml-dev"
-        name: "{{ azure_ml_menv_model_name }}"
-        version: "{{ azure_ml_menv_model_version }}"
-        resource_definition: |
-          type: custom_model
-          path: azureml://datastores/workspaceblobstore/paths/model
-          tags:
-            accuracy: "0.95"
+      # NOTE: demo stand-in. Register from a LOCAL artifact directory (the module
+      # uploads it) rather than an azureml:// datastore path, which would require
+      # blobs to already exist and otherwise fails with ModelAssetPathNotFoundInStorage.
+      # In production the accuracy tag is the real evaluation metric produced by
+      # training; the promotion gate reads it.
       when: _menv_op in ['all', 'register_model']
-      # NOTE: demo stand-in. In production the accuracy tag is the real evaluation
-      # metric produced by training; the promotion gate reads it.
+      block:
+        - name: Create local artifact for initial model registration
+          ansible.builtin.tempfile:
+            state: directory
+            prefix: menv_model_
+          register: _init_model_tmpdir
+
+        - name: Write initial model file
+          ansible.builtin.copy:
+            dest: "{{ _init_model_tmpdir.path }}/model.json"
+            content: '{"framework": "dummy", "accuracy": 0.95}'
+            mode: "0644"
+
+        - name: Register initial model
+          azure.azcollection.azure_rm_ml_model:
+            resource_group: "{{ azure_resource_group }}"
+            ml_workspace: "{{ azure_resource_group[:22] }}-ml-dev"
+            name: "{{ azure_ml_menv_model_name }}"
+            version: "{{ azure_ml_menv_model_version }}"
+            resource_definition: |
+              type: custom_model
+              path: {{ _init_model_tmpdir.path }}
+              tags:
+                accuracy: "0.95"
+      always:
+        - name: Clean up initial model artifact directory
+          ansible.builtin.file:
+            path: "{{ _init_model_tmpdir.path | default('/nonexistent') }}"
+            state: absent
+          when: _init_model_tmpdir.path is defined
 
     - name: Promote model dev -> staging
       ansible.builtin.include_role:
