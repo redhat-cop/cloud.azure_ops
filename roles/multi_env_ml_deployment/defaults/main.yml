@@ -30,7 +30,11 @@ azure_ml_menv_audit_container: audit
 azure_ml_menv_env_code: "{{ azure_ml_menv_environments[azure_ml_menv_environment].code }}"
 azure_ml_menv_storage_account: "{{ (azure_resource_group | regex_replace('[^a-z0-9]', ''))[:16] }}{{ azure_ml_menv_env_code }}ml"
 azure_ml_menv_workspace_name: "{{ azure_resource_group[:22] }}-ml-{{ azure_ml_menv_env_code }}"
-azure_ml_menv_compute_name: training-cluster
+# Compute cluster name must be unique per workspace within the resource group and
+# is limited to 16 chars (start with a letter). Derive it per environment so
+# dev/staging/prod never collide (env code prefix) and deployments in different
+# resource groups stay distinct (sanitized RG token suffix).
+azure_ml_menv_compute_name: "{{ azure_ml_menv_env_code }}-{{ (azure_resource_group | regex_replace('[^a-zA-Z0-9]', ''))[:11] }}"
 azure_ml_menv_compute_vm_size: Standard_DS3_v2
 azure_ml_menv_storage_container: training-data
 

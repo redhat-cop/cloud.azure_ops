@@ -226,7 +226,7 @@ This pattern is documented as guidance — the playbook provisions workspaces wi
 
 * **azure_ml_menv_storage_account**: Environment storage account name (max 24 chars, alphanumeric only, auto-suffixed with env code). Default: derived from `azure_resource_group` with `<code>ml` suffix
 * **azure_ml_menv_workspace_name**: ML workspace name (auto-suffixed with env code). Default: `{{ azure_resource_group[:22] }}-ml-<code>`
-* **azure_ml_menv_compute_name**: Compute cluster name. Default: `training-cluster`
+* **azure_ml_menv_compute_name**: Compute cluster name (max 16 chars, must start with a letter, unique per workspace within the resource group). Default: `<code>-<sanitized-rg[:11]>` — the env-code prefix keeps dev/staging/prod distinct and the resource-group token keeps separate deployments distinct
 * **azure_ml_menv_compute_vm_size**: VM size for compute nodes. Default: `Standard_DS3_v2`
 * **azure_ml_menv_storage_container**: Blob container for training data. Default: `training-data`
 
