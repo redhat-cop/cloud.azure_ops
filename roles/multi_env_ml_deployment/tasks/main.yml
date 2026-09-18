@@ -4,6 +4,11 @@
     msg: azure_resource_group must be defined
   when: azure_resource_group is not defined
 
+- name: Freeze correlation id for this operation
+  ansible.builtin.set_fact:
+    azure_ml_menv_correlation_id: "{{ azure_ml_menv_correlation_id }}"
+  when: azure_ml_menv_correlation_id is defined
+
 - name: Include operation-specific tasks
   ansible.builtin.include_tasks: "{{ operation }}.yml"
   when: operation is defined

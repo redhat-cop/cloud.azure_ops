@@ -19,7 +19,7 @@
 - name: Write promoted model file
   ansible.builtin.copy:
     dest: "{{ _promote_tmpdir.path }}/model.json"
-    content: '{"framework": "dummy", "accuracy": 0.95}'
+    content: '{"framework": "dummy", "accuracy": {{ _gate_accuracy }}}'
     mode: "0644"
 
 - name: Register promoted model in target workspace {{ azure_ml_menv_promote_target }}
@@ -33,7 +33,7 @@
       path: {{ _promote_tmpdir.path }}
       description: Model promoted from {{ azure_ml_menv_promote_source }} to {{ azure_ml_menv_promote_target }}
       tags:
-        accuracy: "0.95"
+        accuracy: "{{ _gate_accuracy }}"
         promoted_from: {{ azure_ml_menv_promote_source }}
 
 - name: Publish promoted model to shared ML registry (best-effort)
@@ -54,12 +54,12 @@
         msg: >-
           Registry publish skipped (authorization error). Ensure the identity has
           Storage Blob Data Contributor on the ML registry backing storage.
-  always:
-    - name: Clean up promotion artifact directory
-      ansible.builtin.file:
-        path: "{{ _promote_tmpdir.path | default('/nonexistent') }}"
-        state: absent
-      when: _promote_tmpdir.path is defined
+
+- name: Clean up promotion artifact directory
+  ansible.builtin.file:
+    path: "{{ _promote_tmpdir.path | default('/nonexistent') }}"
+    state: absent
+  when: _promote_tmpdir.path is defined
 
 - name: Record promotion in the audit trail
   ansible.builtin.include_tasks: record_audit_event.yml

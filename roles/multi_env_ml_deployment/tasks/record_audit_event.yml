@@ -1,7 +1,8 @@
 ---
 - name: Build audit record for action {{ audit_action }}
   ansible.builtin.set_fact:
-    _audit_timestamp: "{{ now(true, '%Y%m%dT%H%M%SZ') }}"
+    _audit_timestamp: "{{ now(true, '%Y%m%dT%H%M%S') }}"
+    _audit_uniq: "{{ '%08x' | format(4294967295 | random) }}"
     _audit_record:
       timestamp: "{{ now(true, '%Y-%m-%dT%H:%M:%SZ') }}"
       action: "{{ audit_action }}"
@@ -30,7 +31,7 @@
     resource_group: "{{ azure_resource_group }}"
     storage_account_name: "{{ azure_ml_menv_audit_storage_account }}"
     container: "{{ azure_ml_menv_audit_container }}"
-    blob: "audit/{{ _audit_timestamp }}-{{ audit_action }}.json"
+    blob: "audit/{{ _audit_timestamp }}-{{ audit_action }}-{{ audit_environment | default('shared', true) }}-{{ _audit_uniq }}.json"
     src: "{{ _audit_tmpdir.path }}/record.json"
     content_type: application/json
 

@@ -16,6 +16,17 @@
   ansible.builtin.set_fact:
     _gate_accuracy: "{{ (_gate_model.ml_models[0].tags.accuracy | default(0)) | float }}"
 
+- name: Record rejected promotion when accuracy gate fails
+  ansible.builtin.include_tasks: record_audit_event.yml
+  vars:
+    audit_action: promote_rejected
+    audit_environment: "{{ gate_target_env }}"
+    audit_model_name: "{{ azure_ml_menv_model_name }}"
+    audit_model_version: "{{ azure_ml_menv_model_version }}"
+    audit_gate_result: failed
+    audit_approval_status: not_evaluated
+  when: _gate_accuracy | float < azure_ml_menv_min_accuracy | float
+
 - name: Fail promotion when model accuracy is below threshold
   ansible.builtin.fail:
     msg: >-
@@ -26,6 +37,19 @@
 - name: Record automated gate as passed
   ansible.builtin.set_fact:
     _menv_gate_result: passed
+
+- name: Record rejected promotion when approval gate fails
+  ansible.builtin.include_tasks: record_audit_event.yml
+  vars:
+    audit_action: promote_rejected
+    audit_environment: "{{ gate_target_env }}"
+    audit_model_name: "{{ azure_ml_menv_model_name }}"
+    audit_model_version: "{{ azure_ml_menv_model_version }}"
+    audit_gate_result: passed
+    audit_approval_status: denied
+  when:
+    - _gate_target_cfg.requires_approval | bool
+    - not (azure_ml_menv_promotion_approved | bool)
 
 - name: Fail promotion when manual approval is required but not granted
   ansible.builtin.fail:

@@ -91,10 +91,10 @@ The workflow requires the following job templates:
 - **Credentials:** Azure Service Principal
 - **Extra Variables:**
   ```yaml
-  # operation auto-set by playbook, but override for testing:
-  # operation: provision_shared_infrastructure
+  menv_operation: provision_shared_infrastructure
   ```
 - **Options:** Skip tags, verbosity, and prompt configurations
+- **Note:** The playbook uses `menv_operation` as the operation selector. Omit it (or set `menv_operation: all`) to run the full lifecycle demo.
 
 #### 2. Provision Environment (Reusable)
 
@@ -103,11 +103,11 @@ The workflow requires the following job templates:
 - **Job Type:** Run
 - **Inventory:** localhost
 - **Project:** [Your project]
-- **Playbook:** `cloud.azure_ops.multi_env_ml_deployment`
+- **Playbook:** `playbooks/multi_env_ml_deployment.yml`
 - **Credentials:** Azure Service Principal
 - **Extra Variables:**
   ```yaml
-  operation: provision_environment
+  menv_operation: provision_environment
   ```
 - **Options:** Enable "Prompt on launch" for Extra Variables (to set `azure_ml_menv_environment`)
 
@@ -129,13 +129,14 @@ The workflow requires the following job templates:
 - **Job Type:** Run
 - **Inventory:** localhost
 - **Project:** [Your project]
-- **Playbook:** `cloud.azure_ops.multi_env_ml_deployment`
+- **Playbook:** `playbooks/multi_env_ml_deployment.yml`
 - **Credentials:** Azure Service Principal
 - **Extra Variables:**
   ```yaml
-  operation: promote_model
+  menv_operation: promote_model
   ```
-- **Options:** Enable "Prompt on launch" for Extra Variables (to set `azure_ml_menv_promote_source`, `azure_ml_menv_promote_target`, `azure_ml_menv_promotion_approved`)
+- **Options:** Enable "Prompt on launch" for Extra Variables (to set `azure_ml_menv_promote_source`, `azure_ml_menv_promote_target`, and `azure_ml_menv_promotion_approved`)
+- **Note:** AAP approval nodes preceding the promote jobs set `azure_ml_menv_promotion_approved: true`. The promote jobs also require `azure_ml_menv_promote_source` and `azure_ml_menv_promote_target` to specify the promotion path (e.g., `dev` → `staging`).
 
 ## Workflow Template Configuration
 

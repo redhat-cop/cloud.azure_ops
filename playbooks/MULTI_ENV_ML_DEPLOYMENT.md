@@ -119,38 +119,51 @@ Without AAP, manually set this variable when invoking the playbook for staging/p
 
 ### Audit Trail
 
-All provisioning and promotion actions are recorded in an immutable audit trail stored in Azure Blob Storage.
+All provisioning and promotion actions are recorded in a **tamper-evident** audit trail stored in Azure Blob Storage. Each event writes one immutable JSON blob that is never mutated, with a unique name incorporating timestamp, action type, environment, and a random token.
 
 **Blob Naming Convention:**
 
 ```
-audit/<timestamp>-<action>.json
+audit/<timestamp>-<action>-<environment>-<uniq>.json
 ```
 
-Example: `audit/20260918T143022Z-promote.json`
+Example: `audit/20260918T143022-promote-staging-a3f2c8e1.json`
 
 **Audit Record Fields:**
 
 | Field | Type | Description | Example |
 |-------|------|-------------|---------|
 | `timestamp` | ISO 8601 | Action timestamp (human-readable) | `2026-09-18T14:30:22Z` |
-| `action` | string | Action type | `promote`, `provision_shared`, `provision_environment` |
+| `action` | string | Action type | `promote`, `promote_rejected`, `provision_shared`, `provision_environment`, `delete_environment`, `delete_shared` |
 | `environment` | string | Target environment (for environment-scoped actions) | `staging`, `prod` |
 | `model_name` | string | Model name (for model actions) | `menv-model` |
 | `model_version` | string | Model version | `1` |
 | `actor` | string | Service principal or user identity | `xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx` |
-| `approval_status` | string | Manual approval status | `approved`, `not_required`, `denied` |
+| `approval_status` | string | Manual approval status | `approved`, `not_required`, `denied`, `not_evaluated` |
 | `gate_result` | string | Automated gate result | `passed`, `failed`, `skipped` |
-| `correlation_id` | string | Correlation ID for related actions | `20260918T143022Z` |
+| `correlation_id` | string | Correlation ID for related actions | `20260918T143022-12345678` |
 
-**Immutability Rationale:**
+**Audit Actions:**
 
-Audit records use append-only blob storage to:
+- `provision_shared`: Shared hub infrastructure provisioned
+- `provision_environment`: Environment-specific spoke resources provisioned
+- `promote`: Model successfully promoted to target environment
+- `promote_rejected`: Promotion blocked by a gate (accuracy or approval)
+- `delete_environment`: Environment resources deleted
+- `delete_shared`: Shared hub infrastructure deleted
 
-* Maintain regulatory compliance (SOC2, HIPAA, FedRAMP)
-* Prevent tampering with promotion history
-* Enable forensic analysis of model deployment lineage
-* Support automated compliance reporting
+**Tamper-Evident Design:**
+
+The audit trail provides tamper-evidence through:
+
+* One immutable blob per event (never updated after creation)
+* Unique blob names prevent same-second overwrites
+* Correlation IDs link related events across a single run
+* Timestamp and actor tracking for forensic analysis
+
+**Production Hardening:**
+
+For true tamper-proof retention meeting regulatory compliance requirements (SOC2, HIPAA, FedRAMP), enable an **Azure Storage immutability policy (WORM)** or **legal hold** on the audit container post-deployment. This prevents deletion or modification of audit blobs for a defined retention period. See [Azure Blob immutable storage](https://learn.microsoft.com/azure/storage/blobs/immutable-storage-overview) for configuration guidance.
 
 ### Network Isolation
 
@@ -193,9 +206,10 @@ This pattern is documented as guidance — the playbook provisions workspaces wi
 
 #### Common
 
-* **azure_resource_group**: (Required) Resource group for all resources (hub and spokes).
+* **azure_resource_group**: (Required) Resource group for all resources (hub and spokes). **Note:** shared and per-environment resource names are derived from this value, so use only letters, digits, and hyphens (DNS-safe characters). Resource group names containing underscores or periods can yield invalid Key Vault, ML registry, or workspace names.
 * **azure_region**: Azure location for resources. Default: `eastus`
-* **operation**: Operation to perform. Valid values: `provision_shared_infrastructure`, `provision_environment`, `promote_model`. Required when using the role directly (playbook sets this automatically).
+* **operation**: Operation to perform. Valid values: `provision_shared_infrastructure`, `provision_environment`, `promote_model`, `delete_environment`, `delete_shared_infrastructure`. Required when using the role directly (playbook sets this automatically).
+* **menv_operation**: Playbook-level operation selector. Valid values: `all` (full lifecycle demo), `provision_shared_infrastructure`, `provision_environment`, `register_model`, `promote_model`, `delete_environment`, `delete_shared_infrastructure`. Default: `all` (AAP job templates set this to run a single operation).
 * **azure_ml_menv_environment**: Active environment for environment-scoped operations (`dev`, `staging`, `prod`). Default: `dev`
 
 #### Shared Infrastructure (Hub)
@@ -256,17 +270,17 @@ This runs the full lifecycle:
 ```bash
 ansible-playbook cloud.azure_ops.multi_env_ml_deployment \
   -e azure_resource_group=my-ml-platform-rg \
-  -e operation=provision_shared_infrastructure
+  -e menv_operation=provision_shared_infrastructure
 ```
 
-**Note:** When invoking the role directly, set `operation` explicitly. The playbook sets this automatically.
+**Note:** The playbook uses `menv_operation` to select which operation(s) to run. Omit it (or set `menv_operation=all`) to run the full lifecycle demo. AAP job templates set `menv_operation` to run a single operation.
 
 #### Provision Single Environment
 
 ```bash
 ansible-playbook cloud.azure_ops.multi_env_ml_deployment \
   -e azure_resource_group=my-ml-platform-rg \
-  -e operation=provision_environment \
+  -e menv_operation=provision_environment \
   -e azure_ml_menv_environment=staging
 ```
 
@@ -275,7 +289,7 @@ ansible-playbook cloud.azure_ops.multi_env_ml_deployment \
 ```bash
 ansible-playbook cloud.azure_ops.multi_env_ml_deployment \
   -e azure_resource_group=my-ml-platform-rg \
-  -e operation=promote_model \
+  -e menv_operation=promote_model \
   -e azure_ml_menv_promote_source=dev \
   -e azure_ml_menv_promote_target=staging \
   -e azure_ml_menv_min_accuracy=0.95 \
@@ -287,7 +301,7 @@ ansible-playbook cloud.azure_ops.multi_env_ml_deployment \
 ```bash
 ansible-playbook cloud.azure_ops.multi_env_ml_deployment \
   -e azure_resource_group=my-ml-platform-rg \
-  -e operation=delete_environment \
+  -e menv_operation=delete_environment \
   -e azure_ml_menv_environment=dev
 ```
 
@@ -296,7 +310,7 @@ ansible-playbook cloud.azure_ops.multi_env_ml_deployment \
 ```bash
 ansible-playbook cloud.azure_ops.multi_env_ml_deployment \
   -e azure_resource_group=my-ml-platform-rg \
-  -e operation=delete_shared_infrastructure
+  -e menv_operation=delete_shared_infrastructure
 ```
 
 **Warning:** This deletes the hub (KV, ACR, registry, audit storage) and all three spoke environments. Audit records are preserved in the storage account until explicitly deleted.

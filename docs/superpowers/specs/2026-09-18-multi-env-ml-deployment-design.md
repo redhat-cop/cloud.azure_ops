@@ -70,7 +70,7 @@ Resource topology:
 > `.md` documents that a production hardening step would use per-environment Key
 > Vaults; this is called out as guidance, not implemented.
 
-### Role operations (`multi_env_ml_deployment_operation`)
+### Role operations (`operation`)
 
 | Operation | Purpose |
 |-----------|---------|
@@ -88,26 +88,29 @@ Shared helper task files (not operations, `include_tasks`-ed by operations):
 ### Environment-specific configuration
 
 All per-environment differences are driven by one dict variable. The active
-environment is selected with `multi_env_ml_deployment_environment`:
+environment is selected with `azure_ml_menv_environment`:
 
 ```yaml
-multi_env_ml_environments:
+azure_ml_menv_environments:
   dev:
+    code: dev
     public_network_access: Enabled
     compute_max_nodes: 4
     requires_approval: false
   staging:
+    code: stg
     public_network_access: Disabled
     compute_max_nodes: 2
     requires_approval: true
   prod:
+    code: prod
     public_network_access: Disabled
     compute_max_nodes: 2
     requires_approval: true
 ```
 
-The role reads `multi_env_ml_environments[multi_env_ml_deployment_environment]`
-for the workspace name suffix, network access, compute sizing, and whether
+The role reads `azure_ml_menv_environments[azure_ml_menv_environment]`
+for the workspace name suffix (via `code`), network access, compute sizing, and whether
 promotion into that environment requires manual approval. This is the "one role,
 environment-specific variables" governance story required by the ticket.
 
@@ -143,9 +146,9 @@ This satisfies "cross-environment model sharing via ML Registry" while keeping
 
 - **Automated validation gate** (`validate_promotion_gate.yml`): looks up the
   candidate model version in the source workspace, reads its accuracy tag, and
-  `fail`s when `accuracy < multi_env_ml_min_accuracy` (default e.g. `0.90`).
+  `fail`s when `accuracy < azure_ml_menv_min_accuracy` (default `0.90`).
 - **Manual approval gate**: for a target env with `requires_approval: true`,
-  promotion `fail`s unless `multi_env_ml_promotion_approved | bool` is true.
+  promotion `fail`s unless `azure_ml_menv_promotion_approved | bool` is true.
   Custom UI is out of scope; the boolean is what an AAP manual-approval node
   provides.
 - **AAP workflow doc** (`docs/aap_surveys/multi_env_ml_workflow.md`): shows the
@@ -154,8 +157,8 @@ This satisfies "cross-environment model sharing via ML Registry" while keeping
   **manual approval node** → promote-to-prod job — plus a survey for the gated
   variables.
 
-Both gates are fully exercisable in CI by setting `multi_env_ml_min_accuracy` and
-`multi_env_ml_promotion_approved`.
+Both gates are fully exercisable in CI by setting `azure_ml_menv_min_accuracy` and
+`azure_ml_menv_promotion_approved`.
 
 ## Audit trail
 
@@ -210,8 +213,8 @@ per collection convention):
 - Flow: `provision_shared_infrastructure` → `provision_environment` for dev,
   staging, prod (lightweight compute: `Standard_DS2_v2`, `max_nodes: 1`) →
   register a model in dev with an accuracy tag → `promote_model` dev→staging and
-  staging→prod with `multi_env_ml_promotion_approved: true` and a passing
-  `multi_env_ml_min_accuracy` → assert the expected audit blobs exist in the audit
+  staging→prod with `azure_ml_menv_promotion_approved: true` and a passing
+  `azure_ml_menv_min_accuracy` → assert the expected audit blobs exist in the audit
   container → (optionally) assert a below-threshold accuracy fails the gate.
 - **Skips online endpoints** to keep runtime sane.
 - Invokes the role via `include_role` (not inline task copies).
