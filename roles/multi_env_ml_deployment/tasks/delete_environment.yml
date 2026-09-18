@@ -1,0 +1,30 @@
+---
+- name: Delete compute cluster in environment {{ azure_ml_menv_environment }}
+  azure.azcollection.azure_rm_ml_compute:
+    resource_group: "{{ azure_resource_group }}"
+    ml_workspace: "{{ azure_ml_menv_workspace_name }}"
+    name: "{{ azure_ml_menv_compute_name }}"
+    state: absent
+  failed_when: false
+
+- name: Delete ML workspace for environment {{ azure_ml_menv_environment }}
+  azure.azcollection.azure_rm_ml_workspace:
+    resource_group: "{{ azure_resource_group }}"
+    name: "{{ azure_ml_menv_workspace_name }}"
+    state: absent
+  failed_when: false
+
+- name: Delete environment storage account
+  ansible.builtin.include_role:
+    name: cloud.azure_ops.azure_manage_storage_account
+  vars:
+    azure_manage_storage_account_operation: delete
+    azure_manage_storage_account_name: "{{ azure_ml_menv_storage_account }}"
+    azure_manage_storage_account_resource_group: "{{ azure_resource_group }}"
+
+- name: Record environment deletion in the audit trail
+  ansible.builtin.include_tasks: record_audit_event.yml
+  vars:
+    audit_action: delete
+    audit_environment: "{{ azure_ml_menv_environment }}"
+  failed_when: false
