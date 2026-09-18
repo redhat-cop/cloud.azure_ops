@@ -1,0 +1,61 @@
+---
+- name: Multi-environment Azure ML deployment with AAP-style promotion
+  hosts: localhost
+  gather_facts: false
+
+  vars_files:
+    - vars/multi_env_ml_deployment_vars.yml
+
+  tasks:
+    - name: Fail when azure_resource_group is not defined
+      ansible.builtin.fail:
+        msg: azure_resource_group must be defined
+      when: azure_resource_group is not defined
+
+    - name: Provision shared hub infrastructure
+      ansible.builtin.include_role:
+        name: cloud.azure_ops.multi_env_ml_deployment
+      vars:
+        operation: provision_shared_infrastructure
+
+    - name: Provision each environment (dev, staging, prod)
+      ansible.builtin.include_role:
+        name: cloud.azure_ops.multi_env_ml_deployment
+      vars:
+        operation: provision_environment
+        azure_ml_menv_environment: "{{ _env_item }}"
+      loop:
+        - dev
+        - staging
+        - prod
+      loop_control:
+        loop_var: _env_item
+
+    - name: Register initial model version in dev workspace
+      azure.azcollection.azure_rm_ml_model:
+        resource_group: "{{ azure_resource_group }}"
+        ml_workspace: "{{ azure_resource_group[:22] }}-ml-dev"
+        name: "{{ azure_ml_menv_model_name }}"
+        version: "{{ azure_ml_menv_model_version }}"
+        resource_definition: |
+          type: custom_model
+          path: azureml://datastores/workspaceblobstore/paths/model
+          tags:
+            accuracy: "0.95"
+      # NOTE: for a real run, replace path with a trained model artifact.
+
+    - name: Promote model dev -> staging
+      ansible.builtin.include_role:
+        name: cloud.azure_ops.multi_env_ml_deployment
+      vars:
+        operation: promote_model
+        azure_ml_menv_promote_source: dev
+        azure_ml_menv_promote_target: staging
+
+    - name: Promote model staging -> prod
+      ansible.builtin.include_role:
+        name: cloud.azure_ops.multi_env_ml_deployment
+      vars:
+        operation: promote_model
+        azure_ml_menv_promote_source: staging
+        azure_ml_menv_promote_target: prod
