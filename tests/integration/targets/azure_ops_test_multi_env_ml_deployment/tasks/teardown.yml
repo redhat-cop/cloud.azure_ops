@@ -1,0 +1,23 @@
+---
+- name: Delete each environment
+  ansible.builtin.include_role:
+    name: cloud.azure_ops.multi_env_ml_deployment
+  vars:
+    operation: delete_environment
+    azure_resource_group: "{{ test_azure_resource_group }}"
+    azure_ml_menv_environment: "{{ _env_item }}"
+  loop:
+    - dev
+    - staging
+    - prod
+  loop_control:
+    loop_var: _env_item
+  failed_when: false
+
+- name: Delete shared infrastructure and resource group
+  ansible.builtin.include_role:
+    name: cloud.azure_ops.multi_env_ml_deployment
+  vars:
+    operation: delete_shared_infrastructure
+    azure_resource_group: "{{ test_azure_resource_group }}"
+  failed_when: false

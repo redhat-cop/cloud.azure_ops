@@ -1,0 +1,72 @@
+---
+- name: Provision shared hub infrastructure
+  ansible.builtin.include_role:
+    name: cloud.azure_ops.multi_env_ml_deployment
+  vars:
+    operation: provision_shared_infrastructure
+    azure_resource_group: "{{ test_azure_resource_group }}"
+    azure_region: "{{ test_azure_region }}"
+
+- name: Provision each environment
+  ansible.builtin.include_role:
+    name: cloud.azure_ops.multi_env_ml_deployment
+  vars:
+    operation: provision_environment
+    azure_resource_group: "{{ test_azure_resource_group }}"
+    azure_region: "{{ test_azure_region }}"
+    azure_ml_menv_environment: "{{ _env_item }}"
+    azure_ml_menv_compute_vm_size: "{{ test_azure_ml_menv_compute_vm_size }}"
+  loop:
+    - dev
+    - staging
+    - prod
+  loop_control:
+    loop_var: _env_item
+
+- name: Register initial model version in dev workspace
+  azure.azcollection.azure_rm_ml_model:
+    resource_group: "{{ test_azure_resource_group }}"
+    ml_workspace: "{{ test_azure_resource_group[:22] }}-ml-dev"
+    name: menv-model
+    version: "1"
+    resource_definition: |
+      type: custom_model
+      path: azureml://datastores/workspaceblobstore/paths/model
+      tags:
+        accuracy: "0.95"
+
+- name: Promote dev -> staging (approval granted)
+  ansible.builtin.include_role:
+    name: cloud.azure_ops.multi_env_ml_deployment
+  vars:
+    operation: promote_model
+    azure_resource_group: "{{ test_azure_resource_group }}"
+    azure_region: "{{ test_azure_region }}"
+    azure_ml_menv_promote_source: dev
+    azure_ml_menv_promote_target: staging
+    azure_ml_menv_promotion_approved: true
+
+- name: Promote staging -> prod (approval granted)
+  ansible.builtin.include_role:
+    name: cloud.azure_ops.multi_env_ml_deployment
+  vars:
+    operation: promote_model
+    azure_resource_group: "{{ test_azure_resource_group }}"
+    azure_region: "{{ test_azure_region }}"
+    azure_ml_menv_promote_source: staging
+    azure_ml_menv_promote_target: prod
+    azure_ml_menv_promotion_approved: true
+
+- name: List audit blobs
+  azure.azcollection.azure_rm_storageblob_info:
+    resource_group: "{{ test_azure_resource_group }}"
+    storage_account_name: "{{ (test_azure_resource_group | regex_replace('[^a-z0-9]', ''))[:15] }}auditml"
+    container: audit
+  register: _audit_blobs
+
+- name: Assert promotion audit records were written
+  ansible.builtin.assert:
+    that:
+      - _audit_blobs.blobs | selectattr('name', 'search', 'promote') | list | length >= 2
+    fail_msg: Expected at least two 'promote' audit records
+    success_msg: Audit trail captured the promotion events

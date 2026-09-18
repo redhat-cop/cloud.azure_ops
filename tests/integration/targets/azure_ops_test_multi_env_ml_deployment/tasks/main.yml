@@ -1,0 +1,8 @@
+---
+- name: Test multi-environment ML deployment
+  block:
+    - name: Run create-and-validate flow
+      ansible.builtin.include_tasks: create_and_validate.yml
+  always:
+    - name: Tear down all multi-env ML resources
+      ansible.builtin.include_tasks: teardown.yml
