@@ -1,0 +1,41 @@
+---
+- name: Resolve source workspace name for gate lookup
+  ansible.builtin.set_fact:
+    _gate_source_workspace: "{{ azure_resource_group[:22] }}-ml-{{ azure_ml_menv_environments[gate_source_env].code }}"
+    _gate_target_cfg: "{{ azure_ml_menv_environments[gate_target_env] }}"
+
+- name: Look up candidate model in source workspace
+  azure.azcollection.azure_rm_ml_model_info:
+    resource_group: "{{ azure_resource_group }}"
+    ml_workspace: "{{ _gate_source_workspace }}"
+    name: "{{ azure_ml_menv_model_name }}"
+    version: "{{ azure_ml_menv_model_version }}"
+  register: _gate_model
+
+- name: Extract candidate model accuracy from tags
+  ansible.builtin.set_fact:
+    _gate_accuracy: "{{ (_gate_model.ml_models[0].tags.accuracy | default(0)) | float }}"
+
+- name: Fail promotion when model accuracy is below threshold
+  ansible.builtin.fail:
+    msg: >-
+      Automated gate failed: model {{ azure_ml_menv_model_name }}:{{ azure_ml_menv_model_version }}
+      accuracy {{ _gate_accuracy }} is below required {{ azure_ml_menv_min_accuracy }}
+  when: _gate_accuracy | float < azure_ml_menv_min_accuracy | float
+
+- name: Record automated gate as passed
+  ansible.builtin.set_fact:
+    _menv_gate_result: passed
+
+- name: Fail promotion when manual approval is required but not granted
+  ansible.builtin.fail:
+    msg: >-
+      Approval gate failed: promotion to {{ gate_target_env }} requires approval.
+      Set azure_ml_menv_promotion_approved=true (supplied by the AAP approval node).
+  when:
+    - _gate_target_cfg.requires_approval | bool
+    - not (azure_ml_menv_promotion_approved | bool)
+
+- name: Record approval status
+  ansible.builtin.set_fact:
+    _menv_approval_status: "{{ 'approved' if _gate_target_cfg.requires_approval | bool else 'not_required' }}"
