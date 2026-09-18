@@ -88,6 +88,6 @@
 - name: Assert promotion audit records were written
   ansible.builtin.assert:
     that:
-      - _audit_blobs.blobs | selectattr('name', 'search', 'promote') | list | length >= 2
+      - _audit_blobs.blob | selectattr('name', 'search', '-promote-') | list | length >= 2
     fail_msg: Expected at least two 'promote' audit records
     success_msg: Audit trail captured the promotion events
