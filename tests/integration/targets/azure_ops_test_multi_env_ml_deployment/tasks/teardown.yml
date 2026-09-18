@@ -12,7 +12,7 @@
     - prod
   loop_control:
     loop_var: _env_item
-  failed_when: false
+  ignore_errors: true   # best-effort teardown — never fail the test on cleanup
 
 - name: Delete shared infrastructure and resource group
   ansible.builtin.include_role:
@@ -20,4 +20,4 @@
   vars:
     operation: delete_shared_infrastructure
     azure_resource_group: "{{ test_azure_resource_group }}"
-  failed_when: false
+  ignore_errors: true   # best-effort teardown — never fail the test on cleanup
