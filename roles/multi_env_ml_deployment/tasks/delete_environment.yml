@@ -27,4 +27,4 @@
   vars:
     audit_action: delete
     audit_environment: "{{ azure_ml_menv_environment }}"
-  failed_when: false
+  ignore_errors: true   # best-effort audit — never fail teardown on the audit write
