@@ -1,0 +1,9 @@
+---
+- name: Fail when azure_resource_group is not defined
+  ansible.builtin.fail:
+    msg: azure_resource_group must be defined
+  when: azure_resource_group is not defined
+
+- name: Include operation-specific tasks
+  ansible.builtin.include_tasks: "{{ operation }}.yml"
+  when: operation is defined
