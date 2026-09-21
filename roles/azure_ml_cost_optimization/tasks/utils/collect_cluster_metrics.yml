@@ -1,0 +1,63 @@
+---
+# Collect Azure Monitor CPU metrics for a single compute cluster.
+#
+# Included once per cluster from utils/collect_metrics.yml with `cluster_entry`
+# set to the cluster entry from _clusters_to_analyze. Extracted into its own
+# file because Ansible does not support `loop` on a `block`.
+
+- name: Initialize loop variables
+  ansible.builtin.set_fact:
+    _cpu_values: []
+    _avg_cpu: 0  # reset each iteration so a prior cluster's average can't leak in
+    _metrics_data_valid: false
+
+- name: Build resource ID
+  ansible.builtin.set_fact:
+    _cluster_resource_id: "/subscriptions/{{ _subscription_id }}/resourceGroups/{{ azure_resource_group }}/providers/Microsoft.MachineLearningServices/workspaces/{{ cluster_entry.workspace_name }}/computes/{{ cluster_entry.cluster_name }}"
+
+- name: Query Azure Monitor for CPU metrics
+  azure.azcollection.azure_rm_resource:
+    url: "https://management.azure.com{{ _cluster_resource_id }}/providers/Microsoft.Insights/metrics"
+    api_version: "2023-10-01"
+    method: GET
+    query_parameters:
+      timespan: "{{ _metrics_start_time }}/{{ _metrics_end_time }}"
+      interval: "{{ _metrics_interval }}"
+      metricnames: "CpuUtilization"
+      aggregation: "Average"
+  register: _metrics_response
+  ignore_errors: true
+
+- name: Validate and parse metrics data
+  ansible.builtin.set_fact:
+    _cpu_values: "{{ _metrics_response.response.value[0].timeseries[0].data | map(attribute='average') | select('defined') | list }}"
+    _metrics_data_valid: true
+  when:
+    - _metrics_response is succeeded
+    - _metrics_response.response is defined
+    - _metrics_response.response.value | length > 0
+    - _metrics_response.response.value[0].timeseries | default([]) | length > 0
+
+- name: Calculate average CPU
+  ansible.builtin.set_fact:
+    _avg_cpu: "{{ (_cpu_values | map('float') | sum / _cpu_values | length) | round(2) }}"
+  when:
+    - _cpu_values | length > 0
+
+- name: Add cluster metrics to collection
+  ansible.builtin.set_fact:
+    _cluster_metrics: "{{ _cluster_metrics + [_metric_entry] }}"
+  vars:
+    _metric_entry:
+      cluster_name: "{{ cluster_entry.cluster_name }}"
+      workspace_name: "{{ cluster_entry.workspace_name }}"
+      avg_cpu_percent: "{{ _avg_cpu | float }}"
+      analysis_days: "{{ azure_ml_cost_optimization_rightsize_analysis_days }}"
+      data_points: "{{ _cpu_values | length }}"
+      has_sufficient_data: "{{ (_cpu_values | length) >= (azure_ml_cost_optimization_rightsize_analysis_days * 20) }}"  # At least 20 data points per day
+
+- name: Log insufficient metrics data
+  ansible.builtin.debug:
+    msg: "Warning: Insufficient metrics data for {{ cluster_entry.cluster_name }} in workspace {{ cluster_entry.workspace_name }}"
+  when:
+    - not _metrics_data_valid or _cpu_values | length == 0

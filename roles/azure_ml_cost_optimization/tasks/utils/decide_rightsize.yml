@@ -1,0 +1,127 @@
+---
+# Pure right-sizing decision -- no Azure calls, no side effects.
+#
+# Given one cluster's utilization and current VM size, decide whether it should
+# be resized and to what. Kept free of API calls so it can be exercised
+# deterministically by fixtures (see the *_rightsize_decision test target).
+#
+# Every intermediate is recomputed unconditionally (using sentinels rather than
+# `is defined`) so a value from a previous loop iteration can never leak into
+# this decision -- set_fact does not clear a var when its `when` is false.
+#
+# Inputs (pass as vars):
+#   _decide_avg_cpu   - average CPU percent over the analysis window (number)
+#   _decide_has_data  - whether sufficient metrics were collected (bool)
+#   _decide_vm_size   - the cluster's current VM size (string)
+# Config used: azure_ml_cost_optimization_rightsize_cpu_threshold,
+#              azure_ml_cost_optimization_rightsize_allowed_sizes,
+#              azure_ml_cost_optimization_rightsize_min_size
+#
+# Output:
+#   _rightsize_decision = {action: resize|no_action, reason: <str>, new_size: <str>}
+#   reasons: insufficient_data | above_threshold | unknown_size |
+#            already_smallest | below_minimum | no_change | underutilized
+
+- name: Evaluate whether utilization is below the right-sizing threshold
+  ansible.builtin.set_fact:
+    _rs_underutilized: "{{ _decide_avg_cpu | float < azure_ml_cost_optimization_rightsize_cpu_threshold | float }}"
+
+- name: Locate current VM size on the allowed ladder (-1 if not present)
+  ansible.builtin.set_fact:
+    _rs_current_index: >-
+      {{ azure_ml_cost_optimization_rightsize_allowed_sizes.index(_decide_vm_size)
+         if _decide_vm_size in azure_ml_cost_optimization_rightsize_allowed_sizes
+         else -1 }}
+
+- name: Pick the next smaller size on the ladder ('' if none)
+  ansible.builtin.set_fact:
+    _rs_new_size: >-
+      {{ azure_ml_cost_optimization_rightsize_allowed_sizes[_rs_current_index | int - 1]
+         if _rs_current_index | int > 0
+         else '' }}
+
+- name: Check the candidate size is not below the configured minimum
+  ansible.builtin.set_fact:
+    _rs_new_allowed: >-
+      {{ (_rs_new_size | length > 0)
+         and (azure_ml_cost_optimization_rightsize_allowed_sizes.index(_rs_new_size)
+              >= azure_ml_cost_optimization_rightsize_allowed_sizes.index(azure_ml_cost_optimization_rightsize_min_size)) }}
+
+# Assemble the decision. Exactly one branch applies; the default
+# (insufficient_data) stands only when there is no usable metrics data.
+- name: Default decision - insufficient data
+  ansible.builtin.set_fact:
+    _rightsize_decision:
+      action: no_action
+      reason: insufficient_data
+      new_size: ""
+
+- name: Decision - utilization above threshold
+  ansible.builtin.set_fact:
+    _rightsize_decision:
+      action: no_action
+      reason: above_threshold
+      new_size: ""
+  when:
+    - _decide_has_data | bool
+    - not (_rs_underutilized | bool)
+
+- name: Decision - VM size not on the allowed ladder
+  ansible.builtin.set_fact:
+    _rightsize_decision:
+      action: no_action
+      reason: unknown_size
+      new_size: ""
+  when:
+    - _decide_has_data | bool
+    - _rs_underutilized | bool
+    - _rs_current_index | int < 0
+
+- name: Decision - already at the smallest allowed size
+  ansible.builtin.set_fact:
+    _rightsize_decision:
+      action: no_action
+      reason: already_smallest
+      new_size: ""
+  when:
+    - _decide_has_data | bool
+    - _rs_underutilized | bool
+    - _rs_current_index | int == 0
+
+- name: Decision - candidate size is below the configured minimum
+  ansible.builtin.set_fact:
+    _rightsize_decision:
+      action: no_action
+      reason: below_minimum
+      new_size: "{{ _rs_new_size }}"
+  when:
+    - _decide_has_data | bool
+    - _rs_underutilized | bool
+    - _rs_current_index | int > 0
+    - not (_rs_new_allowed | bool)
+
+- name: Decision - candidate size equals current size
+  ansible.builtin.set_fact:
+    _rightsize_decision:
+      action: no_action
+      reason: no_change
+      new_size: "{{ _rs_new_size }}"
+  when:
+    - _decide_has_data | bool
+    - _rs_underutilized | bool
+    - _rs_current_index | int > 0
+    - _rs_new_allowed | bool
+    - _rs_new_size == _decide_vm_size
+
+- name: Decision - resize to the next smaller size
+  ansible.builtin.set_fact:
+    _rightsize_decision:
+      action: resize
+      reason: underutilized
+      new_size: "{{ _rs_new_size }}"
+  when:
+    - _decide_has_data | bool
+    - _rs_underutilized | bool
+    - _rs_current_index | int > 0
+    - _rs_new_allowed | bool
+    - _rs_new_size != _decide_vm_size

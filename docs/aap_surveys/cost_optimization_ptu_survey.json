@@ -1,0 +1,30 @@
+{
+  "name": "ML Cost Optimization - PTU Management",
+  "description": "Optimize Azure OpenAI Provisioned Throughput Units",
+  "spec": [
+    {
+      "question_name": "Resource Group",
+      "question_description": "Azure resource group containing OpenAI accounts",
+      "required": true,
+      "type": "text",
+      "variable": "azure_resource_group",
+      "min": 0,
+      "max": 1024,
+      "default": "",
+      "choices": "",
+      "new_question": true
+    },
+    {
+      "question_name": "OpenAI Accounts",
+      "question_description": "Specific OpenAI accounts (comma-separated, blank = all)",
+      "required": false,
+      "type": "text",
+      "variable": "openai_accounts",
+      "min": 0,
+      "max": 1024,
+      "default": "",
+      "choices": "",
+      "new_question": true
+    }
+  ]
+}

@@ -1,0 +1,14 @@
+---
+# Azure ML/AI Cost Optimization - playbook variables
+#
+# Only values that intentionally differ from the role defaults live here.
+# Everything else (right-sizing thresholds, PTU tiers, ROI/audit settings, ...)
+# comes from roles/azure_ml_cost_optimization/defaults/main.yml. Override any of
+# those at run time with -e, which takes precedence over this file.
+
+# Target Azure region (no role default; required by the playbook)
+azure_region: "eastus"
+
+# Intentionally safer than the role default (shutdown_non_critical): triggered
+# runs only alert on budget events unless an operator opts into shutdowns.
+azure_ml_cost_optimization_budget_alert_action: "alert_only"

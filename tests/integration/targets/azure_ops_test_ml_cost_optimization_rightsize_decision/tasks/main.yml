@@ -1,0 +1,109 @@
+---
+# Fixture-driven test for the pure right-sizing decision.
+#
+# Exercises utils/decide_rightsize.yml in isolation with crafted inputs and
+# asserts the resulting _rightsize_decision. Makes no Azure API calls and
+# creates no resources -- it verifies the decision branches that a live run can
+# almost never reproduce on demand (a genuinely underutilized cluster of a
+# specific size). Runs in the cloud/azure lane for consistency with the other
+# targets, but requires no live resources.
+
+- name: Right-sizing decision fixtures
+  vars:
+    # Explicit config so the fixtures are self-contained and independent of any
+    # future change to the role defaults.
+    azure_ml_cost_optimization_rightsize_cpu_threshold: 30
+    azure_ml_cost_optimization_rightsize_allowed_sizes:
+      - Standard_DS3_v2
+      - Standard_DS4_v2
+      - Standard_DS5_v2
+    azure_ml_cost_optimization_rightsize_min_size: Standard_DS3_v2
+    _fixtures:
+      - name: insufficient data is skipped regardless of low CPU
+        avg_cpu: 5
+        has_data: false
+        vm_size: Standard_DS5_v2
+        expect_action: no_action
+        expect_reason: insufficient_data
+        expect_new_size: ""
+      - name: CPU above threshold is skipped
+        avg_cpu: 55
+        has_data: true
+        vm_size: Standard_DS5_v2
+        expect_action: no_action
+        expect_reason: above_threshold
+        expect_new_size: ""
+      - name: CPU exactly at threshold is not underutilized (skip)
+        avg_cpu: 30
+        has_data: true
+        vm_size: Standard_DS5_v2
+        expect_action: no_action
+        expect_reason: above_threshold
+        expect_new_size: ""
+      - name: underutilized DS5 steps down to DS4
+        avg_cpu: 12
+        has_data: true
+        vm_size: Standard_DS5_v2
+        expect_action: resize
+        expect_reason: underutilized
+        expect_new_size: Standard_DS4_v2
+      - name: underutilized DS4 steps down to DS3
+        avg_cpu: 12
+        has_data: true
+        vm_size: Standard_DS4_v2
+        expect_action: resize
+        expect_reason: underutilized
+        expect_new_size: Standard_DS3_v2
+      - name: underutilized DS3 is already the smallest allowed size (skip)
+        avg_cpu: 12
+        has_data: true
+        vm_size: Standard_DS3_v2
+        expect_action: no_action
+        expect_reason: already_smallest
+        expect_new_size: ""
+      - name: underutilized but unknown VM size is skipped
+        avg_cpu: 12
+        has_data: true
+        vm_size: Standard_NC6s_v3
+        expect_action: no_action
+        expect_reason: unknown_size
+        expect_new_size: ""
+  block:
+    - name: Run and assert each right-sizing fixture
+      ansible.builtin.include_tasks: assert_one.yml
+      loop: "{{ _fixtures }}"
+      loop_control:
+        loop_var: _fixture
+        label: "{{ _fixture.name }}"
+
+- name: Right-sizing decision honours a raised minimum size
+  vars:
+    # min_size above the natural floor: DS4 should refuse to drop to DS3.
+    azure_ml_cost_optimization_rightsize_cpu_threshold: 30
+    azure_ml_cost_optimization_rightsize_allowed_sizes:
+      - Standard_DS3_v2
+      - Standard_DS4_v2
+      - Standard_DS5_v2
+    azure_ml_cost_optimization_rightsize_min_size: Standard_DS4_v2
+    _fixtures:
+      - name: underutilized DS4 is held at the raised minimum (below_minimum)
+        avg_cpu: 12
+        has_data: true
+        vm_size: Standard_DS4_v2
+        expect_action: no_action
+        expect_reason: below_minimum
+        expect_new_size: Standard_DS3_v2
+      - name: underutilized DS5 still steps down to DS4 (at the minimum)
+        avg_cpu: 12
+        has_data: true
+        vm_size: Standard_DS5_v2
+        expect_action: resize
+        expect_reason: underutilized
+        expect_new_size: Standard_DS4_v2
+  block:
+    - name: Run and assert each raised-minimum fixture
+      ansible.builtin.include_tasks: assert_one.yml
+      loop: "{{ _fixtures }}"
+      loop_control:
+        loop_var: _fixture
+        label: "{{ _fixture.name }}"

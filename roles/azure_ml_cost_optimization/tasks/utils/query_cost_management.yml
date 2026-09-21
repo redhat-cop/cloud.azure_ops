@@ -1,0 +1,57 @@
+---
+# One attempt of the Cost Management query, called in a loop from
+# generate_roi_report.yml.
+#
+# Why a manual loop instead of `until:`/`retries:`? On HTTP 429 the
+# azure_rm_resource module raises an unhandled exception rather than failing
+# cleanly, and ansible-core does not re-run a crashed module through the
+# `until:` retry loop (it stops after a single attempt). So we retry by hand:
+# skip this attempt once we already have a usable result or a non-throttle
+# error, pause between throttled retries, and register the query into a temp
+# var that is copied to _cost_query only when it actually ran (a skipped task
+# would otherwise overwrite a good result with a skipped one).
+
+- name: Attempt Cost Management query (skip when done or on non-throttle error)
+  when: >-
+    _cost_query is not defined
+    or (_cost_query is failed
+        and ('429' in (_cost_query.msg | default(''))
+             or 'Too many requests' in (_cost_query.msg | default(''))))
+  block:
+    - name: Pause before Cost Management retry
+      ansible.builtin.pause:
+        seconds: "{{ azure_ml_cost_optimization_roi_query_delay | int }}"
+      when:
+        - _cost_query_attempt | int > 0
+        - _cost_query is defined
+        - _cost_query is failed
+
+    - name: Query Azure Cost Management API for current month costs
+      azure.azcollection.azure_rm_resource:
+        url: "https://management.azure.com/subscriptions/{{ _subscription_id }}/resourceGroups/{{ azure_resource_group }}/providers/Microsoft.CostManagement/query"
+        api_version: "2023-03-01"
+        method: POST
+        body:
+          type: "ActualCost"
+          timeframe: "Custom"
+          timePeriod:
+            from: "{{ _current_month_start }}T00:00:00Z"
+            to: "{{ ansible_facts.date_time.iso8601 }}"
+          dataset:
+            granularity: "None"
+            aggregation:
+              totalCost:
+                name: "Cost"
+                function: "Sum"
+            grouping:
+              - type: "Dimension"
+                name: "ResourceType"
+      register: _cost_query_result
+
+    - name: Record successful Cost Management result
+      ansible.builtin.set_fact:
+        _cost_query: "{{ _cost_query_result }}"
+  rescue:
+    - name: Record failed Cost Management attempt
+      ansible.builtin.set_fact:
+        _cost_query: "{{ ansible_failed_result }}"

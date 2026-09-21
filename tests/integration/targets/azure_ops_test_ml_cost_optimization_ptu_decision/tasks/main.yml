@@ -1,0 +1,100 @@
+---
+# Fixture-driven test for the pure PTU scale-down decision.
+#
+# Exercises utils/decide_ptu.yml in isolation with crafted inputs and asserts
+# the resulting _ptu_decision. Makes no Azure API calls and creates no
+# resources -- it verifies the decision branches that a live run can almost
+# never reproduce on demand (a genuinely under-utilized PTU deployment of a
+# specific capacity). Runs in the cloud/azure lane for consistency with the
+# other targets, but requires no live resources.
+
+- name: PTU decision fixtures
+  vars:
+    # Explicit config so the fixtures are self-contained and independent of any
+    # future change to the role defaults.
+    azure_ml_cost_optimization_ptu_scale_down_threshold: 50
+    azure_ml_cost_optimization_ptu_target_utilization: 80
+    _ptu_monthly_cost:
+      50: 2500
+      100: 5000
+      300: 15000
+    _fixtures:
+      - name: no metrics -> no action
+        current_ptu: 100
+        has_metrics: false
+        avg_utilization: 0
+        expect_action: no_action
+        expect_reason: no_metrics
+        expect_new_ptu: 100
+        expect_savings: 0
+        expect_upsize: false
+      - name: utilization between thresholds -> no action, no upsize
+        current_ptu: 100
+        has_metrics: true
+        avg_utilization: 65
+        expect_action: no_action
+        expect_reason: above_threshold
+        expect_new_ptu: 100
+        expect_savings: 0
+        expect_upsize: false
+      - name: utilization exactly at scale-down threshold -> no action
+        current_ptu: 100
+        has_metrics: true
+        avg_utilization: 50
+        expect_action: no_action
+        expect_reason: above_threshold
+        expect_new_ptu: 100
+        expect_savings: 0
+        expect_upsize: false
+      - name: utilization above target -> no action but recommend upsize
+        current_ptu: 100
+        has_metrics: true
+        avg_utilization: 90
+        expect_action: no_action
+        expect_reason: above_threshold
+        expect_new_ptu: 100
+        expect_savings: 0
+        expect_upsize: true
+      - name: under-utilized 300 steps down to 100
+        current_ptu: 300
+        has_metrics: true
+        avg_utilization: 20
+        expect_action: scale_down
+        expect_reason: scale_down
+        expect_new_ptu: 100
+        expect_savings: 10000
+        expect_upsize: false
+      - name: under-utilized 100 steps down to 50
+        current_ptu: 100
+        has_metrics: true
+        avg_utilization: 20
+        expect_action: scale_down
+        expect_reason: scale_down
+        expect_new_ptu: 50
+        expect_savings: 2500
+        expect_upsize: false
+      - name: under-utilized 50 is already at minimum capacity
+        current_ptu: 50
+        has_metrics: true
+        avg_utilization: 20
+        expect_action: no_action
+        expect_reason: at_minimum
+        expect_new_ptu: 50
+        expect_savings: 0
+        expect_upsize: false
+      - name: under-utilized 200 has no supported smaller step
+        current_ptu: 200
+        has_metrics: true
+        avg_utilization: 20
+        expect_action: no_action
+        expect_reason: unsupported_capacity
+        expect_new_ptu: 200
+        expect_savings: 0
+        expect_upsize: false
+  block:
+    - name: Run and assert each PTU fixture
+      ansible.builtin.include_tasks: assert_one.yml
+      loop: "{{ _fixtures }}"
+      loop_control:
+        loop_var: _fixture
+        label: "{{ _fixture.name }}"

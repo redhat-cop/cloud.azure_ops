@@ -1,0 +1,82 @@
+---
+# Analyze one cluster's metrics and rightsize it if underutilized.
+#
+# Included once per cluster metric entry from analyze_and_rightsize.yml with
+# `item` set to the entry from _cluster_metrics. Extracted into its own file
+# because Ansible does not support `loop` on a `block`.
+#
+# The resize decision itself lives in utils/decide_rightsize.yml (pure, no API
+# calls) so it can be tested by fixtures; this file resolves inputs, then acts
+# on the decision (resize + report + audit).
+
+- name: Resolve current cluster record for this metric entry
+  ansible.builtin.set_fact:
+    _current_cluster: "{{ _clusters_to_analyze | selectattr('cluster_name', 'equalto', item.cluster_name) | selectattr('workspace_name', 'equalto', item.workspace_name) | first }}"
+
+- name: Decide whether to rightsize this cluster
+  ansible.builtin.include_tasks: utils/decide_rightsize.yml
+  vars:
+    _decide_avg_cpu: "{{ item.avg_cpu_percent }}"
+    _decide_has_data: "{{ item.has_sufficient_data }}"
+    _decide_vm_size: "{{ _current_cluster.vm_size }}"
+
+- name: Log why a cluster was not resized
+  ansible.builtin.debug:
+    msg: >-
+      Skipping {{ item.cluster_name }} ({{ _current_cluster.vm_size }}, CPU
+      {{ item.avg_cpu_percent }}%): {{ _rightsize_decision.reason }}
+  when: _rightsize_decision.action == 'no_action'
+
+- name: Calculate cost savings
+  ansible.builtin.include_tasks: utils/calculate_costs.yml
+  vars:
+    _old_vm_size: "{{ _current_cluster.vm_size }}"
+    _new_vm_size: "{{ _rightsize_decision.new_size }}"
+  when: _rightsize_decision.action == 'resize'
+
+- name: Resize cluster
+  azure.azcollection.azure_rm_resource:
+    resource_group: "{{ azure_resource_group }}"
+    provider: MachineLearningServices
+    resource_type: workspaces/computes
+    parent_path: "{{ item.workspace_name }}"
+    resource_name: "{{ item.cluster_name }}"
+    api_version: "2023-04-01"
+    body:
+      properties:
+        properties:
+          vmSize: "{{ _rightsize_decision.new_size }}"
+  when: _rightsize_decision.action == 'resize'
+  register: _resize_result
+
+- name: Add to rightsize report
+  ansible.builtin.set_fact:
+    _rightsize_report: "{{ _rightsize_report + [_report_entry] }}"
+    _total_monthly_savings: "{{ _total_monthly_savings | float + _monthly_savings | float }}"
+  vars:
+    _report_entry:
+      cluster: "{{ item.cluster_name }}"
+      workspace: "{{ item.workspace_name }}"
+      old_size: "{{ _current_cluster.vm_size }}"
+      new_size: "{{ _rightsize_decision.new_size }}"
+      avg_cpu: "{{ item.avg_cpu_percent }}"
+      monthly_savings: "{{ _monthly_savings }}"
+      annual_savings: "{{ _annual_savings }}"
+  when:
+    - _resize_result is changed
+
+- name: Record resize in audit log
+  ansible.builtin.set_fact:
+    _audit_log: "{{ _audit_log + [_audit_entry] }}"
+  vars:
+    _audit_entry:
+      timestamp: "{{ ansible_facts.date_time.iso8601 }}"
+      operation: "analyze_and_rightsize"
+      workspace: "{{ item.workspace_name }}"
+      cluster: "{{ item.cluster_name }}"
+      action: "{{ 'resized' if _resize_result is changed else 'skipped' }}"
+      old_vm_size: "{{ _current_cluster.vm_size }}"
+      new_vm_size: "{{ _rightsize_decision.new_size if _rightsize_decision.action == 'resize' else _current_cluster.vm_size }}"
+      avg_cpu_percent: "{{ item.avg_cpu_percent }}"
+      monthly_savings: "{{ _monthly_savings if _resize_result is changed else 0 }}"
+  when: _resize_result is defined
