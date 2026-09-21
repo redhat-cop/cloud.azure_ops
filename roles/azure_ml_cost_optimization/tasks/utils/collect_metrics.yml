@@ -33,7 +33,8 @@
   ansible.builtin.include_tasks: utils/collect_cluster_metrics.yml
   loop: "{{ _clusters_to_analyze }}"
   loop_control:
-    label: "{{ item.cluster_name }}"
+    loop_var: cluster_entry
+    label: "{{ cluster_entry.cluster_name }}"
 
 - name: Display metrics collection summary
   ansible.builtin.debug:

@@ -32,7 +32,8 @@
   ansible.builtin.include_tasks: utils/gather_workspace_clusters.yml
   loop: "{{ _target_workspaces }}"
   loop_control:
-    label: "{{ item.name }}"
+    loop_var: workspace
+    label: "{{ workspace.name }}"
 
 - name: Collect metrics for clusters
   ansible.builtin.include_tasks: utils/collect_metrics.yml

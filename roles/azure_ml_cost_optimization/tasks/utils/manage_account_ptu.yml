@@ -1,26 +1,26 @@
 ---
 # Manage PTU capacity for a single Azure OpenAI account.
 #
-# Included once per account from manage_ptu.yml with `item` set to the OpenAI
-# account. Extracted into its own file because Ansible does not support `loop`
-# on a `block`.
+# Included once per account from manage_ptu.yml with `account` set to the
+# OpenAI account. Extracted into its own file because Ansible does not support
+# `loop` on a `block`.
 
 - name: Get account deployments
   azure.azcollection.azure_rm_resource_info:
     resource_group: "{{ azure_resource_group }}"
     provider: CognitiveServices
     resource_type: accounts/deployments
-    parent_path: "{{ item.name }}"
+    parent_path: "{{ account.name }}"
     api_version: "2023-05-01"
   register: _deployments
 
 - name: Find PTU deployments
   ansible.builtin.set_fact:
-    _ptu_deployments: "{{ _deployments.response | selectattr('sku.name', 'defined') | selectattr('sku.name', 'search', 'ProvisionedManaged') | list }}"
+    _ptu_deployments: "{{ _deployments.response | default([]) | selectattr('sku.name', 'defined') | selectattr('sku.name', 'search', 'ProvisionedManaged') | list }}"
 
 - name: Skip account if no PTU deployments
   ansible.builtin.debug:
-    msg: "Skipping {{ item.name }}: no PTU deployments found"
+    msg: "Skipping {{ account.name }}: no PTU deployments found"
   when: _ptu_deployments | length == 0
 
 - name: Process PTU deployment

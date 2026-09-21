@@ -24,4 +24,5 @@
   ansible.builtin.include_tasks: utils/startup_single_cluster.yml
   loop: "{{ _target_clusters }}"
   loop_control:
-    label: "{{ item.name }}"
+    loop_var: cluster
+    label: "{{ cluster.name }}"

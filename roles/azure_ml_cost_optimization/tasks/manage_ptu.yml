@@ -39,7 +39,8 @@
   ansible.builtin.include_tasks: utils/manage_account_ptu.yml
   loop: "{{ _target_accounts }}"
   loop_control:
-    label: "{{ item.name }}"
+    loop_var: account
+    label: "{{ account.name }}"
 
 - name: Display PTU management summary
   ansible.builtin.debug:

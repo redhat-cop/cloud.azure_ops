@@ -2,22 +2,22 @@
 # Startup a single compute cluster.
 #
 # Included once per cluster from utils/startup_workspace_clusters.yml with
-# `item` set to the cluster and `workspace` in scope. Extracted into its own
+# `cluster` set to the cluster and `workspace` in scope. Extracted into its own
 # file because Ansible does not support `loop` on a `block`.
 
 - name: Check if cluster is AmlCompute and stopped
   ansible.builtin.set_fact:
-    _cluster_compute_type: "{{ item.properties.computeType | default('Unknown') }}"
-    _current_min_nodes: "{{ item.properties.properties.scaleSettings.minNodeCount | default(0) }}"
+    _cluster_compute_type: "{{ cluster.properties.computeType | default('Unknown') }}"
+    _current_min_nodes: "{{ cluster.properties.properties.scaleSettings.minNodeCount | default(0) }}"
 
 - name: Skip if not AmlCompute
   ansible.builtin.debug:
-    msg: "Skipping {{ item.name }}: not AmlCompute type"
+    msg: "Skipping {{ cluster.name }}: not AmlCompute type"
   when: _cluster_compute_type != 'AmlCompute'
 
 - name: Skip if already running
   ansible.builtin.debug:
-    msg: "Skipping {{ item.name }}: already running (min_nodes={{ _current_min_nodes }})"
+    msg: "Skipping {{ cluster.name }}: already running (min_nodes={{ _current_min_nodes }})"
   when:
     - _cluster_compute_type == 'AmlCompute'
     - _current_min_nodes | int > 0
@@ -28,7 +28,7 @@
     provider: MachineLearningServices
     resource_type: workspaces/computes
     parent_path: "{{ workspace.name }}"
-    resource_name: "{{ item.name }}"
+    resource_name: "{{ cluster.name }}"
     api_version: "2023-04-01"
     body:
       properties:
@@ -37,8 +37,8 @@
             # Note: minNodeCount set to 1 intentionally (not original pre-shutdown value).
             # If restoring original minNodeCount is needed, audit log can be consulted.
             minNodeCount: 1
-            maxNodeCount: "{{ item.properties.properties.scaleSettings.maxNodeCount }}"
-            nodeIdleTimeBeforeScaleDown: "{{ item.properties.properties.scaleSettings.nodeIdleTimeBeforeScaleDown | default('PT300S') }}"
+            maxNodeCount: "{{ cluster.properties.properties.scaleSettings.maxNodeCount }}"
+            nodeIdleTimeBeforeScaleDown: "{{ cluster.properties.properties.scaleSettings.nodeIdleTimeBeforeScaleDown | default('PT300S') }}"
   when:
     - _cluster_compute_type == 'AmlCompute'
     - _current_min_nodes | int == 0
@@ -57,7 +57,7 @@
       timestamp: "{{ ansible_date_time.iso8601 }}"
       operation: "startup_compute"
       workspace: "{{ workspace.name }}"
-      cluster: "{{ item.name }}"
+      cluster: "{{ cluster.name }}"
       action: "{{ 'startup' if _startup_result is changed else 'skipped' }}"
       previous_min_nodes: "{{ _current_min_nodes }}"
       new_min_nodes: "{{ 1 if _startup_result is changed else _current_min_nodes }}"
