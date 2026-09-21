@@ -20,8 +20,8 @@
 
 - name: Set metrics time range (7 days)
   ansible.builtin.set_fact:
-    _metrics_start_time: "{{ '%Y-%m-%dT%H:%M:%SZ' | strftime(ansible_date_time.epoch | int - (7 * 86400)) }}"
-    _metrics_end_time: "{{ ansible_date_time.iso8601 }}"
+    _metrics_start_time: "{{ '%Y-%m-%dT%H:%M:%SZ' | strftime(ansible_facts.date_time.epoch | int - (7 * 86400)) }}"
+    _metrics_end_time: "{{ ansible_facts.date_time.iso8601 }}"
 
 - name: Query Azure Monitor for PTU utilization metrics
   azure.azcollection.azure_rm_resource:
@@ -104,7 +104,7 @@
     _audit_log: "{{ _audit_log + [_audit_entry] }}"
   vars:
     _audit_entry:
-      timestamp: "{{ ansible_date_time.iso8601 }}"
+      timestamp: "{{ ansible_facts.date_time.iso8601 }}"
       operation: "manage_ptu"
       account: "{{ account.name }}"
       deployment: "{{ deployment.name }}"

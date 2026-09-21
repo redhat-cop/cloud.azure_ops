@@ -8,7 +8,7 @@
 
 - name: Set current month start date
   ansible.builtin.set_fact:
-    _current_month_start: "{{ '%Y-%m-01' | strftime(ansible_date_time.epoch | int) }}"
+    _current_month_start: "{{ '%Y-%m-01' | strftime(ansible_facts.date_time.epoch | int) }}"
 
 # The Cost Management API is heavily throttled and commonly returns HTTP 429
 # ("Too many requests"). azure_rm_resource does not translate that into a clean
@@ -75,7 +75,7 @@
     dest: "{{ azure_ml_cost_optimization_roi_report_path }}"
     mode: '0644'
   vars:
-    report_date: "{{ ansible_date_time.date }}"
+    report_date: "{{ ansible_facts.date_time.date }}"
     baseline_cost: "{{ azure_ml_cost_optimization_roi_baseline_monthly_cost }}"
     current_cost: "{{ _current_month_cost }}"
     monthly_savings: "{{ _monthly_savings }}"

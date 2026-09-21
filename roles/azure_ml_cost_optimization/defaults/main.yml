@@ -30,7 +30,7 @@ azure_ml_cost_optimization_budget_alert_action: "shutdown_non_critical"  # shutd
 # ROI tracking
 azure_ml_cost_optimization_roi_baseline_monthly_cost: 0  # USD
 azure_ml_cost_optimization_roi_tracking_start_date: ""  # ISO 8601
-azure_ml_cost_optimization_roi_report_path: "/tmp/roi_report_{{ ansible_date_time.date }}.md"
+azure_ml_cost_optimization_roi_report_path: "/tmp/roi_report_{{ ansible_facts.date_time.date }}.md"
 
 # Cost Management query throttling (HTTP 429) handling
 azure_ml_cost_optimization_roi_query_retries: 5  # Retry attempts when the Cost Management API throttles
@@ -38,4 +38,4 @@ azure_ml_cost_optimization_roi_query_delay: 30  # Seconds between retries
 
 # Audit logging
 azure_ml_cost_optimization_enable_audit_log: false
-azure_ml_cost_optimization_audit_log_path: "/tmp/azure_ml_cost_optimization_{{ ansible_date_time.date }}.yml"
+azure_ml_cost_optimization_audit_log_path: "/tmp/azure_ml_cost_optimization_{{ ansible_facts.date_time.date }}.yml"

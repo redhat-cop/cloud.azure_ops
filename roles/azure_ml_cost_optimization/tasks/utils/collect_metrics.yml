@@ -21,8 +21,8 @@
 
 - name: Set metrics collection parameters
   ansible.builtin.set_fact:
-    _metrics_start_time: "{{ '%Y-%m-%dT%H:%M:%SZ' | strftime(ansible_date_time.epoch | int - (azure_ml_cost_optimization_rightsize_analysis_days * 86400)) }}"
-    _metrics_end_time: "{{ ansible_date_time.iso8601 }}"
+    _metrics_start_time: "{{ '%Y-%m-%dT%H:%M:%SZ' | strftime(ansible_facts.date_time.epoch | int - (azure_ml_cost_optimization_rightsize_analysis_days * 86400)) }}"
+    _metrics_end_time: "{{ ansible_facts.date_time.iso8601 }}"
     _metrics_interval: "PT1H"  # 1 hour granularity
 
 - name: Initialize metrics collection

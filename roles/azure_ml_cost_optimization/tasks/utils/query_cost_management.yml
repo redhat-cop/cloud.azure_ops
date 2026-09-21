@@ -36,7 +36,7 @@
           timeframe: "Custom"
           timePeriod:
             from: "{{ _current_month_start }}T00:00:00Z"
-            to: "{{ ansible_date_time.iso8601 }}"
+            to: "{{ ansible_facts.date_time.iso8601 }}"
           dataset:
             granularity: "None"
             aggregation:

@@ -54,7 +54,7 @@
     _audit_log: "{{ _audit_log + [_audit_entry] }}"
   vars:
     _audit_entry:
-      timestamp: "{{ ansible_date_time.iso8601 }}"
+      timestamp: "{{ ansible_facts.date_time.iso8601 }}"
       operation: "startup_compute"
       workspace: "{{ workspace.name }}"
       cluster: "{{ cluster.name }}"

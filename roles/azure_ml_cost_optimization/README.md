@@ -73,14 +73,14 @@ This role reduces Azure ML infrastructure costs by 30-50% through:
 |----------|------|----------|---------|-------------|
 | `azure_ml_cost_optimization_roi_baseline_monthly_cost` | integer | Yes (for ROI report) | `0` | Baseline monthly cost (USD) before automation |
 | `azure_ml_cost_optimization_roi_tracking_start_date` | string | No | `""` | ISO 8601 date when automation started |
-| `azure_ml_cost_optimization_roi_report_path` | string | No | `/tmp/roi_report_{{ ansible_date_time.date }}.md` | Output path for ROI report |
+| `azure_ml_cost_optimization_roi_report_path` | string | No | `/tmp/roi_report_{{ ansible_facts.date_time.date }}.md` | Output path for ROI report |
 
 ### Audit Logging Configuration
 
 | Variable | Type | Required | Default | Description |
 |----------|------|----------|---------|-------------|
 | `azure_ml_cost_optimization_enable_audit_log` | boolean | No | `false` | Enable detailed audit logging |
-| `azure_ml_cost_optimization_audit_log_path` | string | No | `/tmp/azure_ml_cost_optimization_{{ ansible_date_time.date }}.yml` | Path for audit log output |
+| `azure_ml_cost_optimization_audit_log_path` | string | No | `/tmp/azure_ml_cost_optimization_{{ ansible_facts.date_time.date }}.yml` | Path for audit log output |
 
 ## Dependencies
 
