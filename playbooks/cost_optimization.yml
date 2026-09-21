@@ -2,6 +2,9 @@
 - name: Azure ML/AI cost optimization
   hosts: localhost
   gather_facts: true
+  gather_subset:
+    - '!all'
+    - 'min'  # only ansible_date_time is used
 
   vars_files:
     - vars/cost_optimization_vars.yml

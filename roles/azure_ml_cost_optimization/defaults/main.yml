@@ -17,7 +17,7 @@ azure_ml_cost_optimization_rightsize_allowed_sizes:
   - Standard_DS3_v2
   - Standard_DS4_v2
   - Standard_DS5_v2
-azure_ml_cost_optimization_rightsize_min_size: "Standard_DS3_v2"
+azure_ml_cost_optimization_rightsize_min_size: "{{ azure_ml_cost_optimization_rightsize_allowed_sizes | first }}"  # never downsize below this; defaults to the smallest allowed size
 
 # PTU management (Azure OpenAI)
 azure_ml_cost_optimization_ptu_target_utilization: 80  # %
