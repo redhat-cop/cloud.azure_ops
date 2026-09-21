@@ -25,7 +25,7 @@
     msg: >-
       Skipping {{ item.cluster_name }} ({{ _current_cluster.vm_size }}, CPU
       {{ item.avg_cpu_percent }}%): {{ _rightsize_decision.reason }}
-  when: _rightsize_decision.action == 'skip'
+  when: _rightsize_decision.action == 'no_action'
 
 - name: Calculate cost savings
   ansible.builtin.include_tasks: utils/calculate_costs.yml

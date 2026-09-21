@@ -23,21 +23,21 @@
         avg_cpu: 5
         has_data: false
         vm_size: Standard_DS5_v2
-        expect_action: skip
+        expect_action: no_action
         expect_reason: insufficient_data
         expect_new_size: ""
       - name: CPU above threshold is skipped
         avg_cpu: 55
         has_data: true
         vm_size: Standard_DS5_v2
-        expect_action: skip
+        expect_action: no_action
         expect_reason: above_threshold
         expect_new_size: ""
       - name: CPU exactly at threshold is not underutilized (skip)
         avg_cpu: 30
         has_data: true
         vm_size: Standard_DS5_v2
-        expect_action: skip
+        expect_action: no_action
         expect_reason: above_threshold
         expect_new_size: ""
       - name: underutilized DS5 steps down to DS4
@@ -58,14 +58,14 @@
         avg_cpu: 12
         has_data: true
         vm_size: Standard_DS3_v2
-        expect_action: skip
+        expect_action: no_action
         expect_reason: already_smallest
         expect_new_size: ""
       - name: underutilized but unknown VM size is skipped
         avg_cpu: 12
         has_data: true
         vm_size: Standard_NC6s_v3
-        expect_action: skip
+        expect_action: no_action
         expect_reason: unknown_size
         expect_new_size: ""
   block:
@@ -90,7 +90,7 @@
         avg_cpu: 12
         has_data: true
         vm_size: Standard_DS4_v2
-        expect_action: skip
+        expect_action: no_action
         expect_reason: below_minimum
         expect_new_size: Standard_DS3_v2
       - name: underutilized DS5 still steps down to DS4 (at the minimum)

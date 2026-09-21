@@ -18,7 +18,7 @@
 #              azure_ml_cost_optimization_rightsize_min_size
 #
 # Output:
-#   _rightsize_decision = {action: resize|skip, reason: <str>, new_size: <str>}
+#   _rightsize_decision = {action: resize|no_action, reason: <str>, new_size: <str>}
 #   reasons: insufficient_data | above_threshold | unknown_size |
 #            already_smallest | below_minimum | no_change | underutilized
 
@@ -52,14 +52,14 @@
 - name: Default decision - insufficient data
   ansible.builtin.set_fact:
     _rightsize_decision:
-      action: skip
+      action: no_action
       reason: insufficient_data
       new_size: ""
 
 - name: Decision - utilization above threshold
   ansible.builtin.set_fact:
     _rightsize_decision:
-      action: skip
+      action: no_action
       reason: above_threshold
       new_size: ""
   when:
@@ -69,7 +69,7 @@
 - name: Decision - VM size not on the allowed ladder
   ansible.builtin.set_fact:
     _rightsize_decision:
-      action: skip
+      action: no_action
       reason: unknown_size
       new_size: ""
   when:
@@ -80,7 +80,7 @@
 - name: Decision - already at the smallest allowed size
   ansible.builtin.set_fact:
     _rightsize_decision:
-      action: skip
+      action: no_action
       reason: already_smallest
       new_size: ""
   when:
@@ -91,7 +91,7 @@
 - name: Decision - candidate size is below the configured minimum
   ansible.builtin.set_fact:
     _rightsize_decision:
-      action: skip
+      action: no_action
       reason: below_minimum
       new_size: "{{ _rs_new_size }}"
   when:
@@ -103,7 +103,7 @@
 - name: Decision - candidate size equals current size
   ansible.builtin.set_fact:
     _rightsize_decision:
-      action: skip
+      action: no_action
       reason: no_change
       new_size: "{{ _rs_new_size }}"
   when:
