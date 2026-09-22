@@ -22,9 +22,17 @@
     azure_manage_storage_account_name: "{{ azure_ml_menv_storage_account }}"
     azure_manage_storage_account_resource_group: "{{ azure_resource_group }}"
 
-- name: Record environment deletion in the audit trail
-  ansible.builtin.include_tasks: record_audit_event.yml
-  vars:
-    audit_action: delete
-    audit_environment: "{{ azure_ml_menv_environment }}"
-  ignore_errors: true   # best-effort audit — never fail teardown on the audit write
+# Best-effort audit: never fail teardown on the audit write. block/rescue is
+# used instead of failed_when because failed_when on an include does not
+# suppress errors raised inside the included tasks.
+- name: Record environment deletion in the audit trail (best-effort)
+  block:
+    - name: Record environment deletion in the audit trail
+      ansible.builtin.include_tasks: record_audit_event.yml
+      vars:
+        audit_action: delete
+        audit_environment: "{{ azure_ml_menv_environment }}"
+  rescue:
+    - name: Continue teardown despite audit failure
+      ansible.builtin.debug:
+        msg: "Audit write failed during teardown of {{ azure_ml_menv_environment }}; continuing."

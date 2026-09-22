@@ -108,7 +108,7 @@
         azure_ml_menv_promote_target: prod
       when: _menv_op == 'all'
 
-    - name: Promote model ({{ azure_ml_menv_promote_source | default('dev') }} -> {{ azure_ml_menv_promote_target | default('staging') }})
+    - name: "Promote model {{ (azure_ml_menv_promote_source | default('dev')) ~ ' -> ' ~ (azure_ml_menv_promote_target | default('staging')) }}"
       ansible.builtin.include_role:
         name: cloud.azure_ops.multi_env_ml_deployment
       vars:

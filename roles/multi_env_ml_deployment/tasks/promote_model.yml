@@ -1,5 +1,5 @@
 ---
-- name: Run promotion gates ({{ azure_ml_menv_promote_source }} -> {{ azure_ml_menv_promote_target }})
+- name: "Run promotion gates for {{ azure_ml_menv_promote_source ~ ' -> ' ~ azure_ml_menv_promote_target }}"
   ansible.builtin.include_tasks: validate_promotion_gate.yml
   vars:
     gate_source_env: "{{ azure_ml_menv_promote_source }}"
