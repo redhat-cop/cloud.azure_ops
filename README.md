@@ -39,6 +39,7 @@ Name | Description
 [cloud.azure_ops.mlops_lifecycle](https://github.com/redhat-cop/cloud.azure_ops/blob/main/playbooks/MLOPS_LIFECYCLE.md)|A playbook to automate the full MLOps lifecycle on Azure, including workspace provisioning, model training, registry-based cross-workspace sharing, and blue/green deployment.
 [cloud.azure_ops.self_service_ml_platform](https://github.com/redhat-cop/cloud.azure_ops/blob/main/playbooks/SELF_SERVICE_ML_PLATFORM.md)|A playbook to enable self-service ML workspace provisioning through AAP with hub-and-spoke architecture, cost controls, and multi-team isolation.
 [cloud.azure_ops.cost_optimization](https://github.com/redhat-cop/cloud.azure_ops/blob/main/playbooks/COST_OPTIMIZATION.md)|A playbook to optimize Azure ML/AI costs, including compute shutdown/startup, right-sizing, Azure OpenAI PTU management, and ROI reporting.
+[cloud.azure_ops.multi_env_ml_deployment](https://github.com/redhat-cop/cloud.azure_ops/blob/main/playbooks/MULTI_ENV_ML_DEPLOYMENT.md)|A playbook to deploy Azure ML across dev/staging/production with AAP-orchestrated model promotion, approval and validation gates, an immutable audit trail, and per-environment network isolation.
 <!--end collection content-->
 
 ## Installation and Usage

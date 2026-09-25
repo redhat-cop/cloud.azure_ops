@@ -1,0 +1,4 @@
+---
+test_azure_resource_group: "{{ resource_prefix }}-mlmenv"
+test_azure_region: eastus
+test_azure_ml_menv_compute_vm_size: Standard_DS2_v2

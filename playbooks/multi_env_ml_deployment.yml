@@ -1,0 +1,130 @@
+---
+- name: Multi-environment Azure ML deployment with AAP-style promotion
+  hosts: localhost
+  gather_facts: false
+
+  vars_files:
+    - vars/multi_env_ml_deployment_vars.yml
+
+  vars:
+    # Operation selector. Leave unset (or 'all') to run the full lifecycle demo.
+    # AAP job templates run a single operation via -e menv_operation=<op>.
+    # NOTE: intentionally NOT named `operation` — that is the role's own selector,
+    # and an extra-var named `operation` would override the per-stage include_role
+    # vars below (extra-vars outrank include_role vars).
+    _menv_op: "{{ menv_operation | default('all') }}"
+
+  tasks:
+    - name: Fail when azure_resource_group is not defined
+      ansible.builtin.fail:
+        msg: azure_resource_group must be defined
+      when: azure_resource_group is not defined
+
+    - name: Set a stable correlation id for this run
+      ansible.builtin.set_fact:
+        azure_ml_menv_correlation_id: "{{ now(true, '%Y%m%dT%H%M%S') }}-{{ 99999999 | random }}"
+
+    - name: Provision shared hub infrastructure
+      ansible.builtin.include_role:
+        name: cloud.azure_ops.multi_env_ml_deployment
+      vars:
+        operation: provision_shared_infrastructure
+      when: _menv_op in ['all', 'provision_shared_infrastructure']
+
+    - name: Provision each environment (dev, staging, prod)
+      ansible.builtin.include_role:
+        name: cloud.azure_ops.multi_env_ml_deployment
+      vars:
+        operation: provision_environment
+        azure_ml_menv_environment: "{{ _env_item }}"
+      loop:
+        - dev
+        - staging
+        - prod
+      loop_control:
+        loop_var: _env_item
+      when: _menv_op == 'all'
+
+    - name: Provision a single environment ({{ azure_ml_menv_environment }})
+      ansible.builtin.include_role:
+        name: cloud.azure_ops.multi_env_ml_deployment
+      vars:
+        operation: provision_environment
+      when: _menv_op == 'provision_environment'
+
+    - name: Register initial model version in dev workspace
+      # NOTE: demo stand-in. Register from a LOCAL artifact directory (the module
+      # uploads it) rather than an azureml:// datastore path, which would require
+      # blobs to already exist and otherwise fails with ModelAssetPathNotFoundInStorage.
+      # In production the accuracy tag is the real evaluation metric produced by
+      # training; the promotion gate reads it.
+      when: _menv_op in ['all', 'register_model']
+      block:
+        - name: Create local artifact for initial model registration
+          ansible.builtin.tempfile:
+            state: directory
+            prefix: menv_model_
+          register: _init_model_tmpdir
+
+        - name: Write initial model file
+          ansible.builtin.copy:
+            dest: "{{ _init_model_tmpdir.path }}/model.json"
+            content: '{"framework": "dummy", "accuracy": 0.95}'
+            mode: "0644"
+
+        - name: Register initial model
+          azure.azcollection.azure_rm_ml_model:
+            resource_group: "{{ azure_resource_group }}"
+            ml_workspace: "{{ azure_resource_group[:22] }}-ml-dev"
+            name: "{{ azure_ml_menv_model_name }}"
+            version: "{{ azure_ml_menv_model_version }}"
+            resource_definition: |
+              type: custom_model
+              path: {{ _init_model_tmpdir.path }}
+              tags:
+                accuracy: "0.95"
+      always:
+        - name: Clean up initial model artifact directory
+          ansible.builtin.file:
+            path: "{{ _init_model_tmpdir.path | default('/nonexistent') }}"
+            state: absent
+          when: _init_model_tmpdir.path is defined
+
+    - name: Promote model dev -> staging
+      ansible.builtin.include_role:
+        name: cloud.azure_ops.multi_env_ml_deployment
+      vars:
+        operation: promote_model
+        azure_ml_menv_promote_source: dev
+        azure_ml_menv_promote_target: staging
+      when: _menv_op == 'all'
+
+    - name: Promote model staging -> prod
+      ansible.builtin.include_role:
+        name: cloud.azure_ops.multi_env_ml_deployment
+      vars:
+        operation: promote_model
+        azure_ml_menv_promote_source: staging
+        azure_ml_menv_promote_target: prod
+      when: _menv_op == 'all'
+
+    - name: "Promote model {{ (azure_ml_menv_promote_source | default('dev')) ~ ' -> ' ~ (azure_ml_menv_promote_target | default('staging')) }}"
+      ansible.builtin.include_role:
+        name: cloud.azure_ops.multi_env_ml_deployment
+      vars:
+        operation: promote_model
+      when: _menv_op == 'promote_model'
+
+    - name: Delete a single environment ({{ azure_ml_menv_environment }})
+      ansible.builtin.include_role:
+        name: cloud.azure_ops.multi_env_ml_deployment
+      vars:
+        operation: delete_environment
+      when: _menv_op == 'delete_environment'
+
+    - name: Delete shared hub infrastructure
+      ansible.builtin.include_role:
+        name: cloud.azure_ops.multi_env_ml_deployment
+      vars:
+        operation: delete_shared_infrastructure
+      when: _menv_op == 'delete_shared_infrastructure'

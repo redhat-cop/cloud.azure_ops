@@ -1,0 +1,42 @@
+---
+- name: Build audit record for action {{ audit_action }}
+  ansible.builtin.set_fact:
+    _audit_timestamp: "{{ now(true, '%Y%m%dT%H%M%S') }}"
+    _audit_uniq: "{{ '%08x' | format(4294967295 | random) }}"
+    _audit_record:
+      timestamp: "{{ now(true, '%Y-%m-%dT%H:%M:%SZ') }}"
+      action: "{{ audit_action }}"
+      environment: "{{ audit_environment | default('') }}"
+      model_name: "{{ audit_model_name | default('') }}"
+      model_version: "{{ audit_model_version | default('') }}"
+      actor: "{{ azure_ml_menv_actor }}"
+      approval_status: "{{ audit_approval_status | default('not_required') }}"
+      gate_result: "{{ audit_gate_result | default('skipped') }}"
+      correlation_id: "{{ azure_ml_menv_correlation_id }}"
+
+- name: Create temporary directory for audit record
+  ansible.builtin.tempfile:
+    state: directory
+    prefix: menv_audit_
+  register: _audit_tmpdir
+
+- name: Write audit record to a local JSON file
+  ansible.builtin.copy:
+    dest: "{{ _audit_tmpdir.path }}/record.json"
+    content: "{{ _audit_record | to_nice_json }}"
+    mode: "0644"
+
+- name: Upload audit record to the audit container
+  azure.azcollection.azure_rm_storageblob:
+    resource_group: "{{ azure_resource_group }}"
+    storage_account_name: "{{ azure_ml_menv_audit_storage_account }}"
+    container: "{{ azure_ml_menv_audit_container }}"
+    blob: "audit/{{ _audit_timestamp }}-{{ audit_action }}-{{ audit_environment | default('shared', true) }}-{{ _audit_uniq }}.json"
+    src: "{{ _audit_tmpdir.path }}/record.json"
+    content_type: application/json
+
+- name: Remove temporary audit directory
+  ansible.builtin.file:
+    path: "{{ _audit_tmpdir.path | default('/nonexistent') }}"
+    state: absent
+  when: _audit_tmpdir.path is defined

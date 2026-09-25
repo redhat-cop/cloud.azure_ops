@@ -1,0 +1,17 @@
+---
+# Multi-environment Azure ML deployment - playbook variables
+#
+# Only values the playbook needs at play scope live here. Everything else
+# (per-environment config, tags, hub/spoke resource names, promotion gate
+# thresholds, audit settings, service principal, ...) comes from
+# roles/multi_env_ml_deployment/defaults/main.yml. Override any of those at run
+# time with -e, which takes precedence over this file.
+#
+# Required at run time (no default): azure_resource_group.
+
+# Referenced by the playbook's register-model block (play scope), where the
+# role defaults are not in scope - notably when running that stage on its own
+# via -e menv_operation=register_model. Values match the role defaults; change
+# them here to register a different model name/version from the playbook.
+azure_ml_menv_model_name: menv-model
+azure_ml_menv_model_version: "1"

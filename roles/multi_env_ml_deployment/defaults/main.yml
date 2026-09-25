@@ -1,0 +1,55 @@
+---
+operation: provision_shared_infrastructure   # router selector
+azure_region: eastus
+azure_ml_menv_environment: dev               # active env for env-scoped operations
+
+# Per-environment configuration (the governance story)
+azure_ml_menv_environments:
+  dev:     { code: dev,  public_network_access: Enabled,  compute_max_nodes: 4, requires_approval: false }
+  staging: { code: stg,  public_network_access: Disabled, compute_max_nodes: 2, requires_approval: true }
+  prod:    { code: prod, public_network_access: Disabled, compute_max_nodes: 2, requires_approval: true }
+
+# Tags (global constraint)
+azure_ml_menv_environment_tag: production
+azure_ml_menv_cost_center: ml-platform
+azure_ml_menv_team: ml-platform
+azure_ml_menv_tags:
+  environment: "{{ azure_ml_menv_environment_tag }}"
+  cost_center: "{{ azure_ml_menv_cost_center }}"
+  team: "{{ azure_ml_menv_team }}"
+
+# Shared (hub) resource names
+azure_ml_menv_keyvault_name: "{{ azure_resource_group[:19] }}-mkv"
+azure_ml_menv_acr_name: "{{ (azure_resource_group | regex_replace('[^a-z0-9]', ''))[:43] }}menvacr"
+azure_ml_menv_appinsights_name: "{{ azure_resource_group }}-menv-ai"
+azure_ml_menv_registry_name: "{{ azure_resource_group[:20] }}-menvreg"
+azure_ml_menv_audit_storage_account: "{{ (azure_resource_group | regex_replace('[^a-z0-9]', ''))[:15] }}auditml"
+azure_ml_menv_audit_container: audit
+
+# Per-environment (spoke) resource names — computed from the active env code
+azure_ml_menv_env_code: "{{ azure_ml_menv_environments[azure_ml_menv_environment].code }}"
+azure_ml_menv_storage_account: "{{ (azure_resource_group | regex_replace('[^a-z0-9]', ''))[:16] }}{{ azure_ml_menv_env_code }}ml"
+azure_ml_menv_workspace_name: "{{ azure_resource_group[:22] }}-ml-{{ azure_ml_menv_env_code }}"
+# Compute cluster name must be unique per workspace within the resource group and
+# is limited to 16 chars (start with a letter). Derive it per environment so
+# dev/staging/prod never collide (env code prefix) and deployments in different
+# resource groups stay distinct (sanitized RG token suffix).
+azure_ml_menv_compute_name: "{{ azure_ml_menv_env_code }}-{{ (azure_resource_group | regex_replace('[^a-zA-Z0-9]', ''))[:11] }}"
+azure_ml_menv_compute_vm_size: Standard_DS3_v2
+azure_ml_menv_storage_container: training-data
+
+# Model + promotion
+azure_ml_menv_model_name: menv-model
+azure_ml_menv_model_version: "1"
+azure_ml_menv_min_accuracy: 0.90            # automated gate threshold
+azure_ml_menv_promotion_approved: false     # manual approval gate (AAP node supplies true)
+azure_ml_menv_use_registry: true            # publish to shared ML registry (best-effort)
+
+# Audit context
+azure_ml_menv_actor: "{{ lookup('ansible.builtin.env', 'AZURE_CLIENT_ID') | default('unknown', true) }}"
+azure_ml_menv_correlation_id: "{{ now(true, '%Y%m%dT%H%M%SZ') }}"
+
+# Service principal (registry role assignment)
+azure_client_id: "{{ lookup('ansible.builtin.env', 'AZURE_CLIENT_ID') }}"
+azure_secret: "{{ lookup('ansible.builtin.env', 'AZURE_SECRET') }}"
+azure_tenant: "{{ lookup('ansible.builtin.env', 'AZURE_TENANT') }}"

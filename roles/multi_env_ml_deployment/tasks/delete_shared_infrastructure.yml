@@ -1,0 +1,48 @@
+---
+- name: Delete ML registry
+  azure.azcollection.azure_rm_ml_registry:
+    resource_group: "{{ azure_resource_group }}"
+    name: "{{ azure_ml_menv_registry_name }}"
+    state: absent
+  failed_when: false
+  when: azure_ml_menv_use_registry | bool
+
+- name: Delete shared Container Registry
+  azure.azcollection.azure_rm_containerregistry:
+    resource_group: "{{ azure_resource_group }}"
+    name: "{{ azure_ml_menv_acr_name }}"
+    state: absent
+  failed_when: false
+
+- name: Delete shared Application Insights
+  azure.azcollection.azure_rm_resource:
+    resource_group: "{{ azure_resource_group }}"
+    provider: Insights
+    resource_type: components
+    resource_name: "{{ azure_ml_menv_appinsights_name }}"
+    api_version: "2020-02-02"
+    state: absent
+  failed_when: false
+
+- name: Delete shared Key Vault
+  azure.azcollection.azure_rm_keyvault:
+    resource_group: "{{ azure_resource_group }}"
+    vault_name: "{{ azure_ml_menv_keyvault_name }}"
+    state: absent
+  failed_when: false
+
+- name: Delete audit storage account
+  ansible.builtin.include_role:
+    name: cloud.azure_ops.azure_manage_storage_account
+  vars:
+    azure_manage_storage_account_operation: delete
+    azure_manage_storage_account_name: "{{ azure_ml_menv_audit_storage_account }}"
+    azure_manage_storage_account_resource_group: "{{ azure_resource_group }}"
+
+- name: Delete resource group
+  ansible.builtin.include_role:
+    name: cloud.azure_ops.azure_manage_resource_group
+  vars:
+    azure_manage_resource_group_operation: delete
+    azure_manage_resource_group_name: "{{ azure_resource_group }}"
+    azure_manage_resource_group_force_delete_nonempty: true
