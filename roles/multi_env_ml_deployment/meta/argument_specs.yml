@@ -1,0 +1,92 @@
+---
+argument_specs:
+  main:
+    version_added: 6.2.0
+    short_description: A role to run multi-environment Azure ML deployments with promotion gates.
+    description:
+      - A role that automates multi-environment Azure Machine Learning deployments with automated promotion gates.
+      - Implements a hub-and-spoke architecture with shared infrastructure and environment-specific ML workspaces (dev, staging, prod).
+      - This role requires an azure user account with valid permission.
+    options:
+      operation:
+        description:
+          - Operation to perform.
+          - One of C(provision_shared_infrastructure), C(provision_environment), C(promote_model), C(validate_promotion_gate), C(delete_environment) or C(delete_shared_infrastructure).
+        default: "provision_shared_infrastructure"
+      azure_resource_group:
+        description: Resource group used as the base for shared and per-environment resource names.
+        required: true
+      azure_region:
+        description: An Azure location for the resources.
+        default: "eastus"
+      azure_ml_menv_environment:
+        description: The active environment for environment-scoped operations.
+        default: "dev"
+      azure_ml_menv_environments:
+        description: Per-environment configuration keyed by environment name (governance, network access and compute limits).
+        type: dict
+      azure_ml_menv_environment_tag:
+        description: Value of the C(environment) resource tag.
+        default: "production"
+      azure_ml_menv_cost_center:
+        description: Value of the C(cost_center) resource tag.
+        default: "ml-platform"
+      azure_ml_menv_team:
+        description: Value of the C(team) resource tag.
+        default: "ml-platform"
+      azure_ml_menv_tags:
+        description: Dictionary of tags applied to created resources.
+        type: dict
+      azure_ml_menv_keyvault_name:
+        description: Name of the shared (hub) key vault. Derived from the resource group by default.
+      azure_ml_menv_acr_name:
+        description: Name of the shared (hub) Azure Container Registry. Derived from the resource group by default.
+      azure_ml_menv_appinsights_name:
+        description: Name of the shared (hub) Application Insights instance. Derived from the resource group by default.
+      azure_ml_menv_registry_name:
+        description: Name of the shared ML registry. Derived from the resource group by default.
+      azure_ml_menv_audit_storage_account:
+        description: Name of the storage account used for audit records. Derived from the resource group by default.
+      azure_ml_menv_audit_container:
+        description: Name of the blob container used for audit records.
+        default: "audit"
+      azure_ml_menv_storage_account:
+        description: Name of the per-environment storage account. Derived from the resource group and environment code by default.
+      azure_ml_menv_workspace_name:
+        description: Name of the per-environment ML workspace. Derived from the resource group and environment code by default.
+      azure_ml_menv_compute_name:
+        description: Name of the per-environment compute cluster (max 16 chars, must start with a letter). Derived per environment by default.
+      azure_ml_menv_compute_vm_size:
+        description: VM size for the per-environment compute cluster.
+        default: "Standard_DS3_v2"
+      azure_ml_menv_storage_container:
+        description: Name of the blob container used for training data.
+        default: "training-data"
+      azure_ml_menv_model_name:
+        description: Name of the model being deployed and promoted.
+        default: "menv-model"
+      azure_ml_menv_model_version:
+        description: Version of the model being deployed and promoted.
+        default: "1"
+      azure_ml_menv_min_accuracy:
+        description: Minimum accuracy threshold enforced by the automated promotion gate.
+        type: float
+        default: 0.90
+      azure_ml_menv_promotion_approved:
+        description: Manual approval gate. Set to true to allow promotion (typically supplied by an AAP node).
+        type: bool
+        default: false
+      azure_ml_menv_use_registry:
+        description: When true, publish the model to the shared ML registry (best-effort).
+        type: bool
+        default: true
+      azure_ml_menv_actor:
+        description: Identity recorded in audit events. Defaults to the AZURE_CLIENT_ID environment variable.
+      azure_ml_menv_correlation_id:
+        description: Correlation id recorded in audit events for this operation.
+      azure_client_id:
+        description: Azure service principal client id used for registry role assignment.
+      azure_secret:
+        description: Azure service principal secret used for registry role assignment.
+      azure_tenant:
+        description: Azure tenant id used for registry role assignment.

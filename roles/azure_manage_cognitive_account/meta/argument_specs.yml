@@ -1,7 +1,7 @@
 ---
 argument_specs:
   main:
-    version_added: 7.0.0
+    version_added: 6.2.0
     short_description: A role to manage Azure Cognitive Services accounts.
     description:
       - A role to create or delete Azure Cognitive Services accounts (including Azure OpenAI).
