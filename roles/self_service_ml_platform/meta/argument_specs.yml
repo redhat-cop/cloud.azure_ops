@@ -1,0 +1,72 @@
+---
+argument_specs:
+  main:
+    version_added: 6.2.0
+    short_description: A role to provide a self-service Azure ML platform via AAP.
+    description:
+      - A role that enables self-service machine learning workspace provisioning on Azure through Ansible Automation Platform (AAP).
+      - Implements a hub-and-spoke architecture with centralized shared infrastructure and isolated team workspaces.
+      - This role requires an azure user account with valid permission.
+    options:
+      operation:
+        description:
+          - Operation to perform.
+          - One of C(provision_shared_infrastructure), C(provision_team_workspace), C(delete_team_workspace) or C(delete_shared_infrastructure).
+        default: "provision_shared_infrastructure"
+      azure_region:
+        description: An Azure location for the resources.
+        default: "eastus"
+      azure_ml_platform_shared_rg:
+        description: Resource group holding the shared (hub) infrastructure.
+        default: "ml-platform-shared"
+      azure_ml_platform_keyvault:
+        description: Name of the shared key vault. Must be globally unique.
+        default: "ml-platform-kv-001"
+      azure_ml_platform_acr:
+        description: Name of the shared Azure Container Registry. Must be globally unique.
+        default: "mlplatformacr001"
+      azure_ml_platform_appinsights:
+        description: Name of the shared Application Insights instance.
+        default: "ml-platform-insights"
+      azure_ml_platform_admin_email:
+        description: Administrator contact email for the platform.
+        default: "admin@example.com"
+      azure_ml_platform_environment:
+        description: Value of the C(environment) resource tag.
+        default: "production"
+      azure_ml_platform_cost_center:
+        description: Value of the C(cost_center) resource tag.
+        default: "ml-platform"
+      azure_ml_platform_team:
+        description: Value of the C(team) resource tag.
+        default: "platform"
+      azure_ml_team_name:
+        description: Name of the team requesting a workspace. Required for team workspace operations.
+        default: ""
+      azure_ml_team_contact_email:
+        description: Contact email for the team workspace.
+        default: ""
+      azure_ml_team_budget_limit:
+        description: Monthly budget limit for the team workspace in USD.
+        type: int
+        default: 2500
+      azure_ml_team_compute_vm_size:
+        description: VM size for the team workspace compute cluster.
+        default: "Standard_DS3_v2"
+      azure_ml_team_compute_max_nodes:
+        description: Maximum number of nodes for the team workspace compute cluster.
+        type: int
+        default: 4
+      azure_ml_team_data_access_scope:
+        description: Data access scope granted to the team workspace.
+        default: "restricted"
+      azure_ml_team_storage_account:
+        description: Name of the team workspace storage account. Derived from the team name by default.
+      azure_ml_team_workspace_name:
+        description: Name of the team ML workspace. Derived from the team name by default.
+      azure_ml_team_compute_name:
+        description: Name of the team compute cluster. Derived from the team name by default.
+      azure_ml_team_datastore_name:
+        description: Name of the team datastore. Derived from the team name by default.
+      azure_ml_team_environment_name:
+        description: Name of the team base environment. Derived from the team name by default.

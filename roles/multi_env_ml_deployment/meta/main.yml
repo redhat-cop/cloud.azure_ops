@@ -1,0 +1,26 @@
+---
+galaxy_info:
+  author: Red Hat
+  description: Role to automate multi-environment Azure Machine Learning deployments with promotion gates.
+  company: Red Hat
+
+  license: GPL-3.0-or-later
+
+  min_ansible_version: 2.15.0
+
+  platforms:
+    - name: EL
+      versions:
+        - "8"
+        - "9"
+        - "10"
+
+  galaxy_tags:
+    - azure
+    - cloud
+    - machinelearning
+
+dependencies: []
+collections:
+  - azure.azcollection
+...

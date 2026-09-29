@@ -1,0 +1,26 @@
+---
+galaxy_info:
+  author: Red Hat
+  description: Role to enable self-service Azure ML workspace provisioning via Ansible Automation Platform.
+  company: Red Hat
+
+  license: GPL-3.0-or-later
+
+  min_ansible_version: 2.15.0
+
+  platforms:
+    - name: EL
+      versions:
+        - "8"
+        - "9"
+        - "10"
+
+  galaxy_tags:
+    - azure
+    - cloud
+    - machinelearning
+
+dependencies: []
+collections:
+  - azure.azcollection
+...

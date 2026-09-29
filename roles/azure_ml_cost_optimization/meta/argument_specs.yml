@@ -1,0 +1,96 @@
+---
+argument_specs:
+  main:
+    version_added: 6.2.0
+    short_description: A role to optimize Azure ML and AI infrastructure costs.
+    description:
+      - A role to optimize Azure ML/AI infrastructure costs through automated lifecycle management, event-driven overrides, and continuous right-sizing.
+      - This role requires an azure user account with valid permission.
+    options:
+      azure_ml_cost_optimization_operation:
+        description:
+          - Operation to perform.
+          - One of C(shutdown_compute), C(startup_compute), C(analyze_and_rightsize), C(manage_ptu) or C(generate_roi_report).
+        default: ""
+      azure_resource_group:
+        description: Resource group containing the Azure ML/AI resources to optimize.
+        required: true
+      azure_region:
+        description: An Azure location for the resources.
+        required: true
+      azure_ml_cost_optimization_workspaces:
+        description: List of workspace names to target. An empty list targets all workspaces in the resource group.
+        type: list
+        elements: str
+        default: []
+      azure_ml_cost_optimization_compute_targets:
+        description: List of compute cluster names to target. An empty list targets all compute clusters.
+        type: list
+        elements: str
+        default: []
+      azure_ml_cost_optimization_openai_accounts:
+        description: List of Azure OpenAI account names to target. An empty list targets all accounts.
+        type: list
+        elements: str
+        default: []
+      azure_ml_cost_optimization_preserve_running_jobs:
+        description: When true, skip compute clusters with active jobs during shutdown.
+        type: bool
+        default: true
+      azure_ml_cost_optimization_rightsize_cpu_threshold:
+        description: Downsize a cluster when its average CPU utilization (percent) is below this value.
+        type: int
+        default: 30
+      azure_ml_cost_optimization_rightsize_analysis_days:
+        description: Number of days of metrics to analyze when right-sizing.
+        type: int
+        default: 7
+      azure_ml_cost_optimization_rightsize_allowed_sizes:
+        description: Allowed VM sizes to select from when right-sizing.
+        type: list
+        elements: str
+        default:
+          - Standard_DS3_v2
+          - Standard_DS4_v2
+          - Standard_DS5_v2
+      azure_ml_cost_optimization_rightsize_min_size:
+        description: Never downsize below this VM size. Defaults to the smallest allowed size.
+      azure_ml_cost_optimization_ptu_target_utilization:
+        description: Target utilization (percent) for Azure OpenAI provisioned throughput units (PTU).
+        type: int
+        default: 80
+      azure_ml_cost_optimization_ptu_scale_down_threshold:
+        description: Scale down PTU when utilization (percent) falls below this value.
+        type: int
+        default: 50
+      azure_ml_cost_optimization_emergency_mode:
+        description: Enable emergency cost-control behavior triggered by event-driven overrides.
+        type: bool
+        default: false
+      azure_ml_cost_optimization_budget_alert_action:
+        description: Action to take on a budget alert.
+        default: "shutdown_non_critical"
+        choices: ["shutdown_all", "shutdown_non_critical", "alert_only"]
+      azure_ml_cost_optimization_roi_baseline_monthly_cost:
+        description: Baseline monthly cost in USD used for ROI reporting.
+        type: int
+        default: 0
+      azure_ml_cost_optimization_roi_tracking_start_date:
+        description: ISO 8601 date from which ROI is tracked.
+        default: ""
+      azure_ml_cost_optimization_roi_report_path:
+        description: Path where the generated ROI report is written.
+      azure_ml_cost_optimization_roi_query_retries:
+        description: Retry attempts when the Cost Management API throttles (HTTP 429).
+        type: int
+        default: 5
+      azure_ml_cost_optimization_roi_query_delay:
+        description: Seconds between retries when the Cost Management API throttles.
+        type: int
+        default: 30
+      azure_ml_cost_optimization_enable_audit_log:
+        description: When true, write an audit log to disk.
+        type: bool
+        default: false
+      azure_ml_cost_optimization_audit_log_path:
+        description: Path where the audit log is written.

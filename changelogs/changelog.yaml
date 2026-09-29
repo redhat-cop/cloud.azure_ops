@@ -214,3 +214,54 @@ releases:
     fragments:
     - 6.1.2.yml
     release_date: '2025-10-13'
+  6.2.0:
+    changes:
+      major_changes:
+      - Add MLOps lifecycle reference architecture with Azure ML, including the ``mlops_lifecycle.yml``
+        playbook (https://github.com/redhat-cop/cloud.azure_ops/pull/122).
+      - Add RAG pipeline reference architecture using Azure AI Search and Azure OpenAI,
+        including the ``rag_pipeline.yml`` playbook (https://github.com/redhat-cop/cloud.azure_ops/pull/121).
+      - Add Self-Service ML Platform with Ansible Automation Platform (AAP) integration,
+        including the ``self_service_ml_platform`` role and ``self_service_ml_platform.yml``
+        playbook (https://github.com/redhat-cop/cloud.azure_ops/pull/123).
+      - Add multi-environment ML deployment example with automated promotion gates,
+        including the ``multi_env_ml_deployment`` role and ``multi_env_ml_deployment.yml``
+        playbook (https://github.com/redhat-cop/cloud.azure_ops/pull/125).
+      minor_changes:
+      - Add Azure ML cost optimization role (``azure_ml_cost_optimization``) with
+        automated lifecycle management, event-driven overrides, and right-sizing,
+        plus the ``cost_optimization.yml`` playbook (https://github.com/redhat-cop/cloud.azure_ops/pull/124).
+      - Add a galaxy-importer GitHub Actions workflow for pull request validation
+        (https://github.com/redhat-cop/cloud.azure_ops/pull/120).
+      - Raise the minimum required ansible-core version to 2.16.0.
+      release_summary: 'This is the minor release of the ``cloud.azure_ops`` collection.
+
+        This release adds Azure Machine Learning and AI reference architectures,
+
+        supporting roles for Azure AI/ML services, and cost optimization tooling.
+
+        '
+    fragments:
+    - 6.2.0.yml
+    objects:
+      role:
+      - description: A role to manage Azure AI Search service.
+        name: azure_manage_ai_search
+        namespace: null
+      - description: A role to manage Azure Cognitive Services accounts.
+        name: azure_manage_cognitive_account
+        namespace: null
+      - description: A role to manage Azure Storage Accounts.
+        name: azure_manage_storage_account
+        namespace: null
+      - description: A role to optimize Azure ML and AI infrastructure costs.
+        name: azure_ml_cost_optimization
+        namespace: null
+      - description: A role to run multi\-environment Azure ML deployments with promotion
+          gates.
+        name: multi_env_ml_deployment
+        namespace: null
+      - description: A role to provide a self\-service Azure ML platform via AAP.
+        name: self_service_ml_platform
+        namespace: null
+    release_date: '2026-09-28'

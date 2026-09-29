@@ -4,6 +4,41 @@ Cloud.Azure\_Ops Release Notes
 
 .. contents:: Topics
 
+v6.2.0
+======
+
+Release Summary
+---------------
+
+This is the minor release of the ``cloud.azure_ops`` collection.
+This release adds Azure Machine Learning and AI reference architectures,
+supporting roles for Azure AI/ML services, and cost optimization tooling.
+
+Major Changes
+-------------
+
+- Add MLOps lifecycle reference architecture with Azure ML, including the ``mlops_lifecycle.yml`` playbook (https://github.com/redhat-cop/cloud.azure_ops/pull/122).
+- Add RAG pipeline reference architecture using Azure AI Search and Azure OpenAI, including the ``rag_pipeline.yml`` playbook (https://github.com/redhat-cop/cloud.azure_ops/pull/121).
+- Add Self-Service ML Platform with Ansible Automation Platform (AAP) integration, including the ``self_service_ml_platform`` role and ``self_service_ml_platform.yml`` playbook (https://github.com/redhat-cop/cloud.azure_ops/pull/123).
+- Add multi-environment ML deployment example with automated promotion gates, including the ``multi_env_ml_deployment`` role and ``multi_env_ml_deployment.yml`` playbook (https://github.com/redhat-cop/cloud.azure_ops/pull/125).
+
+Minor Changes
+-------------
+
+- Add Azure ML cost optimization role (``azure_ml_cost_optimization``) with automated lifecycle management, event-driven overrides, and right-sizing, plus the ``cost_optimization.yml`` playbook (https://github.com/redhat-cop/cloud.azure_ops/pull/124).
+- Add a galaxy-importer GitHub Actions workflow for pull request validation (https://github.com/redhat-cop/cloud.azure_ops/pull/120).
+- Raise the minimum required ansible-core version to 2.16.0.
+
+New Roles
+---------
+
+- cloud.azure_ops.azure_manage_ai_search - A role to manage Azure AI Search service.
+- cloud.azure_ops.azure_manage_cognitive_account - A role to manage Azure Cognitive Services accounts.
+- cloud.azure_ops.azure_manage_storage_account - A role to manage Azure Storage Accounts.
+- cloud.azure_ops.azure_ml_cost_optimization - A role to optimize Azure ML and AI infrastructure costs.
+- cloud.azure_ops.multi_env_ml_deployment - A role to run multi\-environment Azure ML deployments with promotion gates.
+- cloud.azure_ops.self_service_ml_platform - A role to provide a self\-service Azure ML platform via AAP.
+
 v6.1.2
 ======
 

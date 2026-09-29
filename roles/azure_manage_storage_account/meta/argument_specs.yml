@@ -1,7 +1,7 @@
 ---
 argument_specs:
   main:
-    version_added: 7.0.0
+    version_added: 6.2.0
     short_description: A role to manage Azure Storage Accounts.
     description:
       - A role to create or delete Azure Storage Accounts with optional blob container.
